@@ -144,11 +144,11 @@ impl Filesystem {
     }
 
     /// Web new fs
-    pub fn new_web() -> Filesystem {
+    pub fn new_web(resources_dir_name: &path::Path) -> Filesystem {
         let overlay = vfs::OverlayFS::new();
         Filesystem {
             vfs: Arc::new(Mutex::new(overlay)),
-            resources_dir: Default::default(),
+            resources_dir: resources_dir_name.to_path_buf(),
             zip_dir: Default::default(),
             user_config_dir: Default::default(),
             user_data_dir: Default::default(),
@@ -261,21 +261,40 @@ impl Filesystem {
         let path = path.into();
         let fs = InternalClone::clone(self);
         Coroutine::new(move |_| async move {
-            let finished = Arc::new(AtomicBool::new(false));
-            // TODO 1 thread only, not spawning a new one every time.
-            let handle = std::thread::spawn({
-                let finished = Arc::clone(&finished);
-                move || {
-                    std::thread::sleep(std::time::Duration::from_millis(1200));
-                    let result = fs.read_to_end(path);
-                    finished.store(true, Ordering::Relaxed);
-                    result
-                }
-            });
-            while !finished.load(Ordering::Relaxed) {
-                yield_now().await;
+            #[cfg(target_arch = "wasm32")]
+            {
+                let bytes = reqwest::get(format!(
+                    "http://127.0.0.1:1334/{}{}",
+                    fs.resources_dir.into_os_string().into_string().unwrap(),
+                    path.into_os_string().into_string().unwrap()
+                ))
+                .await
+                .map_err(|x| GameError::FilesystemError(x.to_string()))?
+                .bytes()
+                .await
+                .map_err(|x| GameError::FilesystemError(x.to_string()))?;
+                Ok(bytes.into())
             }
-            handle.join().unwrap()
+
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let finished = Arc::new(AtomicBool::new(false));
+                // TODO 1 thread only, not spawning a new one every time.
+
+                let handle = std::thread::spawn({
+                    let finished = Arc::clone(&finished);
+                    move || {
+                        std::thread::sleep(std::time::Duration::from_millis(1200));
+                        let result = fs.read_to_end(path);
+                        finished.store(true, Ordering::Relaxed);
+                        result
+                    }
+                });
+                while !finished.load(Ordering::Relaxed) {
+                    yield_now().await;
+                }
+                handle.join().unwrap()
+            }
         })
     }
 
