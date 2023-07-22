@@ -280,6 +280,27 @@ impl GraphicsContext {
         };
 
         let window = window_builder.build(event_loop)?;
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            // Winit prevents sizing with CSS, so we have to set
+            // the size manually when on web.
+            use winit::dpi::PhysicalSize;
+            window.set_inner_size(PhysicalSize::new(450, 400));
+            web_sys::console::log_1(&"Init web".into());
+            use winit::platform::web::WindowExtWebSys;
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    let dst = doc.body()?;
+                    // let dst = doc.get_element_by_id("body")?;
+                    let canvas = web_sys::Element::from(window.canvas());
+                    let _ = dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+        }
+
         let surface = unsafe { instance.create_surface(&window) }
             .map_err(|_| GameError::GraphicsInitializationError)?;
 
@@ -303,12 +324,12 @@ impl GraphicsContext {
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    max_bind_groups: 4,
+                    // max_bind_groups: 4,
                     // InstanceArray uses 2 storage buffers.
-                    max_storage_buffers_per_shader_stage: 2,
-                    max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
-                    max_texture_dimension_1d: 8192,
-                    max_texture_dimension_2d: 8192,
+                    // max_storage_buffers_per_shader_stage: 2,
+                    // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
+                    // max_texture_dimension_1d: 8192,
+                    // max_texture_dimension_2d: 8192,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
             },
@@ -456,16 +477,16 @@ impl GraphicsContext {
         );
 
         let instance_bind_layout = BindGroupLayoutBuilder::new()
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
             .create(&wgpu.device, &mut bind_group_cache);
 
         let white_image =
