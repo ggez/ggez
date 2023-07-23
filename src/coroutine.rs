@@ -12,7 +12,7 @@ use std::{
     task::{Poll, Waker},
 };
 
-use crate::Context;
+use crate::{Context, GameResult};
 
 enum CoroutineState<T> {
     Future(Pin<Box<dyn Future<Output = T> + 'static>>),
@@ -73,6 +73,37 @@ impl<T> Coroutine<T> {
             }
             CoroutineState::Finished => None,
         }
+    }
+}
+
+/// Used to help with async loading of assets cleanly
+#[allow(missing_debug_implementations)]
+pub struct Loading<T> {
+    pub(crate) coroutine: Coroutine<GameResult<T>>,
+    result: Option<T>,
+}
+
+impl<T> Loading<T> {
+    /// Create a new loading struct for a given coroutine
+    pub fn new(coroutine: Coroutine<GameResult<T>>) -> Self {
+        Self {
+            coroutine,
+            result: None,
+        }
+    }
+
+    /// Advances and possibly returns a value from the coroutine.
+    pub fn poll(&mut self, ctx: &mut Context) -> GameResult<&Option<T>> {
+        if let Some(val) = self.coroutine.poll(ctx) {
+            self.result = Some(val?);
+            return Ok(&self.result);
+        }
+        Ok(&None)
+    }
+
+    /// Get the result if any
+    pub fn result(&self) -> &Option<T> {
+        &self.result
     }
 }
 
