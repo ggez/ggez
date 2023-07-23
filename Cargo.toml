@@ -26,7 +26,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 # default = ["c_dependencies", "audio", "gamepad", "3d", "gltf", "obj"]
-default = ["gamepad", "3d", "gltf", "obj"]
+default = ["audio", "gamepad", "3d", "gltf", "obj"]
 zip-compression = ["zip/bzip2", "zip/zstd"]
 mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
@@ -72,6 +72,7 @@ rodio = { version = "0.17", optional = true, default-features = false, features 
    "flac",
    "vorbis",
    "wav",
+   "wasm-bindgen"
 ] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"

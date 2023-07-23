@@ -5,6 +5,7 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
+use ggez::coroutine::Loading;
 use ggez::event::{self, EventHandler};
 use ggez::glam::*;
 use ggez::graphics::{self, Color};
@@ -237,21 +238,22 @@ fn world_to_screen_coords(screen_width: f32, screen_height: f32, point: Point2) 
 /// **********************************************************************
 
 struct Assets {
-    player_image: graphics::Image,
-    shot_image: graphics::Image,
-    rock_image: graphics::Image,
-    shot_sound: audio::Source,
-    hit_sound: audio::Source,
+    player_image: Loading<graphics::Image>,
+    shot_image: Loading<graphics::Image>,
+    rock_image: Loading<graphics::Image>,
+    shot_sound: Loading<audio::Source>,
+    hit_sound: Loading<audio::Source>,
+    white: graphics::Image,
 }
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        let player_image = graphics::Image::from_path(ctx, "/player.png")?;
-        let shot_image = graphics::Image::from_path(ctx, "/shot.png")?;
-        let rock_image = graphics::Image::from_path(ctx, "/rock.png")?;
+        let player_image = graphics::Image::from_path_async("/player.png");
+        let shot_image = graphics::Image::from_path_async("/shot.png");
+        let rock_image = graphics::Image::from_path_async("/rock.png");
 
-        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
-        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
+        let shot_sound = audio::Source::new_async("/pew.ogg");
+        let hit_sound = audio::Source::new_async("/boom.ogg");
 
         Ok(Assets {
             player_image,
@@ -259,14 +261,24 @@ impl Assets {
             rock_image,
             shot_sound,
             hit_sound,
+            white: graphics::Image::from_color(ctx, 1, 1, None),
         })
+    }
+
+    fn poll(&mut self, ctx: &mut Context) -> GameResult {
+        self.player_image.poll(ctx)?;
+        self.shot_image.poll(ctx)?;
+        self.rock_image.poll(ctx)?;
+        self.shot_sound.poll(ctx)?;
+        self.hit_sound.poll(ctx)?;
+        Ok(())
     }
 
     fn actor_image(&self, actor: &Actor) -> &graphics::Image {
         match actor.tag {
-            ActorType::Player => &self.player_image,
-            ActorType::Rock => &self.rock_image,
-            ActorType::Shot => &self.shot_image,
+            ActorType::Player => self.player_image.result().as_ref().unwrap_or(&self.white),
+            ActorType::Rock => self.rock_image.result().as_ref().unwrap_or(&self.white),
+            ActorType::Shot => self.shot_image.result().as_ref().unwrap_or(&self.white),
         }
     }
 }
@@ -369,7 +381,9 @@ impl MainState {
 
         self.shots.push(shot);
 
-        self.assets.shot_sound.play(ctx)?;
+        if let Some(shot) = self.assets.shot_sound.result_mut() {
+            shot.play(ctx)?;
+        }
 
         Ok(())
     }
@@ -392,7 +406,9 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
 
-                    self.assets.hit_sound.play(ctx)?;
+                    if let Some(hit) = self.assets.hit_sound.result_mut() {
+                        hit.play(ctx)?;
+                    }
                 }
             }
         }
@@ -444,6 +460,7 @@ fn draw_actor(
 /// **********************************************************************
 impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        self.assets.poll(ctx)?;
         const DESIRED_FPS: u32 = 60;
 
         while ctx.time.check_update_time(DESIRED_FPS) {

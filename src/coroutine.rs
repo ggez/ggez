@@ -105,6 +105,11 @@ impl<T> Loading<T> {
     pub fn result(&self) -> &Option<T> {
         &self.result
     }
+
+    /// Get the mutable result if any
+    pub fn result_mut(&mut self) -> &mut Option<T> {
+        &mut self.result
+    }
 }
 
 // Safety: Can't be constructed outside of this module, so usage can be controlled.
