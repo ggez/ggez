@@ -49,6 +49,9 @@ use std::{
     },
 };
 
+#[cfg(target_arch = "wasm32")]
+use {js_sys::Uint8Array, wasm_bindgen::JsCast, wasm_bindgen_futures::JsFuture, web_sys::Response};
+
 pub use crate::vfs::OpenOptions;
 
 const CONFIG_NAME: &str = "/conf.toml";
@@ -288,16 +291,27 @@ impl Filesystem {
         Coroutine::new(move |_| async move {
             #[cfg(target_arch = "wasm32")]
             {
-                let bytes = reqwest::get(format!(
-                    "http://127.0.0.1:1334/{}{}",
-                    fs.resources_dir.to_string_lossy(),
-                    path.to_string_lossy()
+                let path = fs
+                    .resources_dir
+                    .join(path.strip_prefix("/").unwrap_or(path.as_path()));
+                let window = web_sys::window()
+                    .ok_or_else(|| GameError::FilesystemError(String::from("no window")))?;
+                let resp_value = JsFuture::from(window.fetch_with_str(
+                    path.to_str()
+                        .ok_or_else(|| GameError::FilesystemError(format!("Invalid path: {path:?}")))?,
                 ))
                 .await
-                .map_err(|err| GameError::FilesystemError(err.to_string()))?
-                .bytes()
+                .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
+                let resp: Response = resp_value
+                    .dyn_into()
+                    .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
+                let data = JsFuture::from(
+                    resp.array_buffer()
+                        .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?,
+                )
                 .await
-                .map_err(|err| GameError::FilesystemError(err.to_string()))?;
+                .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
+                let bytes = Uint8Array::new(&data).to_vec();
                 Ok(bytes.into())
             }
 
