@@ -8,6 +8,7 @@ use std::{
     future::Future,
     ops::{Deref, DerefMut},
     pin::Pin,
+    rc::Rc,
     sync::Arc,
     task::{Poll, Waker},
 };
@@ -43,8 +44,8 @@ impl<T> Coroutine<T> {
         }
 
         let waker = Waker::from(Arc::new(Inner));
-        let ctx_holder = UnsafeHolder(Arc::new(Cell::new(std::ptr::null_mut())));
-        let fut = fut(UnsafeHolder(Arc::clone(&ctx_holder.0)));
+        let ctx_holder = UnsafeHolder(Rc::new(Cell::new(std::ptr::null_mut())));
+        let fut = fut(UnsafeHolder(Rc::clone(&ctx_holder.0)));
 
         Self {
             waker,
@@ -115,7 +116,7 @@ impl<T> Loading<T> {
 // Safety: Can't be constructed outside of this module, so usage can be controlled.
 /// This can probably still be misused and cause UB so please use it correctly.
 #[derive(Debug)]
-pub struct UnsafeHolder<T>(Arc<Cell<*mut T>>);
+pub struct UnsafeHolder<T>(Rc<Cell<*mut T>>);
 
 impl<T> UnsafeHolder<T> {
     #[allow(unsafe_code)]

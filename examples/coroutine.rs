@@ -60,7 +60,7 @@ impl event::EventHandler for MainState {
         if let Some(val) = self.slow_coroutine.poll(ctx) {
             println!("Coroutine says: \"{val}\"");
         }
-        if let Some(_) = self.image.poll(ctx)? {
+        if self.image.poll(ctx)?.is_some() {
             println!("Loaded image..");
         }
         Ok(())

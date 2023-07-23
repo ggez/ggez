@@ -146,11 +146,10 @@ impl event::EventHandler for MainState {
         for (i, mesh) in self.meshes.iter().enumerate() {
             if i == 0 {
                 canvas3d.set_default_shader();
-            } else {
-                if let Some(shader) = self.custom_shader.result() {
-                    canvas3d.set_shader(&shader);
-                }
+            } else if let Some(shader) = self.custom_shader.result() {
+                canvas3d.set_shader(shader);
             }
+
             canvas3d.draw(
                 &mesh.0,
                 DrawParam3d::default()

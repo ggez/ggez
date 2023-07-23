@@ -98,7 +98,7 @@ impl event::EventHandler for MainState {
         let mut canvas3d = Canvas3d::from_image(ctx, self.canvas_image.clone(), Color::RED);
         canvas3d.set_projection(self.static_camera.to_matrix());
         if let Some(shader) = self.fancy_shader.result() {
-            canvas3d.set_shader(&shader);
+            canvas3d.set_shader(shader);
         }
         canvas3d.draw(
             &self.cube_one.0,
@@ -110,7 +110,7 @@ impl event::EventHandler for MainState {
         let mut canvas3d = Canvas3d::from_frame(ctx, Color::BLACK);
         canvas3d.set_projection(self.camera.to_matrix());
         if let Some(shader) = self.fancy_shader.result() {
-            canvas3d.set_shader(&shader);
+            canvas3d.set_shader(shader);
         }
         canvas3d.draw(
             &self.cube_two.0,

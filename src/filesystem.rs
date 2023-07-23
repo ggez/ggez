@@ -279,7 +279,7 @@ impl Filesystem {
                 let resp: Response = resp_value.dyn_into().unwrap();
                 let data = JsFuture::from(resp.array_buffer().unwrap()).await.unwrap();
                 let bytes = Uint8Array::new(&data).to_vec();
-                Ok(bytes.into())
+                Ok(bytes)
             }
 
             #[cfg(not(target_arch = "wasm32"))]
@@ -624,7 +624,7 @@ pub fn log_all(ctx: &Context) {
 /// But it can be very nice for debugging and dev purposes, such as
 /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
 #[deprecated(since = "0.8.0", note = "Use `ctx.fs.mount` instead")]
-pub fn mount(ctx: &mut Context, path: &path::Path, readonly: bool) {
+pub fn mount(ctx: &Context, path: &path::Path, readonly: bool) {
     ctx.fs.mount(path, readonly)
 }
 

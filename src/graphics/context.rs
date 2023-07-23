@@ -312,7 +312,9 @@ impl GraphicsContext {
         .ok_or(GameError::GraphicsInitializationError)?;
 
         // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
+        #[cfg(not(target_arch = "wasm32"))]
         const MAX_INSTANCES: u32 = 1_000_000;
+        #[cfg(not(target_arch = "wasm32"))]
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
 
         #[cfg(target_arch = "wasm32")]
