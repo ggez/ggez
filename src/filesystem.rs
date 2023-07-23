@@ -51,6 +51,9 @@ use std::{
     },
 };
 
+#[cfg(target_arch = "wasm32")]
+use {js_sys::Uint8Array, wasm_bindgen::JsCast, wasm_bindgen_futures::JsFuture, web_sys::Response};
+
 pub use crate::vfs::OpenOptions;
 
 const CONFIG_NAME: &str = "/conf.toml";
@@ -263,16 +266,17 @@ impl Filesystem {
         Coroutine::new(move |_| async move {
             #[cfg(target_arch = "wasm32")]
             {
-                let bytes = reqwest::get(format!(
-                    "http://127.0.0.1:1334/{}{}",
-                    fs.resources_dir.into_os_string().into_string().unwrap(),
-                    path.into_os_string().into_string().unwrap()
-                ))
-                .await
-                .map_err(|x| GameError::FilesystemError(x.to_string()))?
-                .bytes()
-                .await
-                .map_err(|x| GameError::FilesystemError(x.to_string()))?;
+                let path = fs
+                    .resources_dir
+                    .join(path.strip_prefix("/").unwrap_or(path.as_path()));
+                web_sys::console::log_1(&format!("{path:?}").into());
+                let window = web_sys::window().unwrap();
+                let resp_value = JsFuture::from(window.fetch_with_str(path.to_str().unwrap()))
+                    .await
+                    .unwrap();
+                let resp: Response = resp_value.dyn_into().unwrap();
+                let data = JsFuture::from(resp.array_buffer().unwrap()).await.unwrap();
+                let bytes = Uint8Array::new(&data).to_vec();
                 Ok(bytes.into())
             }
 
