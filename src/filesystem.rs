@@ -290,7 +290,6 @@ impl Filesystem {
                 let handle = std::thread::spawn({
                     let finished = Arc::clone(&finished);
                     move || {
-                        std::thread::sleep(std::time::Duration::from_millis(1200));
                         let result = fs.read_to_end(path);
                         finished.store(true, Ordering::Relaxed);
                         result

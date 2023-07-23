@@ -419,6 +419,7 @@ impl GraphicsContext {
         ));
 
         #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -427,6 +428,16 @@ impl GraphicsContext {
         ));
 
         #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance3d_web.wgsl").into()),
+            },
+        ));
+
+        #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -436,6 +447,18 @@ impl GraphicsContext {
             },
         ));
 
+        #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered3d_web.wgsl").into(),
+                ),
+            },
+        ));
+
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -443,11 +466,30 @@ impl GraphicsContext {
             },
         ));
 
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance_web.wgsl").into()),
+            },
+        ));
+
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(
                     include_str!("shader/instance_unordered.wgsl").into(),
+                ),
+            },
+        ));
+
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered_web.wgsl").into(),
                 ),
             },
         ));
@@ -509,7 +551,6 @@ impl GraphicsContext {
             )
             .create(&wgpu.device, &mut bind_group_cache);
 
-        // TODO: Actually make this work
         #[cfg(not(target_arch = "wasm32"))]
         let instance_bind_layout = BindGroupLayoutBuilder::new()
             .buffer(

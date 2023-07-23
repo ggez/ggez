@@ -16,11 +16,16 @@ use std::{
     },
 };
 
+/// Max amount of instances allowed on web
+pub const MAX_INSTANCES_WEB: usize = 170;
+
 const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
+///
+/// On web if there is any more than 170 instances it will crash
 #[derive(Debug)]
 pub struct InstanceArray {
     pub(crate) buffer: Mutex<ArcBuffer>,
@@ -79,6 +84,9 @@ impl InstanceArray {
         #[cfg(target_arch = "wasm32")]
         let usage = wgpu::BufferUsages::UNIFORM;
 
+        #[cfg(target_arch = "wasm32")]
+        let capacity = MAX_INSTANCES_WEB;
+        
         #[cfg(not(target_arch = "wasm32"))]
         let usage = wgpu::BufferUsages::STORAGE;
 
@@ -100,6 +108,26 @@ impl InstanceArray {
             mapped_at_creation: false,
         }));
 
+        #[cfg(target_arch = "wasm32")]
+        let bind_group = BindGroupBuilder::new()
+            .buffer(
+                &buffer,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform { },
+                false,
+                None,
+            )
+            .buffer(
+                &indices,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform { },
+                false,
+                None,
+            );
+
+        #[cfg(not(target_arch = "wasm32"))]
         let bind_group = BindGroupBuilder::new()
             .buffer(
                 &buffer,
@@ -117,6 +145,7 @@ impl InstanceArray {
                 false,
                 None,
             );
+
         let bind_group =
             ArcBindGroup::new(wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,

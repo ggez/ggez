@@ -16,6 +16,9 @@ use std::{
     },
 };
 
+/// Max amount of 3d instances allowed on web
+pub const MAX_INSTANCES3D_WEB: usize = 113;
+
 const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
@@ -85,13 +88,19 @@ impl InstanceArray3d {
         mesh: Mesh3d,
     ) -> Self {
         assert!(capacity > 0);
+        #[cfg(target_arch = "wasm32")]
+        let usage = wgpu::BufferUsages::UNIFORM;
+
+        #[cfg(target_arch = "wasm32")]
+        let capacity = MAX_INSTANCES3D_WEB;
+        
+        #[cfg(not(target_arch = "wasm32"))]
+        let usage = wgpu::BufferUsages::STORAGE;
 
         let buffer = ArcBuffer::new(wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms3d::std140_size_static() as u64 * capacity as u64,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST
-                | wgpu::BufferUsages::COPY_SRC,
+            usage: usage | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         }));
 
@@ -102,12 +111,30 @@ impl InstanceArray3d {
             } else {
                 4 // min for layout
             },
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_SRC
-                | wgpu::BufferUsages::COPY_DST,
+            usage: usage | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         }));
 
+        #[cfg(target_arch = "wasm32")]
+        let bind_group = BindGroupBuilder::new()
+            .buffer(
+                &buffer,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform { },
+                false,
+                None,
+            )
+            .buffer(
+                &indices,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform { },
+                false,
+                None,
+            );
+
+        #[cfg(not(target_arch = "wasm32"))]
         let bind_group = BindGroupBuilder::new()
             .buffer(
                 &buffer,
@@ -125,6 +152,7 @@ impl InstanceArray3d {
                 false,
                 None,
             );
+
         let bind_group =
             ArcBindGroup::new(wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
