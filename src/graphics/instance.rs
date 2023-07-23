@@ -86,7 +86,7 @@ impl InstanceArray {
 
         #[cfg(target_arch = "wasm32")]
         let capacity = MAX_INSTANCES_WEB;
-        
+
         #[cfg(not(target_arch = "wasm32"))]
         let usage = wgpu::BufferUsages::STORAGE;
 
@@ -114,7 +114,7 @@ impl InstanceArray {
                 &buffer,
                 0,
                 wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform { },
+                wgpu::BufferBindingType::Uniform {},
                 false,
                 None,
             )
@@ -122,7 +122,7 @@ impl InstanceArray {
                 &indices,
                 0,
                 wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform { },
+                wgpu::BufferBindingType::Uniform {},
                 false,
                 None,
             );
