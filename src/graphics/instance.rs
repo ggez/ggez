@@ -76,12 +76,16 @@ impl InstanceArray {
     ) -> Self {
         assert!(capacity > 0);
 
+        #[cfg(target_arch = "wasm32")]
+        let usage = wgpu::BufferUsages::UNIFORM;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let usage = wgpu::BufferUsages::STORAGE;
+
         let buffer = ArcBuffer::new(wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST
-                | wgpu::BufferUsages::COPY_SRC,
+            usage: usage | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         }));
 
@@ -92,9 +96,7 @@ impl InstanceArray {
             } else {
                 4 // min for layout
             },
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_SRC
-                | wgpu::BufferUsages::COPY_DST,
+            usage: usage | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         }));
 

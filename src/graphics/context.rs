@@ -495,17 +495,33 @@ impl GraphicsContext {
             },
         );
 
+        #[cfg(target_arch = "wasm32")]
         let instance_bind_layout = BindGroupLayoutBuilder::new()
-            // .buffer(
-            //     wgpu::ShaderStages::VERTEX,
-            //     wgpu::BufferBindingType::Storage { read_only: true },
-            //     false,
-            // )
-            // .buffer(
-            //     wgpu::ShaderStages::VERTEX,
-            //     wgpu::BufferBindingType::Storage { read_only: true },
-            //     false,
-            // )
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform {},
+                false,
+            )
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform {},
+                false,
+            )
+            .create(&wgpu.device, &mut bind_group_cache);
+
+        // TODO: Actually make this work
+        #[cfg(not(target_arch = "wasm32"))]
+        let instance_bind_layout = BindGroupLayoutBuilder::new()
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
             .create(&wgpu.device, &mut bind_group_cache);
 
         let white_image =

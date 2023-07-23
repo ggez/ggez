@@ -520,17 +520,32 @@ impl<'a> InternalCanvas<'a> {
                 .sampler(wgpu::ShaderStages::FRAGMENT)
                 .create(&self.wgpu.device, self.bind_group_cache);
 
+            #[cfg(target_arch = "wasm32")]
             let instance_layout = BindGroupLayoutBuilder::new()
-                // .buffer(
-                //     wgpu::ShaderStages::VERTEX,
-                //     wgpu::BufferBindingType::Storage { read_only: true },
-                //     false,
-                // )
-                // .buffer(
-                //     wgpu::ShaderStages::VERTEX,
-                //     wgpu::BufferBindingType::Storage { read_only: true },
-                //     false,
-                // )
+                .buffer(
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Uniform {},
+                    false,
+                )
+                .buffer(
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Uniform {},
+                    false,
+                )
+                .create(&self.wgpu.device, self.bind_group_cache);
+
+            #[cfg(not(target_arch = "wasm32"))]
+            let instance_layout = BindGroupLayoutBuilder::new()
+                .buffer(
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Storage { read_only: true },
+                    false,
+                )
+                .buffer(
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Storage { read_only: true },
+                    false,
+                )
                 .create(&self.wgpu.device, self.bind_group_cache);
 
             let uniform_layout = BindGroupLayoutBuilder::new()
