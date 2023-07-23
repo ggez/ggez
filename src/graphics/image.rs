@@ -6,11 +6,14 @@ use super::{
     },
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
-use crate::{context::Has, coroutine::yield_now, Context, Coroutine, GameError, GameResult};
+use crate::{
+    context::Has,
+    coroutine::{yield_now, Loading},
+    Context, Coroutine, GameError, GameResult,
+};
 use image::ImageEncoder;
 use std::{
     collections::BTreeMap,
-    io::Read,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
@@ -140,9 +143,9 @@ impl Image {
     /// Creates a new coroutine that returns an image initialized with pixel data loaded from a given path as an
     /// encoded image (e.g. PNG or JPEG).
     #[allow(unsafe_code)]
-    pub fn from_path_async(path: impl Into<PathBuf>) -> Coroutine<GameResult<Self>> {
+    pub fn from_path_async(path: impl Into<PathBuf>) -> Loading<Self> {
         let path: PathBuf = path.into();
-        Coroutine::new(move |mut ctx| async move {
+        Loading::new(Coroutine::new(move |mut ctx| async move {
             let mut bytes_coroutine = ctx.fs.read_to_end_async(path);
             let bytes = loop {
                 if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
@@ -153,7 +156,7 @@ impl Image {
 
             // Loading the bytes on a separate thread doesn't seem possible (as of now at least).
             Self::from_bytes(&ctx.gfx, &bytes)
-        })
+        }))
     }
 
     /// Creates a new image initialized with pixel data from a given encoded image (e.g. PNG or JPEG)

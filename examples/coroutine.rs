@@ -4,7 +4,7 @@
 use std::{cell::Cell, path::PathBuf, sync::Arc};
 
 use ggez::{
-    coroutine::yield_now,
+    coroutine::{yield_now, Loading},
     event,
     glam::*,
     graphics::{self, Color, Image},
@@ -16,8 +16,7 @@ struct MainState {
     circle: graphics::Mesh,
     coroutine: Coroutine,
     slow_coroutine: Coroutine<String>,
-    loading_coroutine: Coroutine<GameResult<Image>>,
-    loaded_image: Option<Image>,
+    image: Loading<Image>,
 }
 
 impl MainState {
@@ -50,8 +49,7 @@ impl MainState {
 
                 String::from("I came from a coroutine!")
             }),
-            loading_coroutine: Image::from_path_async("/dragon4.png"),
-            loaded_image: None,
+            image: Image::from_path_async("/dragon4.png"),
         })
     }
 }
@@ -62,9 +60,8 @@ impl event::EventHandler for MainState {
         if let Some(val) = self.slow_coroutine.poll(ctx) {
             println!("Coroutine says: \"{val}\"");
         }
-        if let Some(val) = self.loading_coroutine.poll(ctx) {
+        if let Some(_) = self.image.poll(ctx)? {
             println!("Loaded image..");
-            self.loaded_image = Some(val?);
         }
         Ok(())
     }
@@ -74,7 +71,7 @@ impl event::EventHandler for MainState {
             graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
         canvas.draw(&self.circle, Vec2::new(self.pos_x.get(), 380.0));
-        if let Some(loaded_mesh) = &self.loaded_image {
+        if let Some(loaded_mesh) = &self.image.result() {
             canvas.draw(loaded_mesh, Vec2::new(self.pos_x.get(), 100.0));
         }
 
