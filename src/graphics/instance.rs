@@ -15,11 +15,16 @@ use std::{
     },
 };
 
+/// Max amount of instances allowed on web
+pub const MAX_INSTANCES_WEB: usize = 170;
+
 const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
+///
+/// On web if there is any more than 170 instances it will crash
 #[derive(Debug)]
 pub struct InstanceArray {
     pub(crate) buffer: Mutex<wgpu::Buffer>,
@@ -78,6 +83,9 @@ impl InstanceArray {
 
         #[cfg(target_arch = "wasm32")]
         let usage = wgpu::BufferUsages::UNIFORM;
+        #[cfg(target_arch = "wasm32")]
+        let capacity = MAX_INSTANCES_WEB;
+
         #[cfg(not(target_arch = "wasm32"))]
         let usage = wgpu::BufferUsages::STORAGE;
 

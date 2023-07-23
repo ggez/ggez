@@ -344,13 +344,28 @@ impl GraphicsContext {
         #[cfg(feature = "3d")]
         let draw_shader_3d = load_shader(include_str!("shader/draw3d.wgsl"));
         #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader_3d = load_shader(include_str!("shader/instance3d.wgsl"));
         #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader_3d = load_shader(include_str!("shader/instance3d_web.wgsl"));
+        #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader_3d =
             load_shader(include_str!("shader/instance_unordered3d.wgsl"));
+        #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader_3d =
+            load_shader(include_str!("shader/instance_unordered3d_web.wgsl"));
 
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader = load_shader(include_str!("shader/instance.wgsl"));
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader = load_shader(include_str!("shader/instance_web.wgsl"));
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader = load_shader(include_str!("shader/instance_unordered.wgsl"));
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader = load_shader(include_str!("shader/instance_unordered_web.wgsl"));
         let text_shader = load_shader(include_str!("shader/text.wgsl"));
         let copy_shader = load_shader(include_str!("shader/copy.wgsl"));
 
@@ -397,7 +412,6 @@ impl GraphicsContext {
             )
             .create(&wgpu.device, &mut bind_group_cache);
 
-        // TODO: Actually make this work
         #[cfg(not(target_arch = "wasm32"))]
         let instance_bind_layout = BindGroupLayoutBuilder::new()
             .buffer(
