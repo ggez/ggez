@@ -50,6 +50,12 @@ use std::{
 #[cfg(target_arch = "wasm32")]
 use {js_sys::Uint8Array, wasm_bindgen::JsCast, wasm_bindgen_futures::JsFuture, web_sys::Response};
 
+#[cfg(not(target_arch = "wasm32"))]
+use {
+    crate::coroutine::yield_now,
+    std::sync::atomic::{AtomicBool, Ordering},
+};
+
 pub use crate::vfs::OpenOptions;
 
 const CONFIG_NAME: &str = "/conf.toml";
