@@ -34,7 +34,6 @@
 
 use crate::{
     conf,
-    coroutine::yield_now,
     vfs::{self, OverlayFS, VFS},
     Context, Coroutine, GameError, GameResult,
 };
@@ -45,10 +44,7 @@ use std::{
     io::{self, Read},
     ops::DerefMut,
     path::{self, PathBuf},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
 };
 
 #[cfg(target_arch = "wasm32")]

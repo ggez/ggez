@@ -293,7 +293,7 @@ impl GraphicsContext {
                     }
 
                     let dst = doc.body()?;
-                    let mut canvas = web_sys::Element::from(window.canvas());
+                    let canvas = web_sys::Element::from(window.canvas());
                     canvas.set_id("ggez-body");
                     let _ = dst.append_child(&canvas).ok()?;
                     Some(())

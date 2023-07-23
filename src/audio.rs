@@ -85,7 +85,7 @@ impl SoundData {
         Loading::new(Coroutine::new(move |mut ctx| async move {
             let mut bytes_coroutine = ctx.fs.read_to_end_async(path);
             let bytes = loop {
-                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
+                if let Some(bytes) = bytes_coroutine.poll(&mut ctx) {
                     break bytes;
                 }
                 yield_now().await;
@@ -322,7 +322,7 @@ impl Source {
         Loading::new(Coroutine::new(move |mut ctx| async move {
             let mut sound_coroutine = SoundData::new_async(path).coroutine;
             let sound = loop {
-                if let Some(sound) = sound_coroutine.poll(&mut *ctx) {
+                if let Some(sound) = sound_coroutine.poll(&mut ctx) {
                     break sound;
                 }
                 yield_now().await;

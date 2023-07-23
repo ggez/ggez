@@ -1,3 +1,4 @@
+use ggez::coroutine::Loading;
 use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Mesh3d, Mesh3dBuilder, Vertex3d};
 use std::{env, path};
 
@@ -13,7 +14,7 @@ use ggez::{
 struct MainState {
     camera: Camera3d,
     meshes: Vec<(Mesh3d, Vec3, Vec3)>,
-    custom_shader: Shader,
+    custom_shader: Loading<Shader>,
 }
 
 impl MainState {
@@ -83,9 +84,7 @@ impl MainState {
                 (mesh, Vec3::new(10.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0)),
                 (mesh_two, Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0)),
             ],
-            custom_shader: graphics::ShaderBuilder::from_path("/fancy.wgsl")
-                .build(&ctx.gfx)
-                .unwrap(),
+            custom_shader: graphics::ShaderBuilder::from_path("/fancy.wgsl").build_async(),
         })
     }
 }
@@ -96,6 +95,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        self.custom_shader.poll(ctx)?;
         let k_ctx = &ctx.keyboard.clone();
         let (yaw_sin, yaw_cos) = self.camera.transform.yaw.sin_cos();
         let forward = Vec3::new(yaw_cos, 0.0, yaw_sin).normalize();
@@ -147,7 +147,9 @@ impl event::EventHandler for MainState {
             if i == 0 {
                 canvas3d.set_default_shader();
             } else {
-                canvas3d.set_shader(&self.custom_shader);
+                if let Some(shader) = self.custom_shader.result() {
+                    canvas3d.set_shader(&shader);
+                }
             }
             canvas3d.draw(
                 &mesh.0,

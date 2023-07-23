@@ -1,7 +1,11 @@
 use std::io::Read;
 use std::marker::PhantomData;
 
-use crate::{context::Has, Context, GameError, GameResult};
+use crate::{
+    context::Has,
+    coroutine::{yield_now, Loading},
+    Context, Coroutine, GameError, GameResult,
+};
 
 use super::{
     context::GraphicsContext,
@@ -15,21 +19,21 @@ use super::{
 };
 use crevice::std140::Std140;
 
-#[derive(Debug, PartialEq, Eq)]
-enum ShaderSource<'a> {
+#[derive(Debug, PartialEq, Eq, Clone)]
+enum ShaderSource {
     None,
-    Path(&'a str),
-    Code(&'a str),
+    Path(String),
+    Code(String),
 }
 
 /// Builder pattern for assembling shaders.
-#[derive(Debug)]
-pub struct ShaderBuilder<'a> {
-    fs: ShaderSource<'a>,
-    vs: ShaderSource<'a>,
+#[derive(Debug, Clone)]
+pub struct ShaderBuilder {
+    fs: ShaderSource,
+    vs: ShaderSource,
 }
 
-impl<'a> ShaderBuilder<'a> {
+impl ShaderBuilder {
     /// Create a new builder with no associated shader code.
     pub fn new() -> Self {
         ShaderBuilder {
@@ -39,60 +43,139 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     /// Use this wgsl code as both a vertex and fragment shader.
-    pub fn from_code(source: &'a str) -> Self {
+    pub fn from_code(source: impl ToString) -> Self {
         ShaderBuilder {
-            fs: ShaderSource::Code(source),
-            vs: ShaderSource::Code(source),
+            fs: ShaderSource::Code(source.to_string()),
+            vs: ShaderSource::Code(source.to_string()),
         }
     }
 
     /// Use a single wgsl resource as both a vertex and fragment shader.
-    pub fn from_path(path: &'a str) -> Self {
+    pub fn from_path(path: impl ToString) -> Self {
         ShaderBuilder {
-            fs: ShaderSource::Path(path),
-            vs: ShaderSource::Path(path),
+            fs: ShaderSource::Path(path.to_string()),
+            vs: ShaderSource::Path(path.to_string()),
         }
     }
 
     /// Use this wgsl shader code for the fragment shader.
     #[must_use]
-    pub fn fragment_code(self, source: &'a str) -> Self {
+    pub fn fragment_code(self, source: impl ToString) -> Self {
         ShaderBuilder {
-            fs: ShaderSource::Code(source),
+            fs: ShaderSource::Code(source.to_string()),
             vs: self.vs,
         }
     }
     /// Use this wgsl code resource path for the fragment shader.
     #[must_use]
-    pub fn fragment_path(self, path: &'a str) -> Self {
+    pub fn fragment_path(self, path: impl ToString) -> Self {
         ShaderBuilder {
-            fs: ShaderSource::Path(path),
+            fs: ShaderSource::Path(path.to_string()),
             vs: self.vs,
         }
     }
 
     /// Use this wgsl shader code for the vertex shader.
     #[must_use]
-    pub fn vertex_code(self, source: &'a str) -> Self {
+    pub fn vertex_code(self, source: impl ToString) -> Self {
         ShaderBuilder {
             fs: self.vs,
-            vs: ShaderSource::Code(source),
+            vs: ShaderSource::Code(source.to_string()),
         }
     }
 
     /// Use this wgsl code resource path for the vertex shader.
     #[must_use]
-    pub fn vertex_path(self, path: &'a str) -> Self {
+    pub fn vertex_path(self, path: impl ToString) -> Self {
         ShaderBuilder {
             fs: self.vs,
-            vs: ShaderSource::Path(path),
+            vs: ShaderSource::Path(path.to_string()),
         }
     }
 
     /// Create a Shader from the builder.
+    pub fn build_async(self) -> Loading<Shader> {
+        let new_self = self.clone();
+        Loading::new(Coroutine::new(move |mut ctx| async move {
+            let load = |ctx: &mut Context, s: String| {
+                Some(ArcShaderModule::new(
+                    ctx.gfx
+                        .wgpu
+                        .device
+                        .create_shader_module(wgpu::ShaderModuleDescriptor {
+                            label: None,
+                            source: wgpu::ShaderSource::Wgsl(s.into()),
+                        }),
+                ))
+            };
+
+            let load_fs = {
+                match new_self.fs.clone() {
+                    ShaderSource::Code(source) => load(&mut ctx, source.to_string()),
+                    ShaderSource::Path(source) => {
+                        let source = {
+                            let mut bytes_coroutine = ctx.fs.read_to_end_async(source.to_string());
+                            let bytes = loop {
+                                if let Some(bytes) = bytes_coroutine.poll(&mut ctx) {
+                                    break bytes;
+                                }
+                                yield_now().await;
+                            }?;
+                            // .unwrap();
+                            Ok::<String, GameError>(
+                                String::from_utf8(bytes).map_err(GameError::ShaderEncodingError)?, // .unwrap(),
+                            )
+                        }?;
+
+                        load(&mut ctx, source)
+                    }
+                    ShaderSource::None => None,
+                }
+            };
+
+            let load_vs = {
+                match new_self.vs.clone() {
+                    ShaderSource::Code(source) => load(&mut ctx, source.to_string()),
+                    ShaderSource::Path(source) => {
+                        let source = {
+                            let mut bytes_coroutine = ctx.fs.read_to_end_async(source.to_string());
+                            let bytes = loop {
+                                if let Some(bytes) = bytes_coroutine.poll(&mut ctx) {
+                                    break bytes;
+                                }
+                                yield_now().await;
+                            }?;
+                            // .unwrap();
+                            Ok::<String, GameError>(
+                                String::from_utf8(bytes).map_err(GameError::ShaderEncodingError)?, // .unwrap(),
+                            )
+                        }?;
+
+                        load(&mut ctx, source)
+                    }
+                    ShaderSource::None => None,
+                }
+            };
+
+            if new_self.vs == new_self.fs {
+                let module = load_vs;
+                Ok(Shader {
+                    vs_module: module.clone(),
+                    fs_module: module,
+                })
+            } else {
+                Ok(Shader {
+                    vs_module: load_vs,
+                    fs_module: load_fs,
+                })
+            }
+        }))
+    }
+
+    /// Build shader with async path
     pub fn build(self, gfx: &impl Has<GraphicsContext>) -> GameResult<Shader> {
         let gfx = gfx.retrieve();
-        let load = |s: &str| {
+        let load = |s: String| {
             Some(ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
                 wgpu::ShaderModuleDescriptor {
                     label: None,
@@ -100,13 +183,14 @@ impl<'a> ShaderBuilder<'a> {
                 },
             )))
         };
-        let load_resource = |path: &str| -> GameResult<Option<ArcShaderModule>> {
+        let load_resource = |path: String| -> GameResult<Option<ArcShaderModule>> {
             let mut encoded = Vec::new();
             _ = gfx.fs.open(path)?.read_to_end(&mut encoded)?;
             Ok(load(
-                &String::from_utf8(encoded).map_err(GameError::ShaderEncodingError)?,
+                String::from_utf8(encoded).map_err(GameError::ShaderEncodingError)?,
             ))
         };
+
         let load_any = |source| -> GameResult<Option<ArcShaderModule>> {
             Ok(match source {
                 ShaderSource::Code(source) => load(source),
@@ -114,6 +198,7 @@ impl<'a> ShaderBuilder<'a> {
                 ShaderSource::None => None,
             })
         };
+
         Ok(if self.vs == self.fs {
             let module = load_any(self.vs)?;
             Shader {
@@ -129,7 +214,7 @@ impl<'a> ShaderBuilder<'a> {
     }
 }
 
-impl Default for ShaderBuilder<'_> {
+impl Default for ShaderBuilder {
     fn default() -> Self {
         Self::new()
     }
