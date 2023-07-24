@@ -35,6 +35,8 @@
 use crate::{
     conf,
     vfs::{self, OverlayFS, VFS},
+    context::Has,
+    graphics::GraphicsContext,
     Context, Coroutine, GameError, GameResult,
 };
 use directories::ProjectDirs;
@@ -262,7 +264,7 @@ impl Filesystem {
 
     /// Creates a coroutine that opens the given `path` and returns the resulting bytes
     /// in read-only mode.
-    pub fn read_to_end_async(&self, path: impl Into<PathBuf>) -> Coroutine<GameResult<Vec<u8>>> {
+    pub fn read_to_end_async<C: Has<Filesystem> + Has<GraphicsContext>>(&self, path: impl Into<PathBuf>) -> Coroutine<GameResult<Vec<u8>>, C> {
         let path = path.into();
         let fs = InternalClone::clone(self);
         Coroutine::new(move |_| async move {

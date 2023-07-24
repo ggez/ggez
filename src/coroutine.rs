@@ -13,30 +13,28 @@ use std::{
     task::{Poll, Waker},
 };
 
-use crate::{Context, GameResult};
+use crate::{Context, GameResult, context::Has, filesystem::Filesystem};
 
 enum CoroutineState<T> {
     Future(Pin<Box<dyn Future<Output = T> + 'static>>),
     Finished,
 }
 
-// TODO custom context
-// TODO
 // TODO let coroutines has specific parameters?
 // TODO as in `Coroutine<Filesystem, Vec<u8>> has poll(Filesystem) -> Option<Vec<u8>>`
 
 /// Coroutine structure
 #[allow(missing_debug_implementations)]
-pub struct Coroutine<T = ()> {
+pub struct Coroutine<T = (), C = Context> {
     waker: Waker,
-    ctx_holder: UnsafeHolder<Context>,
+    ctx_holder: UnsafeHolder<C>,
     state: CoroutineState<T>,
 }
 
-impl<T> Coroutine<T> {
+impl<T, C> Coroutine<T, C> where C: Has<Filesystem> {
     /// Constructs a new coroutine
     pub fn new<F: Future<Output = T> + 'static>(
-        fut: impl FnOnce(UnsafeHolder<Context>) -> F,
+        fut: impl FnOnce(UnsafeHolder<C>) -> F,
     ) -> Self {
         struct Inner;
         impl std::task::Wake for Inner {
@@ -55,12 +53,12 @@ impl<T> Coroutine<T> {
     }
 
     /// Advances and possibly returns a value from the coroutine.
-    pub fn poll(&mut self, ctx: &mut Context) -> Option<T> {
+    pub fn poll(&mut self, ctx: &mut C) -> Option<T> {
         match &mut self.state {
             // If the future isn't done, poll it
             CoroutineState::Future(fut) => {
                 let mut task_context = std::task::Context::from_waker(&self.waker);
-                self.ctx_holder.0.set(ctx as *mut Context);
+                self.ctx_holder.0.set(ctx as *mut C);
                 let result = match fut.as_mut().poll(&mut task_context) {
                     // If the future finished, return the value and set the coroutine to a finished state
                     Poll::Ready(v) => {
@@ -79,14 +77,14 @@ impl<T> Coroutine<T> {
 
 /// Used to help with async loading of assets cleanly
 #[allow(missing_debug_implementations)]
-pub struct Loading<T> {
-    pub(crate) coroutine: Coroutine<GameResult<T>>,
+pub struct Loading<T, C = Context> {
+    pub(crate) coroutine: Coroutine<GameResult<T>, C>,
     result: Option<T>,
 }
 
-impl<T> Loading<T> {
+impl<T, C> Loading<T, C> where C: Has<Filesystem> {
     /// Create a new loading struct for a given coroutine
-    pub fn new(coroutine: Coroutine<GameResult<T>>) -> Self {
+    pub fn new(coroutine: Coroutine<GameResult<T>, C>) -> Self {
         Self {
             coroutine,
             result: None,
@@ -94,7 +92,7 @@ impl<T> Loading<T> {
     }
 
     /// Advances and possibly returns a value from the coroutine.
-    pub fn poll(&mut self, ctx: &mut Context) -> GameResult<&Option<T>> {
+    pub fn poll(&mut self, ctx: &mut C) -> GameResult<&Option<T>> {
         if let Some(val) = self.coroutine.poll(ctx) {
             self.result = Some(val?);
             return Ok(&self.result);

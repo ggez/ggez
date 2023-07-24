@@ -252,8 +252,8 @@ impl Assets {
         let shot_image = graphics::Image::from_path_async("/shot.png");
         let rock_image = graphics::Image::from_path_async("/rock.png");
 
-        let shot_sound = audio::Source::new_async("/pew.ogg");
-        let hit_sound = audio::Source::new_async("/boom.ogg");
+        let shot_sound = audio::Source::new_async::<Context, _>("/pew.ogg");
+        let hit_sound = audio::Source::new_async::<Context, _>("/boom.ogg");
 
         Ok(Assets {
             player_image,
