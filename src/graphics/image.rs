@@ -9,8 +9,8 @@ use super::{
 use crate::{
     context::Has,
     coroutine::{yield_now, Loading},
+    filesystem::Filesystem,
     Context, Coroutine, GameError, GameResult,
-    filesystem::Filesystem
 };
 use image::ImageEncoder;
 use std::{
@@ -144,7 +144,9 @@ impl Image {
     /// Creates a new coroutine that returns an image initialized with pixel data loaded from a given path as an
     /// encoded image (e.g. PNG or JPEG).
     #[allow(unsafe_code)]
-    pub fn from_path_async<C: Has<Filesystem> + Has<GraphicsContext> + 'static>(path: impl Into<PathBuf>) -> Loading<Self, C> {
+    pub fn from_path_async<C: Has<Filesystem> + Has<GraphicsContext> + 'static>(
+        path: impl Into<PathBuf>,
+    ) -> Loading<Self, C> {
         let path: PathBuf = path.into();
         Loading::new(Coroutine::<_, C>::new(move |mut ctx| async move {
             let fs: &Filesystem = (*ctx).retrieve();

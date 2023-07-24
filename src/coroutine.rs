@@ -13,7 +13,7 @@ use std::{
     task::{Poll, Waker},
 };
 
-use crate::{Context, GameResult, context::Has, filesystem::Filesystem};
+use crate::{context::Has, filesystem::Filesystem, Context, GameResult};
 
 enum CoroutineState<T> {
     Future(Pin<Box<dyn Future<Output = T> + 'static>>),
@@ -31,11 +31,12 @@ pub struct Coroutine<T = (), C = Context> {
     state: CoroutineState<T>,
 }
 
-impl<T, C> Coroutine<T, C> where C: Has<Filesystem> {
+impl<T, C> Coroutine<T, C>
+where
+    C: Has<Filesystem>,
+{
     /// Constructs a new coroutine
-    pub fn new<F: Future<Output = T> + 'static>(
-        fut: impl FnOnce(UnsafeHolder<C>) -> F,
-    ) -> Self {
+    pub fn new<F: Future<Output = T> + 'static>(fut: impl FnOnce(UnsafeHolder<C>) -> F) -> Self {
         struct Inner;
         impl std::task::Wake for Inner {
             fn wake(self: Arc<Self>) {}
@@ -82,7 +83,10 @@ pub struct Loading<T, C = Context> {
     result: Option<T>,
 }
 
-impl<T, C> Loading<T, C> where C: Has<Filesystem> {
+impl<T, C> Loading<T, C>
+where
+    C: Has<Filesystem>,
+{
     /// Create a new loading struct for a given coroutine
     pub fn new(coroutine: Coroutine<GameResult<T>, C>) -> Self {
         Self {

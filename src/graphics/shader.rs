@@ -2,9 +2,9 @@ use std::io::Read;
 use std::marker::PhantomData;
 
 use crate::{
-    filesystem::Filesystem,
     context::Has,
     coroutine::{yield_now, Loading},
+    filesystem::Filesystem,
     Context, Coroutine, GameError, GameResult,
 };
 
@@ -95,20 +95,19 @@ impl ShaderBuilder {
     }
 
     /// Create a Shader from the builder.
-    pub fn build_async<C: Has<Filesystem> + Has<GraphicsContext> + 'static>(self) -> Loading<Shader, C> {
+    pub fn build_async<C: Has<Filesystem> + Has<GraphicsContext> + 'static>(
+        self,
+    ) -> Loading<Shader, C> {
         let new_self = self.clone();
         Loading::new(Coroutine::new(move |mut ctx| async move {
             let load = |ctx: &mut C, s: String| {
-            let gfx: &GraphicsContext = (*ctx).retrieve();
-                Some(ArcShaderModule::new(
-                    gfx
-                        .wgpu
-                        .device
-                        .create_shader_module(wgpu::ShaderModuleDescriptor {
-                            label: None,
-                            source: wgpu::ShaderSource::Wgsl(s.into()),
-                        }),
-                ))
+                let gfx: &GraphicsContext = (*ctx).retrieve();
+                Some(ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
+                    wgpu::ShaderModuleDescriptor {
+                        label: None,
+                        source: wgpu::ShaderSource::Wgsl(s.into()),
+                    },
+                )))
             };
 
             let load_fs = {
