@@ -6,6 +6,7 @@ use crate::{
     context::Has,
     coroutine::{yield_now, Loading},
     Context, Coroutine, GameError, GameResult,
+    filesystem::Filesystem,
 };
 use image::ImageEncoder;
 use std::{
@@ -162,18 +163,22 @@ impl Image {
 
     /// Creates a new coroutine that returns an image initialized with pixel data loaded from a given path as an
     /// encoded image (e.g. PNG or JPEG).
-    pub fn from_path_async(path: impl Into<PathBuf>) -> Loading<Self> {
+    pub fn from_path_async<C: Has<Filesystem> + Has<GraphicsContext> + 'static>(
+        path: impl Into<PathBuf>,
+    ) -> Loading<Self, C> {
         let path = path.into();
-        Loading::new(Coroutine::new(move |mut ctx| async move {
-            let mut bytes_coroutine = ctx.fs.read_to_end_async(path);
+        Loading::new(Coroutine::<_, C>::new(move |mut ctx| async move {
+            let fs: &Filesystem = (*ctx).retrieve();
+            let mut bytes_coroutine = fs.read_to_end_async::<C>(path);
             let bytes = loop {
-                if let Some(bytes) = bytes_coroutine.poll(&mut ctx) {
+                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
                     break bytes;
                 }
                 yield_now().await;
             }?;
 
-            Self::from_bytes(&ctx.gfx, &bytes)
+            let gfx: &GraphicsContext = (*ctx).retrieve();
+            Self::from_bytes(gfx, &bytes)
         }))
     }
 

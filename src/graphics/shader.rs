@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use crate::{
     context::Has,
     coroutine::{yield_now, Loading},
+    filesystem::Filesystem,
     Context, Coroutine, GameError, GameResult,
 };
 
@@ -89,11 +90,14 @@ impl ShaderBuilder {
     }
 
     /// Create a Shader from the builder.
-    pub fn build_async(self) -> Loading<Shader> {
+    pub fn build_async<C: Has<Filesystem> + Has<GraphicsContext> + 'static>(
+        self,
+    ) -> Loading<Shader, C> {
         let new_self = self.clone();
-        Loading::new(Coroutine::new(move |mut ctx| async move {
-            let load = |ctx: &mut Context, s: String| {
-                Some(ctx.gfx.wgpu.device.create_shader_module(
+        Loading::new(Coroutine::<_, C>::new(move |mut ctx| async move {
+            let load = |ctx: &mut C, s: String| {
+                let gfx: &GraphicsContext = ctx.retrieve();
+                Some(gfx.wgpu.device.create_shader_module(
                     wgpu::ShaderModuleDescriptor {
                         label: None,
                         source: wgpu::ShaderSource::Wgsl(s.into()),
@@ -105,10 +109,12 @@ impl ShaderBuilder {
                 match new_self.fs.clone() {
                     ShaderSource::Code(source) => load(&mut ctx, source.to_string()),
                     ShaderSource::Path(source) => {
+                        let fs: &Filesystem = (*ctx).retrieve();
                         let source = {
-                            let mut bytes_coroutine = ctx.fs.read_to_end_async(source.to_string());
+                            let mut bytes_coroutine =
+                                fs.read_to_end_async::<C>(source.to_string());
                             let bytes = loop {
-                                if let Some(bytes) = bytes_coroutine.poll(&mut ctx) {
+                                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
                                     break bytes;
                                 }
                                 yield_now().await;
@@ -129,10 +135,12 @@ impl ShaderBuilder {
                 match new_self.vs.clone() {
                     ShaderSource::Code(source) => load(&mut ctx, source.to_string()),
                     ShaderSource::Path(source) => {
+                        let fs: &Filesystem = (*ctx).retrieve();
                         let source = {
-                            let mut bytes_coroutine = ctx.fs.read_to_end_async(source.to_string());
+                            let mut bytes_coroutine =
+                                fs.read_to_end_async::<C>(source.to_string());
                             let bytes = loop {
-                                if let Some(bytes) = bytes_coroutine.poll(&mut ctx) {
+                                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
                                     break bytes;
                                 }
                                 yield_now().await;

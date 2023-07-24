@@ -34,6 +34,7 @@
 
 use crate::{
     conf,
+    context::Has,
     coroutine::yield_now,
     vfs::{self, OverlayFS, VFS},
     Coroutine, GameError, GameResult,
@@ -285,7 +286,10 @@ impl Filesystem {
     }
 
     /// Creates a coroutine that reads the whole content of a file to a `Vec`.
-    pub fn read_to_end_async(&self, path: impl Into<PathBuf>) -> Coroutine<GameResult<Vec<u8>>> {
+    pub fn read_to_end_async<C: Has<Filesystem> + 'static>(
+        &self,
+        path: impl Into<PathBuf>,
+    ) -> Coroutine<GameResult<Vec<u8>>, C> {
         let path = path.into();
         let fs = self.clone();
         Coroutine::new(move |_| async move {
