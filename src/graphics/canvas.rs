@@ -444,6 +444,7 @@ impl Canvas {
         canvas.set_sampler(state.sampler);
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
+        canvas.set_premultiplied_text(state.premul_text);
 
         if state.scissor_rect.2 > 0 && state.scissor_rect.3 > 0 {
             canvas.set_scissor_rect(state.scissor_rect);
