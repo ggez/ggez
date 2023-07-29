@@ -198,12 +198,8 @@ impl MainState {
                 });
 
         // Create 1-pixel blue texture.
-        let image = graphics::Image::from_color(
-            ctx,
-            1,
-            1,
-            Some(graphics::Color::from_rgb(0x20, 0xA0, 0xC0)),
-        );
+        let image =
+            graphics::Image::from_color(ctx, 1, 1, graphics::Color::from_rgb(0x20, 0xA0, 0xC0));
 
         let sampler = ctx
             .gfx

@@ -148,11 +148,11 @@ pub fn queue_text(
     canvas: &mut Canvas,
     text: &Text,
     relative_dest: impl Into<Point2<f32>>,
-    color: Option<Color>,
+    color: impl Into<Option<Color>>,
 ) {
     canvas
         .queued_texts
-        .push((text.clone(), relative_dest.into(), color));
+        .push((text.clone(), relative_dest.into(), color.into()));
 }
 
 /// Draws all of the Texts added via `queue_text`.
