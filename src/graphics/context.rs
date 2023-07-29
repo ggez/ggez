@@ -23,8 +23,8 @@ use crate::{
     graphics::gpu::{bind_group::BindGroupLayoutBuilder, pipeline::RenderPipelineInfo},
     GameError,
 };
-use ::image as imgcrate;
 use glyph_brush::FontId;
+use image as imgcrate;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
 use winit::{
@@ -557,6 +557,11 @@ impl GraphicsContext {
     pub fn add_font(&mut self, name: &str, font: FontData) {
         let id = self.text.glyph_brush.borrow_mut().add_font(font.font);
         self.fonts.insert(name.to_string(), id);
+    }
+
+    /// Checks if the given font is loaded
+    pub fn has_font(&self, font_name: impl Into<String>) -> bool {
+        self.fonts.contains_key(&font_name.into())
     }
 
     /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).
