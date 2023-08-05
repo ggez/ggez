@@ -280,6 +280,27 @@ impl GraphicsContext {
         };
 
         let window = window_builder.build(event_loop)?;
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            web_sys::console::log_1(&"Init web".into());
+            use winit::platform::web::WindowExtWebSys;
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    if let Some(element) = doc.get_element_by_id("ggez-body") {
+                        element.remove()
+                    }
+
+                    let dst = doc.body()?;
+                    let mut canvas = web_sys::Element::from(window.canvas());
+                    canvas.set_id("ggez-body");
+                    let _ = dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+        }
+
         let surface = unsafe { instance.create_surface(&window) }
             .map_err(|_| GameError::GraphicsInitializationError)?;
 
@@ -294,16 +315,33 @@ impl GraphicsContext {
         const MAX_INSTANCES: u32 = 1_000_000;
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
 
+        #[cfg(target_arch = "wasm32")]
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
-                    // 1st: DrawParams
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    max_bind_groups: 4,
+                    // InstanceArray uses 2 storage buffers.
+                    // max_storage_buffers_per_shader_stage: 2,
+                    // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
+                    ..wgpu::Limits::downlevel_webgl2_defaults()
+                },
+            },
+            None,
+        ))?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::default(),
+                limits: wgpu::Limits {
+                    // 1st: Texture + Sampler
+                    // 2nd: InstanceArray
+                    // 3rd: ShaderParams
                     // InstanceArray uses 2 storage buffers.
                     max_storage_buffers_per_shader_stage: 2,
                     max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
@@ -456,16 +494,16 @@ impl GraphicsContext {
         );
 
         let instance_bind_layout = BindGroupLayoutBuilder::new()
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
             .create(&wgpu.device, &mut bind_group_cache);
 
         let white_image =
