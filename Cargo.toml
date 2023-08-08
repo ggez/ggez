@@ -96,6 +96,7 @@ web-sys = { version = "0.3", features = [
     "Response",
 ]}
 dyn-clone = "1.0.12"
+ureq = "2.7.1"
 
 [dev-dependencies]
 chrono = "0.4"

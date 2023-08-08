@@ -20,6 +20,7 @@ use std::path::{self, Path, PathBuf};
 use crate::coroutine::yield_now;
 use crate::error::{GameError, GameResult};
 use crate::Coroutine;
+#[cfg(target_arch = "wasm32")]
 use {js_sys::Uint8Array, wasm_bindgen::JsCast, wasm_bindgen_futures::JsFuture, web_sys::Response};
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
@@ -988,16 +989,47 @@ impl VFS for HttpFS {
                 );
                 return Err(GameError::FilesystemError(msg));
             }
-            // TODO: Change this to handle differnet urls with @127.0.0.1:1241/remote_file
-            let path = new_self.root.join(path.strip_prefix("/").unwrap_or(&path));
-            let window = web_sys::window().unwrap();
-            let resp_value = JsFuture::from(window.fetch_with_str(path.to_str().unwrap()))
-                .await
-                .unwrap();
-            let resp: Response = resp_value.dyn_into().unwrap();
-            let data = JsFuture::from(resp.array_buffer().unwrap()).await.unwrap();
-            let bytes = Uint8Array::new(&data).to_vec();
-            Ok(Box::new(io::Cursor::new(bytes)) as Box<dyn VFile>)
+            let mut ip = "".to_string();
+            if let Some(string) = path.as_os_str().to_str() {
+                if let Some(string) = string.strip_prefix('/') {
+                    ip = new_self
+                        .root
+                        .join(string)
+                        .into_os_string()
+                        .into_string()
+                        .unwrap();
+                } else if let Some(string) = string.strip_prefix('@') {
+                    ip = "http://".to_string() + string;
+                }
+            } else {
+                return Err(GameError::FilesystemError(
+                    "Path contains invalid UniCode".to_string(),
+                ));
+            }
+
+            #[cfg(target_arch = "wasm32")]
+            {
+                let window = web_sys::window().unwrap();
+                let resp_value = JsFuture::from(window.fetch_with_str(ip.as_str()))
+                    .await
+                    .unwrap();
+                let resp: Response = resp_value.dyn_into().unwrap();
+                let data = JsFuture::from(resp.array_buffer().unwrap()).await.unwrap();
+                let bytes = Uint8Array::new(&data).to_vec();
+                Ok(Box::new(io::Cursor::new(bytes)) as Box<dyn VFile>)
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let mut bytes: Vec<u8> = vec![];
+                let _ = ureq::get(ip.as_str())
+                    .call()
+                    .map_err(|x| GameError::FilesystemError(x.to_string()))?
+                    .into_reader()
+                    .read_to_end(&mut bytes)
+                    .map_err(|x| GameError::FilesystemError(x.to_string()))?;
+
+                Ok(Box::new(io::Cursor::new(bytes)) as Box<dyn VFile>)
+            }
         })
     }
 
