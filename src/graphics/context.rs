@@ -323,12 +323,11 @@ impl GraphicsContext {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
+                    // 1st: Texture + Sampler
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
                     // InstanceArray uses 2 storage buffers.
-                    // max_storage_buffers_per_shader_stage: 2,
-                    // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
             },
@@ -344,6 +343,7 @@ impl GraphicsContext {
                     // 1st: Texture + Sampler
                     // 2nd: InstanceArray
                     // 3rd: ShaderParams
+                    // 4th: ShaderParams
                     // InstanceArray uses 2 storage buffers.
                     max_storage_buffers_per_shader_stage: 2,
                     max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,

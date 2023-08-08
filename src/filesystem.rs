@@ -34,14 +34,11 @@
 
 use crate::{
     conf,
-    context::Has,
-    graphics::GraphicsContext,
+    coroutine::yield_now,
     vfs::{self, OverlayFS, VFS},
     Context, Coroutine, GameError, GameResult,
 };
-use directories::ProjectDirs;
 use std::{
-    env,
     io::SeekFrom,
     io::{self, Read},
     ops::DerefMut,
@@ -49,13 +46,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-#[cfg(target_arch = "wasm32")]
-use {js_sys::Uint8Array, wasm_bindgen::JsCast, wasm_bindgen_futures::JsFuture, web_sys::Response};
-
 #[cfg(not(target_arch = "wasm32"))]
 use {
-    crate::coroutine::yield_now,
-    std::sync::atomic::{AtomicBool, Ordering},
+    directories::ProjectDirs,
+    std::{
+        env,
+        sync::atomic::{AtomicBool, Ordering},
+    },
 };
 
 pub use crate::vfs::OpenOptions;
@@ -151,18 +148,49 @@ impl Filesystem {
     }
 
     /// Web new fs
-    pub fn new_web(resources_dir_name: &path::Path) -> Filesystem {
-        let overlay = vfs::OverlayFS::new();
-        Filesystem {
+    #[cfg(target_arch = "wasm32")]
+    fn _new(
+        _: &str,
+        _: &str,
+        resources_dir_name: &path::Path,
+        resources_zip_name: &path::Path,
+    ) -> GameResult<Filesystem> {
+        let root_path: path::PathBuf = Default::default();
+        let mut overlay = vfs::OverlayFS::new();
+        let mut resources_path;
+        let mut resources_zip_path;
+        // <game exe root>/resources/
+        {
+            resources_path = root_path.clone();
+            resources_path.push(resources_dir_name);
+            trace!("Resources path: {:?}", resources_path);
+            let physfs = vfs::HttpFS::new(&resources_path);
+            overlay.push_back(Box::new(physfs));
+        }
+
+        // <root>/resources.zip
+        {
+            resources_zip_path = root_path;
+            resources_zip_path.push(resources_zip_name);
+            if resources_zip_path.exists() {
+                trace!("Resources zip file: {:?}", resources_zip_path);
+                let zipfs = vfs::ZipFS::new(&resources_zip_path)?;
+                overlay.push_back(Box::new(zipfs));
+            } else {
+                trace!("No resources zip file found");
+            }
+        }
+        Ok(Filesystem {
             vfs: Arc::new(Mutex::new(overlay)),
             resources_dir: resources_dir_name.to_path_buf(),
             zip_dir: Default::default(),
             user_config_dir: Default::default(),
             user_data_dir: Default::default(),
-        }
+        })
     }
 
     /// Actual implementation of `new`, without generics.
+    #[cfg(not(target_arch = "wasm32"))]
     fn _new(
         id: &str,
         author: &str,
@@ -198,8 +226,8 @@ impl Filesystem {
             resources_path = root_path.clone();
             resources_path.push(resources_dir_name);
             trace!("Resources path: {:?}", resources_path);
-            let physfs = vfs::PhysicalFS::new(&resources_path, true);
-            overlay.push_back(Box::new(physfs));
+            let httpfs = vfs::HttpFS::new(&resources_path);
+            overlay.push_back(Box::new(httpfs));
         }
 
         // <root>/resources.zip
@@ -254,6 +282,24 @@ impl Filesystem {
         self.vfs().open(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
+    /// Opens the given `path` and returns the resulting `File`
+    /// in read-only mode.
+    pub fn open_async<P: AsRef<path::Path>, C>(&self, path: P) -> Coroutine<GameResult<File>, C> {
+        let fs = InternalClone::clone(self);
+        let path = path.as_ref().to_path_buf();
+        Coroutine::<_, C>::new(move |_| async move {
+            let mut coroutine = fs.vfs().open_async(path.as_ref());
+            let result = loop {
+                if let Some(result) = coroutine.poll(&mut ()) {
+                    break result;
+                }
+                yield_now().await;
+            };
+
+            result.map(|f| File::VfsFile(f))
+        })
+    }
+
     /// Opens the given `path` and returns the resulting bytes
     /// in read-only mode.
     pub fn read_to_end<P: AsRef<path::Path>>(&self, path: P) -> GameResult<Vec<u8>> {
@@ -264,40 +310,49 @@ impl Filesystem {
 
     /// Creates a coroutine that opens the given `path` and returns the resulting bytes
     /// in read-only mode.
-    pub fn read_to_end_async<C: Has<Filesystem> + Has<GraphicsContext>>(
+    pub fn read_to_end_async(
+        // <C: Has<Filesystem> + Has<GraphicsContext>>(
         &self,
         path: impl Into<PathBuf>,
-    ) -> Coroutine<GameResult<Vec<u8>>, C> {
+    ) -> Coroutine<GameResult<Vec<u8>>, ()> {
         let path = path.into();
         let fs = InternalClone::clone(self);
-        Coroutine::new(move |_| async move {
+        Coroutine::<_, ()>::new(move |_| async move {
             #[cfg(target_arch = "wasm32")]
             {
-                let path = fs
-                    .resources_dir
-                    .join(path.strip_prefix("/").unwrap_or(path.as_path()));
-                web_sys::console::log_1(&format!("{path:?}").into());
-                let window = web_sys::window().unwrap();
-                let resp_value = JsFuture::from(window.fetch_with_str(path.to_str().unwrap()))
-                    .await
-                    .unwrap();
-                let resp: Response = resp_value.dyn_into().unwrap();
-                let data = JsFuture::from(resp.array_buffer().unwrap()).await.unwrap();
-                let bytes = Uint8Array::new(&data).to_vec();
+                let mut coroutine = fs.open_async(path);
+                let result = loop {
+                    if let Some(result) = coroutine.poll(&mut ()) {
+                        break result;
+                    }
+                    yield_now().await;
+                };
+
+                let mut bytes = Vec::new();
+                let _ = result?.read_to_end(&mut bytes)?;
+
                 Ok(bytes)
             }
 
             #[cfg(not(target_arch = "wasm32"))]
             {
                 let finished = Arc::new(AtomicBool::new(false));
-                // TODO 1 thread only, not spawning a new one every time.
+                //     // TODO 1 thread only, not spawning a new one every time.
 
                 let handle = std::thread::spawn({
                     let finished = Arc::clone(&finished);
                     move || {
-                        let result = fs.read_to_end(path);
+                        let mut coroutine = fs.open_async(path);
+                        let result = loop {
+                            if let Some(result) = coroutine.poll(&mut ()) {
+                                break result;
+                            }
+                        };
+                        let mut bytes = Vec::new();
+                        let _ = result?.read_to_end(&mut bytes)?;
+
                         finished.store(true, Ordering::Relaxed);
-                        result
+                        Ok(bytes)
                     }
                 });
                 while !finished.load(Ordering::Relaxed) {
@@ -439,7 +494,10 @@ impl Filesystem {
     /// for `.mount()`. Rather, it can be used to read zip files from sources
     /// such as `std::io::Cursor::new(includes_bytes!(...))` in order to embed
     /// resources into the game's executable.
-    pub fn add_zip_file<R: io::Read + io::Seek + Send + 'static>(&self, reader: R) -> GameResult {
+    pub fn add_zip_file<R: io::Read + io::Seek + Send + Clone + 'static>(
+        &self,
+        reader: R,
+    ) -> GameResult {
         let zipfs = vfs::ZipFS::from_read(reader)?;
         trace!("Adding zip file from reader");
         self.vfs().push_back(Box::new(zipfs));
@@ -651,7 +709,8 @@ pub fn write_config(ctx: &Context, conf: &conf::Conf) -> GameResult {
 mod tests {
     use crate::conf;
     use crate::error::GameError;
-    use crate::filesystem::{env, vfs, Arc, Filesystem, Mutex, CONFIG_NAME};
+    use crate::filesystem::{vfs, Arc, Filesystem, Mutex, CONFIG_NAME};
+    use std::env;
     use std::io::{Read, Write};
     use std::path;
 

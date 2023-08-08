@@ -148,11 +148,11 @@ impl Image {
         path: impl Into<PathBuf>,
     ) -> Loading<Self, C> {
         let path: PathBuf = path.into();
-        Loading::new(Coroutine::<_, C>::new(move |mut ctx| async move {
+        Loading::new(Coroutine::<_, C>::new(move |ctx| async move {
             let fs: &Filesystem = (*ctx).retrieve();
             let mut bytes_coroutine = fs.read_to_end_async(path);
             let bytes = loop {
-                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
+                if let Some(bytes) = bytes_coroutine.poll(&mut ()) {
                     break bytes;
                 }
                 yield_now().await;

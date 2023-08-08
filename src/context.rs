@@ -376,10 +376,6 @@ impl ContextBuilder {
 
     /// Build a `Context`
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        #[cfg(target_arch = "wasm32")]
-        let fs = Filesystem::new_web(&self.resources_dir_name);
-
-        #[cfg(not(target_arch = "wasm32"))]
         let fs = Filesystem::new(
             self.game_id.as_ref(),
             self.author.as_ref(),

@@ -118,12 +118,11 @@ impl ShaderBuilder {
                         let source = {
                             let mut bytes_coroutine = fs.read_to_end_async(source.to_string());
                             let bytes = loop {
-                                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
+                                if let Some(bytes) = bytes_coroutine.poll(&mut ()) {
                                     break bytes;
                                 }
                                 yield_now().await;
                             }?;
-                            // .unwrap();
                             Ok::<String, GameError>(
                                 String::from_utf8(bytes).map_err(GameError::ShaderEncodingError)?, // .unwrap(),
                             )
@@ -143,7 +142,7 @@ impl ShaderBuilder {
                         let source = {
                             let mut bytes_coroutine = fs.read_to_end_async(source.to_string());
                             let bytes = loop {
-                                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
+                                if let Some(bytes) = bytes_coroutine.poll(&mut ()) {
                                     break bytes;
                                 }
                                 yield_now().await;

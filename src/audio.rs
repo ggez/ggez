@@ -85,21 +85,19 @@ impl SoundData {
     ) -> Loading<Self> {
         let path = path.as_ref();
         let path: PathBuf = path.into();
-        Loading::new(Coroutine::<_, crate::Context>::new(
-            move |mut ctx| async move {
-                let fs: &Filesystem = (*ctx).retrieve();
-                let mut bytes_coroutine = fs.read_to_end_async(path);
-                let bytes = loop {
-                    if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
-                        break bytes;
-                    }
-                    yield_now().await;
-                }?;
+        Loading::new(Coroutine::<_, crate::Context>::new(move |ctx| async move {
+            let fs: &Filesystem = (*ctx).retrieve();
+            let mut bytes_coroutine = fs.read_to_end_async(path);
+            let bytes = loop {
+                if let Some(bytes) = bytes_coroutine.poll(&mut ()) {
+                    break bytes;
+                }
+                yield_now().await;
+            }?;
 
-                // Loading the bytes on a separate thread doesn't seem possible (as of now at least).
-                Ok(Self::from_bytes(&bytes))
-            },
-        ))
+            // Loading the bytes on a separate thread doesn't seem possible (as of now at least).
+            Ok(Self::from_bytes(&bytes))
+        }))
     }
 
     /// Copies the data in the given slice into a new `SoundData` object.

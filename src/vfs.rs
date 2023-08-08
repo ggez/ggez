@@ -9,6 +9,7 @@
 //! as a trait object, and its path abstraction is not the most
 //! convenient.
 
+use dyn_clone::DynClone;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::fmt::{self, Debug};
@@ -16,7 +17,10 @@ use std::fs;
 use std::io::{self, Read, Seek, Write};
 use std::path::{self, Path, PathBuf};
 
+use crate::coroutine::yield_now;
 use crate::error::{GameError, GameResult};
+use crate::Coroutine;
+use {js_sys::Uint8Array, wasm_bindgen::JsCast, wasm_bindgen_futures::JsFuture, web_sys::Response};
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     path.to_str().ok_or_else(|| {
@@ -93,14 +97,28 @@ impl OpenOptions {
     }
 }
 
+dyn_clone::clone_trait_object!(VFS);
+
 #[allow(clippy::upper_case_acronyms)]
-pub trait VFS: Debug + Send {
+pub trait VFS: Debug + Send + DynClone {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>>;
+    /// Open the file at this path with the given options
+    fn open_options_async(
+        &self,
+        path: &Path,
+        open_options: OpenOptions,
+    ) -> Coroutine<GameResult<Box<dyn VFile>>, ()>;
     /// Open the file at this path for reading
     fn open(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(path, OpenOptions::new().read(true))
     }
+
+    /// Open the file at this path for reading
+    fn open_async(&self, path: &Path) -> Coroutine<GameResult<Box<dyn VFile>>, ()> {
+        self.open_options_async(path, OpenOptions::new().read(true))
+    }
+
     /// Open the file at this path for writing, truncating it if it exists already
     fn create(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(
@@ -111,6 +129,20 @@ pub trait VFS: Debug + Send {
     /// Open the file at this path for appending, creating it if necessary
     fn append(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(
+            path,
+            OpenOptions::new().write(true).create(true).append(true),
+        )
+    }
+    /// Open the file at this path for writing, truncating it if it exists already
+    fn create_async(&self, path: &Path) -> Coroutine<GameResult<Box<dyn VFile>>, ()> {
+        self.open_options_async(
+            path,
+            OpenOptions::new().write(true).create(true).truncate(true),
+        )
+    }
+    /// Open the file at this path for appending, creating it if necessary
+    fn append_async(&self, path: &Path) -> Coroutine<GameResult<Box<dyn VFile>>, ()> {
+        self.open_options_async(
             path,
             OpenOptions::new().write(true).create(true).append(true),
         )
@@ -183,7 +215,7 @@ impl VMetadata for PhysicalMetadata {
 /// like "/foo" or "/foo/bar.txt".  This means a path with components
 /// starting with a `RootDir`, and zero or more `Normal` components.
 ///
-/// We gotta return a new path because there's apparently no real good way
+/// We gotta return a new path becggezause there's apparently no real good way
 /// to turn an absolute path into a relative path with the same
 /// components (other than the first), and pushing an absolute `Path`
 /// onto a `PathBuf` just completely nukes its existing contents.
@@ -316,6 +348,40 @@ impl VFS for PhysicalFS {
             .map_err(GameError::from)
     }
 
+    /// Open the file at this path with the given options
+    fn open_options_async(
+        &self,
+        path: &Path,
+        open_options: OpenOptions,
+    ) -> Coroutine<GameResult<Box<dyn VFile>>, ()> {
+        let new_self = self.clone();
+        let path: PathBuf = path.to_owned();
+        Coroutine::new(|_| async move {
+            if new_self.readonly
+                && (open_options.write
+                    || open_options.create
+                    || open_options.append
+                    || open_options.truncate)
+            {
+                let msg = format!(
+                    "Cannot alter file {path:?} in root {new_self:?}, filesystem read-only"
+                );
+                return Err(GameError::FilesystemError(msg));
+            }
+
+            if open_options.create {
+                new_self.create_root()?;
+            }
+
+            let p = new_self.to_absolute(&path)?;
+            open_options
+                .to_fs_openoptions()
+                .open(p)
+                .map(|x| Box::new(x) as Box<dyn VFile>)
+                .map_err(GameError::from)
+        })
+    }
+
     /// Create a directory at the location by this path
     fn mkdir(&self, path: &Path) -> GameResult {
         if self.readonly {
@@ -419,7 +485,7 @@ impl VFS for PhysicalFS {
 }
 
 /// A structure that joins several VFS's together in order.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct OverlayFS {
     roots: VecDeque<Box<dyn VFS>>,
@@ -469,6 +535,46 @@ impl VFS for OverlayFS {
         }
         let errmessage = String::from(convenient_path_to_str(path)?);
         Err(GameError::ResourceNotFound(errmessage, tried))
+    }
+
+    /// Open the file at this path with the given options
+    fn open_options_async(
+        &self,
+        path: &Path,
+        open_options: OpenOptions,
+    ) -> Coroutine<GameResult<Box<dyn VFile>>, ()> {
+        let new_self = self.clone();
+        let path: PathBuf = path.to_owned();
+        Coroutine::new(|mut ctx| async move {
+            let mut tried: Vec<(PathBuf, GameError)> = vec![];
+            for vfs in &new_self.roots {
+                let mut vfs_coroutine = vfs.open_options_async(&path, open_options);
+                let mut ticks = 0;
+                let result = loop {
+                    if let Some(result) = vfs_coroutine.poll(&mut ctx) {
+                        break result;
+                    }
+                    ticks += 1;
+                    if ticks > 10000 {
+                        break Err(GameError::FilesystemError("Failed".to_string()));
+                    }
+                    yield_now().await;
+                };
+
+                match result {
+                    Err(e) => {
+                        if let Some(vfs_path) = vfs.to_path_buf() {
+                            tried.push((vfs_path, e));
+                        } else {
+                            tried.push((PathBuf::from("<invalid path>"), e));
+                        }
+                    }
+                    f => return f,
+                }
+            }
+            let errmessage = String::from(convenient_path_to_str(&path)?);
+            Err(GameError::ResourceNotFound(errmessage, tried))
+        })
     }
 
     /// Create a directory at the location by this path
@@ -553,13 +659,15 @@ impl VFS for OverlayFS {
     }
 }
 
-trait ZipArchiveAccess: Send {
+dyn_clone::clone_trait_object!(ZipArchiveAccess);
+
+trait ZipArchiveAccess: Send + DynClone {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
     fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
     fn len(&self) -> usize;
 }
 
-impl<T: Read + Seek + Send> ZipArchiveAccess for zip::ZipArchive<T> {
+impl<T: Read + Seek + Send + Clone> ZipArchiveAccess for zip::ZipArchive<T> {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile> {
         let filename =
             sanitize_path_for_zip(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
@@ -584,7 +692,7 @@ impl Debug for dyn ZipArchiveAccess {
 }
 
 /// A filesystem backed by a zip file.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct ZipFS {
     // It's... a bit jankity.
@@ -604,8 +712,11 @@ pub struct ZipFS {
 
 impl ZipFS {
     pub fn new(filename: &Path) -> GameResult<Self> {
-        let f = fs::File::open(filename)?;
-        let archive = Box::new(zip::ZipArchive::new(f)?);
+        let mut f = fs::File::open(filename)?;
+        let metadata = fs::metadata(filename).expect("unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        let _ = f.read(&mut buffer).expect("buffer overflow");
+        let archive = Box::new(zip::ZipArchive::new(io::Cursor::new(buffer))?);
         Ok(ZipFS::from_boxed_archive(archive, Some(filename.into())))
     }
 
@@ -613,7 +724,7 @@ impl ZipFS {
     /// in-memory `std::io::Cursor`.
     pub fn from_read<R>(reader: R) -> GameResult<Self>
     where
-        R: Read + Seek + Send + 'static,
+        R: Read + Seek + Send + Clone + 'static,
     {
         let archive = Box::new(zip::ZipArchive::new(reader)?);
         Ok(ZipFS::from_boxed_archive(archive, None))
@@ -748,6 +859,35 @@ impl VFS for ZipFS {
         Ok(Box::new(zipfile) as Box<dyn VFile>)
     }
 
+    fn open_options_async(
+        &self,
+        path: &Path,
+        open_options: OpenOptions,
+    ) -> Coroutine<GameResult<Box<dyn VFile>>, ()> {
+        let new_self = self.clone();
+        let path: PathBuf = path.to_owned();
+        Coroutine::new(|_| async move {
+            // Zip is readonly
+            let path = convenient_path_to_str(&path)?;
+            if open_options.write
+                || open_options.create
+                || open_options.append
+                || open_options.truncate
+            {
+                let msg = format!(
+                    "Cannot alter file {path:?} in zipfile {new_self:?}, filesystem read-only"
+                );
+                return Err(GameError::FilesystemError(msg));
+            }
+            let mut stupid_archive_borrow = new_self.archive
+            .try_borrow_mut()
+            .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen! Report a bug at https://github.com/ggez/ggez/");
+            let mut f = stupid_archive_borrow.by_name(path)?;
+            let zipfile = ZipFileWrapper::new(&mut f)?;
+            Ok(Box::new(zipfile) as Box<dyn VFile>)
+        })
+    }
+
     fn mkdir(&self, path: &Path) -> GameResult {
         let msg = format!("Cannot mkdir {path:?} in zipfile {self:?}, filesystem read-only");
         Err(GameError::FilesystemError(msg))
@@ -806,6 +946,98 @@ impl VFS for ZipFS {
 
     fn to_path_buf(&self) -> Option<PathBuf> {
         self.source.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
+#[allow(clippy::upper_case_acronyms)]
+pub struct HttpFS {
+    root: PathBuf,
+}
+
+impl HttpFS {
+    pub fn new(root: &Path) -> Self {
+        Self { root: root.into() }
+    }
+}
+
+impl VFS for HttpFS {
+    fn open_options(&self, path: &Path, _open_options: OpenOptions) -> GameResult<Box<dyn VFile>> {
+        let msg = format!(
+            "Cannot open file {path:?} at http {self:?}, filesystem can't handle non async loading"
+        );
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn open_options_async(
+        &self,
+        path: &Path,
+        open_options: OpenOptions,
+    ) -> Coroutine<GameResult<Box<dyn VFile>>, ()> {
+        // Zip is readonly
+        let new_self = self.clone();
+        let path: PathBuf = path.to_owned();
+        Coroutine::new(move |_| async move {
+            if open_options.write
+                || open_options.create
+                || open_options.append
+                || open_options.truncate
+            {
+                let msg = format!(
+                    "Cannot alter file {path:?} at http {new_self:?}, filesystem read-only"
+                );
+                return Err(GameError::FilesystemError(msg));
+            }
+            // TODO: Change this to handle differnet urls with @127.0.0.1:1241/remote_file
+            let path = new_self.root.join(path.strip_prefix("/").unwrap_or(&path));
+            let window = web_sys::window().unwrap();
+            let resp_value = JsFuture::from(window.fetch_with_str(path.to_str().unwrap()))
+                .await
+                .unwrap();
+            let resp: Response = resp_value.dyn_into().unwrap();
+            let data = JsFuture::from(resp.array_buffer().unwrap()).await.unwrap();
+            let bytes = Uint8Array::new(&data).to_vec();
+            Ok(Box::new(io::Cursor::new(bytes)) as Box<dyn VFile>)
+        })
+    }
+
+    fn mkdir(&self, path: &Path) -> GameResult {
+        let msg = format!("Cannot mkdir {path:?} at http {self:?}, filesystem read-only");
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn rm(&self, path: &Path) -> GameResult {
+        let msg = format!("Cannot rm {path:?} at http {self:?}, filesystem read-only");
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn rmrf(&self, path: &Path) -> GameResult {
+        let msg = format!("Cannot rmrf {path:?} at http {self:?}, filesystem read-only");
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn exists(&self, _path: &Path) -> bool {
+        false
+    }
+
+    fn metadata(&self, _path: &Path) -> GameResult<Box<dyn VMetadata>> {
+        Err(GameError::CustomError(
+            "No metadata support for web yet".to_string(),
+        ))
+    }
+
+    #[allow(clippy::needless_collect)]
+    /// Zip files don't have real directories, so we (incorrectly) hack it by
+    /// just looking for a path prefix for now.
+    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
+        let msg = format!(
+            "Cannot read_dir {path:?} at http {self:?}, filesystem doesn't support iterating directories"
+        );
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        Some(self.root.clone())
     }
 }
 
