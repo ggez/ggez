@@ -1,4 +1,4 @@
-//! The simplest possible example that does something.
+//! Example to show off HttpFS, expects a http server to be hosted locally at localhost:2020
 #![allow(clippy::unnecessary_wraps)]
 
 use std::path::PathBuf;
@@ -18,7 +18,9 @@ struct MainState {
 impl MainState {
     fn new(_ctx: &mut Context) -> GameResult<MainState> {
         Ok(MainState {
-            image: Image::from_path_async("@localhost:2020/dragon4.png"),
+            image: Image::from_path_async(
+                "@raw.githubusercontent.com/ggez/ggez/master/resources/dragon1.png",
+            ),
         })
     }
 }
