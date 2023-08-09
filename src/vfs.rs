@@ -997,7 +997,7 @@ impl VFS for HttpFS {
                         .join(string)
                         .into_os_string()
                         .into_string()
-                        .unwrap();
+                        .map_err(|x| GameError::FilesystemError(format!("{x:?}")))?;
                 } else if let Some(string) = string.strip_prefix('@') {
                     ip = "http://".to_string() + string;
                 }
@@ -1012,9 +1012,17 @@ impl VFS for HttpFS {
                 let window = web_sys::window().unwrap();
                 let resp_value = JsFuture::from(window.fetch_with_str(ip.as_str()))
                     .await
-                    .unwrap();
-                let resp: Response = resp_value.dyn_into().unwrap();
-                let data = JsFuture::from(resp.array_buffer().unwrap()).await.unwrap();
+                    .map_err(|x| GameError::FilesystemError(format!("{x:?}")))?;
+
+                let resp: Response = resp_value
+                    .dyn_into()
+                    .map_err(|x| GameError::FilesystemError(format!("{x:?}")))?;
+                let data = JsFuture::from(
+                    resp.array_buffer()
+                        .map_err(|x| GameError::FilesystemError(format!("{x:?}")))?,
+                )
+                .await
+                .map_err(|x| GameError::FilesystemError(format!("{x:?}")))?;
                 let bytes = Uint8Array::new(&data).to_vec();
                 Ok(Box::new(io::Cursor::new(bytes)) as Box<dyn VFile>)
             }
