@@ -280,6 +280,27 @@ impl GraphicsContext {
         };
 
         let window = window_builder.build(event_loop)?;
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            web_sys::console::log_1(&"Init web".into());
+            use winit::platform::web::WindowExtWebSys;
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    if let Some(element) = doc.get_element_by_id("ggez-body") {
+                        element.remove()
+                    }
+
+                    let dst = doc.body()?;
+                    let canvas = web_sys::Element::from(window.canvas());
+                    canvas.set_id("ggez-body");
+                    let _ = dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+        }
+
         let surface = unsafe { instance.create_surface(&window) }
             .map_err(|_| GameError::GraphicsInitializationError)?;
 
@@ -291,19 +312,38 @@ impl GraphicsContext {
         .ok_or(GameError::GraphicsInitializationError)?;
 
         // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
+        #[cfg(not(target_arch = "wasm32"))]
         const MAX_INSTANCES: u32 = 1_000_000;
+        #[cfg(not(target_arch = "wasm32"))]
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
 
+        #[cfg(target_arch = "wasm32")]
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
-                    // 1st: DrawParams
+                    // 1st: Texture + Sampler
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    max_bind_groups: 4,
+                    // InstanceArray uses 2 storage buffers.
+                    ..wgpu::Limits::downlevel_webgl2_defaults()
+                },
+            },
+            None,
+        ))?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::default(),
+                limits: wgpu::Limits {
+                    // 1st: Texture + Sampler
+                    // 2nd: InstanceArray
+                    // 3rd: ShaderParams
+                    // 4th: ShaderParams
                     // InstanceArray uses 2 storage buffers.
                     max_storage_buffers_per_shader_stage: 2,
                     max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
@@ -379,6 +419,7 @@ impl GraphicsContext {
         ));
 
         #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -387,6 +428,16 @@ impl GraphicsContext {
         ));
 
         #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance3d_web.wgsl").into()),
+            },
+        ));
+
+        #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -396,6 +447,18 @@ impl GraphicsContext {
             },
         ));
 
+        #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered3d_web.wgsl").into(),
+                ),
+            },
+        ));
+
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -403,11 +466,30 @@ impl GraphicsContext {
             },
         ));
 
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance_web.wgsl").into()),
+            },
+        ));
+
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(
                     include_str!("shader/instance_unordered.wgsl").into(),
+                ),
+            },
+        ));
+
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered_web.wgsl").into(),
                 ),
             },
         ));
@@ -455,6 +537,21 @@ impl GraphicsContext {
             },
         );
 
+        #[cfg(target_arch = "wasm32")]
+        let instance_bind_layout = BindGroupLayoutBuilder::new()
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform {},
+                false,
+            )
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform {},
+                false,
+            )
+            .create(&wgpu.device, &mut bind_group_cache);
+
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_bind_layout = BindGroupLayoutBuilder::new()
             .buffer(
                 wgpu::ShaderStages::VERTEX,

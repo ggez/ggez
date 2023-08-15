@@ -4,6 +4,7 @@ use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Image, ImageFormat, Mesh3d
 
 use ggez::input::keyboard::KeyCode;
 use ggez::{
+    coroutine::Loading,
     event,
     glam::*,
     graphics::{self, Color},
@@ -16,7 +17,7 @@ struct MainState {
     cube_one: (Mesh3d, Quat),
     cube_two: (Mesh3d, Quat),
     canvas_image: Image,
-    fancy_shader: graphics::Shader,
+    fancy_shader: Loading<graphics::Shader>,
 }
 
 impl MainState {
@@ -39,9 +40,7 @@ impl MainState {
             camera,
             cube_one: (mesh, Quat::IDENTITY),
             cube_two: (mesh_two, Quat::IDENTITY),
-            fancy_shader: graphics::ShaderBuilder::from_path("/fancy.wgsl")
-                .build(&ctx.gfx)
-                .unwrap(),
+            fancy_shader: graphics::ShaderBuilder::from_path("/fancy.wgsl").build_async(),
         })
     }
 }
@@ -52,6 +51,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        self.fancy_shader.poll(ctx)?;
         let k_ctx = &ctx.keyboard.clone();
         let (yaw_sin, yaw_cos) = self.camera.transform.yaw.sin_cos();
         let forward = Vec3::new(yaw_cos, 0.0, yaw_sin).normalize();
@@ -97,7 +97,9 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas3d = Canvas3d::from_image(ctx, self.canvas_image.clone(), Color::RED);
         canvas3d.set_projection(self.static_camera.to_matrix());
-        canvas3d.set_shader(&self.fancy_shader);
+        if let Some(shader) = self.fancy_shader.result() {
+            canvas3d.set_shader(shader);
+        }
         canvas3d.draw(
             &self.cube_one.0,
             DrawParam3d::default()
@@ -107,7 +109,9 @@ impl event::EventHandler for MainState {
         canvas3d.finish(ctx)?;
         let mut canvas3d = Canvas3d::from_frame(ctx, Color::BLACK);
         canvas3d.set_projection(self.camera.to_matrix());
-        canvas3d.set_shader(&self.fancy_shader);
+        if let Some(shader) = self.fancy_shader.result() {
+            canvas3d.set_shader(shader);
+        }
         canvas3d.draw(
             &self.cube_two.0,
             DrawParam3d::default().rotation(self.cube_two.1),

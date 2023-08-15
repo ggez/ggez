@@ -10,16 +10,21 @@ use std::io;
 use std::io::Read;
 use std::mem;
 use std::path;
+use std::path::PathBuf;
 use std::time;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use crate::context::Has;
+use crate::coroutine::yield_now;
+use crate::coroutine::Loading;
 use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
 use crate::filesystem::InternalClone;
+use crate::graphics::GraphicsContext;
+use crate::Coroutine;
 
 /// A struct that contains all information for tracking sound info.
 ///
@@ -72,6 +77,27 @@ impl SoundData {
         let path = path.as_ref();
         let file = &mut fs.open(path)?;
         SoundData::from_read(file)
+    }
+
+    /// Load the file at the given path and create a new `SoundData` from it.
+    pub fn new_async<C: Has<Filesystem> + Has<GraphicsContext>, P: AsRef<path::Path>>(
+        path: P,
+    ) -> Loading<Self> {
+        let path = path.as_ref();
+        let path: PathBuf = path.into();
+        Loading::new(Coroutine::<_, crate::Context>::new(move |ctx| async move {
+            let fs: &Filesystem = (*ctx).retrieve();
+            let mut bytes_coroutine = fs.read_to_end_async(path);
+            let bytes = loop {
+                if let Some(bytes) = bytes_coroutine.poll(&mut ()) {
+                    break bytes;
+                }
+                yield_now().await;
+            }?;
+
+            // Loading the bytes on a separate thread doesn't seem possible (as of now at least).
+            Ok(Self::from_bytes(&bytes))
+        }))
     }
 
     /// Copies the data in the given slice into a new `SoundData` object.
@@ -291,6 +317,28 @@ impl Source {
         let path = path.as_ref();
         let data = SoundData::new(&audio.fs, path)?;
         Source::from_data(audio, data)
+    }
+
+    /// Create a new `Source` from the given file.
+    pub fn new_async<C: Has<Filesystem> + Has<GraphicsContext>, P: AsRef<path::Path>>(
+        path: P,
+    ) -> Loading<Self> {
+        let path = path.as_ref();
+        let path: PathBuf = path.into();
+        Loading::new(Coroutine::<_, crate::Context>::new(
+            move |mut ctx| async move {
+                let mut sound_coroutine = SoundData::new_async::<C, _>(path).coroutine;
+                let sound = loop {
+                    if let Some(sound) = sound_coroutine.poll(&mut *ctx) {
+                        break sound;
+                    }
+                    yield_now().await;
+                }?;
+
+                // Loading the bytes on a separate thread doesn't seem possible (as of now at least).
+                Self::from_data(&ctx.audio, sound)
+            },
+        ))
     }
 
     /// Creates a new `Source` using the given `SoundData` object.

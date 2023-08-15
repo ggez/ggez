@@ -7,6 +7,7 @@ use std::path;
 use ggez::input::keyboard;
 use oorandom::Rand32;
 
+use ggez::coroutine::Loading;
 use ggez::graphics::{Color, Image, InstanceArray};
 use ggez::Context;
 use ggez::*;
@@ -16,7 +17,12 @@ use ggez::input::keyboard::KeyInput;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...
+#[cfg(target_arch = "wasm32")]
+const INITIAL_BUNNIES: usize = 100;
+
+#[cfg(not(target_arch = "wasm32"))]
 const INITIAL_BUNNIES: usize = 1000;
+
 const WIDTH: u16 = 800;
 const HEIGHT: u16 = 600;
 const GRAVITY: f32 = 0.5;
@@ -40,75 +46,73 @@ impl Bunny {
 
 struct GameState {
     rng: Rand32,
-    texture: Image,
+    texture: Loading<Image>,
     bunnies: Vec<Bunny>,
-    max_x: f32,
-    max_y: f32,
-
     click_timer: i32,
-    bunnybatch: InstanceArray,
+    bunnybatch: Option<(InstanceArray, f32, f32)>,
     batched_drawing: bool,
 }
 
 impl GameState {
-    fn new(ctx: &mut Context) -> ggez::GameResult<GameState> {
+    fn new(_ctx: &mut Context) -> ggez::GameResult<GameState> {
         // We just use the same RNG seed every time.
         let mut rng = Rand32::new(12345);
-        let texture = Image::from_path(ctx, "/wabbit_alpha.png")?;
+        let texture = Image::from_path_async("/wabbit_alpha.png");
         let mut bunnies = Vec::with_capacity(INITIAL_BUNNIES);
-        let max_x = (WIDTH - texture.width() as u16) as f32;
-        let max_y = (HEIGHT - texture.height() as u16) as f32;
 
         for _ in 0..INITIAL_BUNNIES {
             bunnies.push(Bunny::new(&mut rng));
         }
 
-        let mut bunnybatch = InstanceArray::new(ctx, texture.clone());
-        bunnybatch.resize(ctx, INITIAL_BUNNIES);
-
         Ok(GameState {
             rng,
             texture,
             bunnies,
-            max_x,
-            max_y,
-
             click_timer: 0,
-            bunnybatch,
+            bunnybatch: None,
             batched_drawing: true,
         })
     }
 }
 
 impl event::EventHandler for GameState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if let Some(texture) = self.texture.poll(ctx)? {
+            let mut bunnybatch = InstanceArray::new(ctx, texture.clone());
+            bunnybatch.resize(ctx, INITIAL_BUNNIES);
+            let max_x = (WIDTH - texture.width() as u16) as f32;
+            let max_y = (HEIGHT - texture.height() as u16) as f32;
+            self.bunnybatch = Some((bunnybatch, max_x, max_y));
+        }
+
         if self.click_timer > 0 {
             self.click_timer -= 1;
         }
+        if let Some((_, max_x, max_y)) = self.bunnybatch {
+            for bunny in &mut self.bunnies {
+                bunny.position += bunny.velocity;
+                bunny.velocity += Vec2::new(0.0, GRAVITY);
 
-        for bunny in &mut self.bunnies {
-            bunny.position += bunny.velocity;
-            bunny.velocity += Vec2::new(0.0, GRAVITY);
-
-            if bunny.position.x > self.max_x {
-                bunny.velocity *= Vec2::new(-1.0, 0.);
-                bunny.position.x = self.max_x;
-            } else if bunny.position.x < 0.0 {
-                bunny.velocity *= Vec2::new(-1.0, 0.0);
-                bunny.position.x = 0.0;
-            }
-
-            if bunny.position.y > self.max_y {
-                bunny.velocity.y *= -0.8;
-                bunny.position.y = self.max_y;
-
-                // Flip a coin
-                if self.rng.rand_i32() > 0 {
-                    bunny.velocity -= Vec2::new(0.0, 3.0 + (self.rng.rand_float() * 4.0));
+                if bunny.position.x > max_x {
+                    bunny.velocity *= Vec2::new(-1.0, 0.);
+                    bunny.position.x = max_x;
+                } else if bunny.position.x < 0.0 {
+                    bunny.velocity *= Vec2::new(-1.0, 0.0);
+                    bunny.position.x = 0.0;
                 }
-            } else if bunny.position.y < 0.0 {
-                bunny.velocity.y = 0.0;
-                bunny.position.y = 0.0;
+
+                if bunny.position.y > max_y {
+                    bunny.velocity.y *= -0.8;
+                    bunny.position.y = max_y;
+
+                    // Flip a coin
+                    if self.rng.rand_i32() > 0 {
+                        bunny.velocity -= Vec2::new(0.0, 3.0 + (self.rng.rand_float() * 4.0));
+                    }
+                } else if bunny.position.y < 0.0 {
+                    bunny.velocity.y = 0.0;
+                    bunny.position.y = 0.0;
+                }
             }
         }
 
@@ -119,19 +123,18 @@ impl event::EventHandler for GameState {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::from((0.392, 0.584, 0.929)));
 
         if self.batched_drawing {
-            self.bunnybatch.set(
-                self.bunnies
-                    .iter()
-                    .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
-            );
-
-            canvas.draw(&self.bunnybatch, graphics::DrawParam::default());
-        } else {
-            for bunny in &self.bunnies {
-                canvas.draw(
-                    &self.texture,
-                    graphics::DrawParam::new().dest(bunny.position),
+            if let Some(bunnybatch) = self.bunnybatch.as_mut() {
+                bunnybatch.0.set(
+                    self.bunnies
+                        .iter()
+                        .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
                 );
+
+                canvas.draw(&bunnybatch.0, graphics::DrawParam::default());
+            }
+        } else if let Some(texture) = self.texture.result() {
+            for bunny in &self.bunnies {
+                canvas.draw(texture, graphics::DrawParam::new().dest(bunny.position));
             }
         }
 
@@ -163,6 +166,7 @@ impl event::EventHandler for GameState {
     ) -> GameResult {
         if button == input::mouse::MouseButton::Left && self.click_timer == 0 {
             for _ in 0..INITIAL_BUNNIES {
+                #[cfg(not(target_arch = "wasm32"))]
                 self.bunnies.push(Bunny::new(&mut self.rng));
             }
             self.click_timer = 10;

@@ -383,12 +383,15 @@ impl ContextBuilder {
             &self.resources_zip_name,
         )?;
 
-        for path in &self.paths {
-            fs.mount(path, true);
-        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            for path in &self.paths {
+                fs.mount(path, true);
+            }
 
-        for zipfile_bytes in self.memory_zip_files {
-            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
+            for zipfile_bytes in self.memory_zip_files {
+                fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
+            }
         }
 
         let config = if self.load_conf_file {
