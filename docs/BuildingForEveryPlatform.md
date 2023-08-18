@@ -89,10 +89,13 @@ Just copy-paste the exe and resource directory to the destination computer.
 
 # MacOS
 
-At the moment we unfortunately cannot provide support for developing on
-mac (none of the developers have hardware). While `ggez` tries not to do
-anything that would make it *not* work on Mac, it is a DIY target. If
-you find any issues feel free to open a PR.
+Should just build.
+
+## Distributing
+
+You *can* just directly distribute an exe and resource directory but macos typically has .apps.
+You can look into the structure of these(Basically just a folder with a certain layout) or do something
+with xcode.
 
 # Android
 
@@ -102,8 +105,19 @@ You might be able to use [`good-web-game`] though to run your `ggez` app on Andr
 
 # Web/wasm/emscripten
 
-Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/71
+Should just build as long as you have the 'wasm32-unknown-unknown' target installed.
 
-You might be able to use [`good-web-game`] though to run your `ggez` app on wasm.
+If using rustup try: `rustup target install wasm32-unknown-unknown`
 
-[`good-web-game`]: https://github.com/ggez/good-web-game
+For testing we personally use [`wasm-server-runner`]: https://github.com/jakobhellermann/wasm-server-runner
+
+## Distributing
+
+You can use `wasm-bindgen` to generate the files you need to host on a site.
+
+```
+cargo build --release --target wasm32-unknown-unknown
+wasm-bindgen --out-dir ./out/ --target web ./target/
+```
+
+There is some higher level tools like `wasm-pack`

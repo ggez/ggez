@@ -142,11 +142,12 @@ impl Filesystem {
         )
     }
 
-    /// Web new fs
+    /// Creates a filesystem for web builds.
+    #[cfg(target_arch = "wasm32")]
     pub fn new_web(resources_dir_name: &path::Path) -> Filesystem {
         let overlay = vfs::OverlayFS::new();
         Filesystem {
-            vfs: Arc::new(Mutex::new(overlay)),
+            vfs: Arc::new(RwLock::new(overlay)),
             resources_dir: resources_dir_name.to_path_buf(),
             zip_dir: Default::default(),
             user_config_dir: Default::default(),
