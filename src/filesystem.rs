@@ -158,7 +158,7 @@ impl Filesystem {
         let root_path: path::PathBuf = Default::default();
         let mut overlay = vfs::OverlayFS::new();
         let mut resources_path;
-        let mut resources_zip_path;
+
         // <game exe root>/resources/
         {
             resources_path = root_path.clone();
@@ -168,18 +168,6 @@ impl Filesystem {
             overlay.push_back(Box::new(physfs));
         }
 
-        // <root>/resources.zip
-        {
-            resources_zip_path = root_path;
-            resources_zip_path.push(resources_zip_name);
-            if resources_zip_path.exists() {
-                trace!("Resources zip file: {:?}", resources_zip_path);
-                let zipfs = vfs::ZipFS::new(&resources_zip_path)?;
-                overlay.push_back(Box::new(zipfs));
-            } else {
-                trace!("No resources zip file found");
-            }
-        }
         Ok(Filesystem {
             vfs: Arc::new(Mutex::new(overlay)),
             resources_dir: resources_dir_name.to_path_buf(),

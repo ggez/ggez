@@ -263,6 +263,7 @@ pub struct ContextBuilder {
     pub(crate) author: String,
     pub(crate) conf: conf::Conf,
     pub(crate) resources_dir_name: path::PathBuf,
+    /// Does nothing on the Web target at the moment
     pub(crate) resources_zip_name: path::PathBuf,
     pub(crate) paths: Vec<path::PathBuf>,
     pub(crate) memory_zip_files: Vec<Cow<'static, [u8]>>,
@@ -388,10 +389,10 @@ impl ContextBuilder {
             for path in &self.paths {
                 fs.mount(path, true);
             }
+        }
 
-            for zipfile_bytes in self.memory_zip_files {
-                fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
-            }
+        for zipfile_bytes in self.memory_zip_files {
+            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
         }
 
         let config = if self.load_conf_file {
@@ -426,8 +427,11 @@ impl ContextBuilder {
             &self.resources_zip_name,
         )?;
 
-        for path in &self.paths {
-            fs.mount(path, true);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            for path in &self.paths {
+                fs.mount(path, true);
+            }
         }
 
         for zipfile_bytes in self.memory_zip_files {
