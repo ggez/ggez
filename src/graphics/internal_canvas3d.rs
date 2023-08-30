@@ -11,11 +11,11 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     AlphaMode, BlendMode, Color, Draw3d, DrawCommand3d, DrawParam3d, DrawUniforms3d, LinearColor,
-    Rect, RenderedMesh3d, Vertex3d, WgpuContext, ZIndex,
+    Rect, RenderedMesh3d, Vertex3d, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
-use std::{collections::BTreeMap, hash::Hash};
+use std::hash::Hash;
 
 /// A canvas represents a render pass and is how you render meshes .
 #[allow(missing_debug_implementations)]
@@ -246,7 +246,7 @@ impl<'a> InternalCanvas3d<'a> {
         self.pass.set_scissor_rect(x, y, w, h);
     }
 
-    pub(crate) fn update_uniform(&mut self, draws: &BTreeMap<ZIndex, Vec<DrawCommand3d>>) {
+    pub(crate) fn update_uniform(&mut self, draws: &[DrawCommand3d]) {
         let alignment = self
             .wgpu
             .device
@@ -254,20 +254,18 @@ impl<'a> InternalCanvas3d<'a> {
             .min_uniform_buffer_offset_alignment as u64;
         let mut alloc_size = 0;
         let mut uniforms = Vec::new();
-        for draws in draws.values() {
-            for draw in draws {
-                if draw.state.projection != self.transform.into() {
-                    self.set_projection(draw.state.projection);
-                }
-                if let Draw3d::Mesh { .. } = &draw.draw {
-                    alloc_size += alignment;
-                    let draw_uniform =
-                        DrawUniforms3d::from_param(&draw.param).projection(self.transform);
-                    let mut bytes = draw_uniform.as_std140().as_bytes().to_vec();
-                    let needed_padding = alignment - (bytes.len() as u64 % alignment); // Pad the uniforms so we can index properly
-                    bytes.resize(bytes.len() + needed_padding as usize, 0);
-                    uniforms.extend_from_slice(bytes.as_slice());
-                }
+        for draw in draws {
+            if draw.state.projection != self.transform.into() {
+                self.set_projection(draw.state.projection);
+            }
+            if let Draw3d::Mesh { .. } = &draw.draw {
+                alloc_size += alignment;
+                let draw_uniform =
+                    DrawUniforms3d::from_param(&draw.param).projection(self.transform);
+                let mut bytes = draw_uniform.as_std140().as_bytes().to_vec();
+                let needed_padding = alignment - (bytes.len() as u64 % alignment); // Pad the uniforms so we can index properly
+                bytes.resize(bytes.len() + needed_padding as usize, 0);
+                uniforms.extend_from_slice(bytes.as_slice());
             }
         }
 
