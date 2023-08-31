@@ -213,6 +213,9 @@ impl Canvas {
     }
 
     /// Resets the active mesh shader to the default.
+    ///
+    /// If any shader parameters were previously set with `set_shader_params`, these will also be
+    /// reset to the default of `None`.
     #[inline]
     pub fn set_default_shader(&mut self) {
         self.state.shader = default_shader();
@@ -220,6 +223,9 @@ impl Canvas {
     }
 
     /// Resets the active text shader to the default.
+    ///
+    /// If any text shader parameters were previously set with `set_text_shader_params`, these will
+    /// also be reset to the default of `None`.
     #[inline]
     pub fn set_default_text_shader(&mut self) {
         self.state.text_shader = default_text_shader();
