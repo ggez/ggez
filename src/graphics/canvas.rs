@@ -216,12 +216,14 @@ impl Canvas {
     #[inline]
     pub fn set_default_shader(&mut self) {
         self.state.shader = default_shader();
+        self.state.params = None;
     }
 
     /// Resets the active text shader to the default.
     #[inline]
     pub fn set_default_text_shader(&mut self) {
         self.state.text_shader = default_text_shader();
+        self.state.text_params = None;
     }
 
     /// Sets the active sampler used to sample images.
