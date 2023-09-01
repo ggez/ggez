@@ -365,7 +365,8 @@ impl GraphicsContext {
         #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader = load_shader(include_str!("shader/instance_unordered.wgsl"));
         #[cfg(target_arch = "wasm32")]
-        let instance_unordered_shader = load_shader(include_str!("shader/instance_unordered_web.wgsl"));
+        let instance_unordered_shader =
+            load_shader(include_str!("shader/instance_unordered_web.wgsl"));
         let text_shader = load_shader(include_str!("shader/text.wgsl"));
         let copy_shader = load_shader(include_str!("shader/copy.wgsl"));
 

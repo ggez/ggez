@@ -13,7 +13,10 @@ use std::{
     task::{Poll, Waker},
 };
 
-use crate::{Context, GameResult, context::Has, filesystem::Filesystem};
+use crate::{context::Has, filesystem::Filesystem, graphics::Drawable, Context, GameResult};
+
+#[cfg(feature = "3d")]
+use crate::graphics::Drawable3d;
 
 enum CoroutineState<T> {
     Future(Pin<Box<dyn Future<Output = T> + 'static>>),
@@ -31,11 +34,12 @@ pub struct Coroutine<T = (), C = Context> {
     state: CoroutineState<T>,
 }
 
-impl<T, C> Coroutine<T, C> where C: Has<Filesystem> {
+impl<T, C> Coroutine<T, C>
+where
+    C: Has<Filesystem>,
+{
     /// Constructs a new coroutine
-    pub fn new<F: Future<Output = T> + 'static>(
-        fut: impl FnOnce(UnsafeHolder<C>) -> F,
-    ) -> Self {
+    pub fn new<F: Future<Output = T> + 'static>(fut: impl FnOnce(UnsafeHolder<C>) -> F) -> Self {
         struct Inner;
         impl std::task::Wake for Inner {
             fn wake(self: Arc<Self>) {}
@@ -76,13 +80,18 @@ impl<T, C> Coroutine<T, C> where C: Has<Filesystem> {
 }
 
 /// Used to help with async loading of assets cleanly
+/// Drawable types will be able to be drawn even if not loaded just nothing
+/// will display. This is for convenience.
 #[allow(missing_debug_implementations)]
 pub struct Loading<T, C = Context> {
     pub(crate) coroutine: Coroutine<GameResult<T>, C>,
     result: Option<T>,
 }
 
-impl<T, C> Loading<T, C> where C: Has<Filesystem> {
+impl<T, C> Loading<T, C>
+where
+    C: Has<Filesystem>,
+{
     /// Create a new loading struct for a given coroutine
     pub fn new(coroutine: Coroutine<GameResult<T>, C>) -> Self {
         Self {
@@ -108,6 +117,42 @@ impl<T, C> Loading<T, C> where C: Has<Filesystem> {
     /// Get the mutable result if any
     pub fn result_mut(&mut self) -> &mut Option<T> {
         &mut self.result
+    }
+}
+
+impl<T: Drawable, C> Drawable for Loading<T, C> {
+    fn draw(
+        &self,
+        canvas: &mut crate::graphics::Canvas,
+        param: impl Into<crate::graphics::DrawParam>,
+    ) {
+        if let Some(result) = self.result.as_ref() {
+            result.draw(canvas, param)
+        }
+    }
+
+    fn dimensions(
+        &self,
+        gfx: &impl crate::context::Has<crate::graphics::GraphicsContext>,
+    ) -> crate::graphics::Rect {
+        if let Some(result) = self.result.as_ref() {
+            result.dimensions(gfx)
+        } else {
+            crate::graphics::Rect::new(0.0, 0.0, 1.0, 1.0)
+        }
+    }
+}
+
+#[cfg(feature = "3d")]
+impl<T: Drawable3d, C> Drawable3d for Loading<T, C> {
+    fn draw(
+        &self,
+        canvas: &mut crate::graphics::Canvas3d,
+        param: impl Into<crate::graphics::DrawParam3d>,
+    ) {
+        if let Some(result) = self.result.as_ref() {
+            result.draw(canvas, param)
+        }
     }
 }
 

@@ -1,7 +1,9 @@
 //! A very simple shader example.
+// Doesn't work on web yet am unsure why at the moment
 
 // You must depend on the same version of `crevice` that ggez uses
 use crevice::std140::AsStd140;
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawMode};
@@ -16,7 +18,7 @@ struct Dim {
 
 struct MainState {
     dim: Dim,
-    shader: graphics::Shader,
+    shader: Loading<graphics::Shader>,
     params: graphics::ShaderParams<Dim>,
 }
 
@@ -25,7 +27,7 @@ impl MainState {
         let dim = Dim { rate: 0.5 };
         let shader = graphics::ShaderBuilder::new()
             .fragment_path("/dimmer.wgsl")
-            .build(&ctx.gfx)?;
+            .build_async();
         let params = graphics::ShaderParamsBuilder::new(&dim).build(ctx);
         Ok(MainState {
             dim,
@@ -37,6 +39,7 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        self.shader.poll(ctx)?;
         self.dim.rate = 0.5 + (((ctx.time.ticks() as f32) / 100.0).cos() / 2.0);
         Ok(())
     }
@@ -54,9 +57,12 @@ impl event::EventHandler for MainState {
         )?;
         canvas.draw(&circle, Vec2::new(0.0, 0.0));
 
-        self.params.set_uniforms(ctx, &self.dim);
-        canvas.set_shader(&self.shader);
-        canvas.set_shader_params(&self.params);
+        if let Some(shader) = self.shader.result() {
+            self.params.set_uniforms(ctx, &self.dim);
+            canvas.set_shader(shader);
+            canvas.set_shader_params(&self.params);
+        }
+
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),

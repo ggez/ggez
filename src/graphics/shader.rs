@@ -96,13 +96,15 @@ impl ShaderBuilder {
         let new_self = self.clone();
         Loading::new(Coroutine::<_, C>::new(move |mut ctx| async move {
             let load = |ctx: &mut C, s: String| {
-                let gfx: &GraphicsContext = ctx.retrieve();
-                Some(gfx.wgpu.device.create_shader_module(
-                    wgpu::ShaderModuleDescriptor {
-                        label: None,
-                        source: wgpu::ShaderSource::Wgsl(s.into()),
-                    },
-                ))
+                let gfx = <C as Has<GraphicsContext>>::retrieve(ctx);
+                Some(
+                    gfx.wgpu
+                        .device
+                        .create_shader_module(wgpu::ShaderModuleDescriptor {
+                            label: None,
+                            source: wgpu::ShaderSource::Wgsl(s.into()),
+                        }),
+                )
             };
 
             let load_fs = {
@@ -111,8 +113,7 @@ impl ShaderBuilder {
                     ShaderSource::Path(source) => {
                         let fs: &Filesystem = (*ctx).retrieve();
                         let source = {
-                            let mut bytes_coroutine =
-                                fs.read_to_end_async::<C>(source.to_string());
+                            let mut bytes_coroutine = fs.read_to_end_async::<C>(source.to_string());
                             let bytes = loop {
                                 if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
                                     break bytes;
@@ -137,8 +138,7 @@ impl ShaderBuilder {
                     ShaderSource::Path(source) => {
                         let fs: &Filesystem = (*ctx).retrieve();
                         let source = {
-                            let mut bytes_coroutine =
-                                fs.read_to_end_async::<C>(source.to_string());
+                            let mut bytes_coroutine = fs.read_to_end_async::<C>(source.to_string());
                             let bytes = loop {
                                 if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
                                     break bytes;

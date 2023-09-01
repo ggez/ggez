@@ -1,7 +1,7 @@
 //! How to draw a 3D cube in ggez.
 //!
-//! ggez doesn't provide any 3D drawing itself, but it exposes
-//! the underlying `gfx-rs` data types, so you can bypass ggez's
+//! ggez provide's 3D drawing itself, but this may not be suitable for all cases,
+//! so ggez exposes the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
 // You must depend on the same version of `crevice` that ggez uses

@@ -32,10 +32,11 @@
 //! directory isolation is intended for convenience, not security, so
 //! don't assume it will be secure.
 
+#[cfg(not(target_arch = "wasm32"))]
+use crate::coroutine::yield_now;
 use crate::{
     conf,
     context::Has,
-    coroutine::yield_now,
     vfs::{self, OverlayFS, VFS},
     Coroutine, GameError, GameResult,
 };
@@ -44,11 +45,11 @@ use std::{
     env,
     io::{self, Read},
     path::{self, PathBuf},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, RwLock,
-    },
+    sync::{Arc, RwLock},
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(target_arch = "wasm32")]
 use {js_sys::Uint8Array, wasm_bindgen::JsCast, wasm_bindgen_futures::JsFuture, web_sys::Response};
@@ -301,12 +302,12 @@ impl Filesystem {
                     .join(path.strip_prefix("/").unwrap_or(path.as_path()));
                 let window = web_sys::window()
                     .ok_or_else(|| GameError::FilesystemError(String::from("no window")))?;
-                let resp_value = JsFuture::from(window.fetch_with_str(
-                    path.to_str()
-                        .ok_or_else(|| GameError::FilesystemError(format!("Invalid path: {path:?}")))?,
-                ))
-                .await
-                .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
+                let resp_value =
+                    JsFuture::from(window.fetch_with_str(path.to_str().ok_or_else(|| {
+                        GameError::FilesystemError(format!("Invalid path: {path:?}"))
+                    })?))
+                    .await
+                    .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
                 let resp: Response = resp_value
                     .dyn_into()
                     .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;

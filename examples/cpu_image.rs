@@ -14,7 +14,8 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let og_image = Image::from_path(ctx, "/wabbit_alpha.png")?;
+        let og_image =
+            graphics::Image::from_bytes(ctx, include_bytes!("../resources/wabbit_alpha.png"))?;
         let cpu_image = og_image.to_pixels(ctx)?;
         let image = Image::from_pixels(
             ctx,

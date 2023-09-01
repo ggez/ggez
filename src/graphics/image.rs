@@ -5,8 +5,8 @@ use super::{
 use crate::{
     context::Has,
     coroutine::{yield_now, Loading},
-    Context, Coroutine, GameError, GameResult,
     filesystem::Filesystem,
+    Context, Coroutine, GameError, GameResult,
 };
 use image::ImageEncoder;
 use std::{

@@ -25,12 +25,12 @@ impl MainState {
                 .circle(
                     graphics::DrawMode::stroke(4.0),
                     Vec2::new(0.0, 0.0),
-                    8.0,
+                    16.0,
                     1.0,
                     (0, 0, 255).into(),
                 )?
                 .line(
-                    &[Vec2::new(0.0, 0.0), Vec2::new(8.0, 0.0)],
+                    &[Vec2::new(0.0, 0.0), Vec2::new(16.0, 0.0)],
                     2.0,
                     (255, 255, 0).into(),
                 )?
@@ -39,8 +39,8 @@ impl MainState {
 
         // Generate enough instances to fill the entire screen
         let size = ctx.gfx.drawable_size();
-        let items_x = (size.0 / 16.0) as usize;
-        let items_y = (size.1 / 16.0) as usize;
+        let items_x = (size.0 / 64.0) as usize;
+        let items_y = (size.1 / 64.0) as usize;
         let mut mesh_batch = graphics::InstanceArray::new(ctx, None);
         mesh_batch.resize(ctx, items_x * items_y);
 
@@ -50,7 +50,7 @@ impl MainState {
                 let y = y as f32;
 
                 DrawParam::new()
-                    .dest(Vec2::new(x * 16.0, y * 16.0))
+                    .dest(Vec2::new(x * 64.0, y * 64.0))
                     .rotation(rng.rand_float() * TWO_PI)
             })
         }));
@@ -109,7 +109,7 @@ impl event::EventHandler for MainState {
         canvas.draw_instanced_mesh(
             self.mesh.clone(),
             &self.mesh_batch,
-            DrawParam::new().dest(glam::Vec2::new(5.0, 8.0)),
+            DrawParam::new().dest(glam::Vec2::new(5.0, 16.0)),
         );
 
         canvas.finish(ctx)?;
