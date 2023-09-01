@@ -2,6 +2,7 @@
 //!
 //! You really want to run this one in release mode.
 
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
@@ -13,6 +14,7 @@ type Point2 = ggez::glam::Vec2;
 type Vector2 = ggez::glam::Vec2;
 
 struct MainState {
+    image: Loading<graphics::Image>,
     instances: graphics::InstanceArray,
     canvas_image: graphics::ScreenImage,
     draw_pt: Point2,
@@ -21,13 +23,14 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> MainState {
-        let image = graphics::Image::from_path(ctx, "/tile.png").unwrap();
-        let mut instances = graphics::InstanceArray::new(ctx, image);
-        instances.resize(ctx, 150 * 150);
+        let image = graphics::Image::from_path_async("/tile.png");
+        let mut instances = graphics::InstanceArray::new(ctx, None);
+        instances.resize(ctx, 10 * 10);
         let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);
         MainState {
+            image,
             instances,
             canvas_image,
             draw_pt,
@@ -39,15 +42,15 @@ impl MainState {
 impl MainState {
     fn draw_spritebatch(&mut self, ctx: &mut Context) -> GameResult {
         // Freeze the animation so things are easier to see.
-        let time = 2000;
-        // let time = (ctx.timer.time_since_start().as_secs_f64() * 1000.0) as u32;
+        let time = 12500;
+        // let time = (ctx.time.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
-        self.instances.set((0..150).flat_map(|x| {
-            (0..150).map(move |y| {
+        self.instances.set((0..10).flat_map(|x| {
+            (0..10).map(move |y| {
                 let x = x as f32;
                 let y = y as f32;
                 graphics::DrawParam::new()
-                    .dest(Point2::new(x * 10.0, y * 10.0))
+                    .dest(Point2::new(x * 20.0, y * 20.0))
                     // scale: graphics::Point::new(0.0625, 0.0625),
                     .scale(Vector2::new(
                         ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
@@ -70,7 +73,7 @@ impl MainState {
                 ((time % cycle) as f32 / cycle as f32 * TAU).sin().abs() * 2.0 + 1.0,
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * TAU)
-            .offset(Point2::new(750., 750.));
+            .offset(Point2::new(150., 150.));
 
         canvas.draw(&self.instances, param);
         canvas.finish(ctx)?;
@@ -84,6 +87,10 @@ impl event::EventHandler for MainState {
         if ctx.time.ticks() % 100 == 0 {
             println!("Delta frame time: {:?} ", ctx.time.delta());
             println!("Average FPS: {}", ctx.time.fps());
+        }
+
+        if let Some(image) = self.image.poll(ctx)? {
+            self.instances.set_image(image.clone());
         }
 
         // Bounce the rect if necessary

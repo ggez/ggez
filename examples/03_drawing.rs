@@ -151,24 +151,23 @@ impl event::EventHandler for MainState {
         let dst2 = glam::Vec2::new(400.0, 400.0);
         let scale = glam::Vec2::new(10.0, 10.0);
 
-        if let Some(image) = &self.image2.result() {
-            canvas.draw(
-                image,
-                graphics::DrawParam::new()
-                    .dest(dst)
-                    .rotation(self.rotation)
-                    .scale(scale),
-            );
-            canvas.set_sampler(graphics::Sampler::nearest_clamp());
-            canvas.draw(
-                image,
-                graphics::DrawParam::new()
-                    .dest(dst2)
-                    .rotation(self.rotation)
-                    .scale(scale)
-                    .offset(vec2(0.5, 0.5)),
-            );
-        }
+        canvas.draw(
+            &self.image2,
+            graphics::DrawParam::new()
+                .dest(dst)
+                .rotation(self.rotation)
+                .scale(scale),
+        );
+        canvas.set_sampler(graphics::Sampler::nearest_clamp());
+        canvas.draw(
+            &self.image2,
+            graphics::DrawParam::new()
+                .dest(dst2)
+                .rotation(self.rotation)
+                .scale(scale)
+                .offset(vec2(0.5, 0.5)),
+        );
+
         canvas.set_default_sampler();
 
         // Draw a filled rectangle mesh.

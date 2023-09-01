@@ -23,7 +23,6 @@ use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
 use crate::filesystem::InternalClone;
-use crate::graphics::GraphicsContext;
 use crate::Coroutine;
 
 /// A struct that contains all information for tracking sound info.
@@ -80,9 +79,7 @@ impl SoundData {
     }
 
     /// Load the file at the given path and create a new `SoundData` from it.
-    pub fn new_async<C: Has<Filesystem> + Has<GraphicsContext>, P: AsRef<path::Path>>(
-        path: P,
-    ) -> Loading<Self> {
+    pub fn new_async<C: Has<Filesystem>, P: AsRef<path::Path>>(path: P) -> Loading<Self> {
         let path = path.as_ref();
         let path: PathBuf = path.into();
         Loading::new(Coroutine::<_, crate::Context>::new(move |ctx| async move {
@@ -320,7 +317,7 @@ impl Source {
     }
 
     /// Create a new `Source` from the given file.
-    pub fn new_async<C: Has<Filesystem> + Has<GraphicsContext>, P: AsRef<path::Path>>(
+    pub fn new_async<C: Has<Filesystem> + Has<AudioContext>, P: AsRef<path::Path>>(
         path: P,
     ) -> Loading<Self> {
         let path = path.as_ref();

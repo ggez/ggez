@@ -1,5 +1,6 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawParam};
@@ -11,8 +12,9 @@ use std::path;
 struct MainState {
     a: i32,
     direction: i32,
-    image: graphics::Image,
+    image: Loading<graphics::Image>,
     rng: oorandom::Rand32,
+    sound: Loading<ggez::audio::Source>,
 }
 
 impl MainState {
@@ -44,12 +46,9 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.fs.print_all();
 
-        let image = graphics::Image::from_path(ctx, "/dragon1.png")?;
+        let image = graphics::Image::from_path_async("/dragon1.png");
 
-        let mut sound = audio::Source::new(ctx, "/sound.ogg")?;
-
-        // "detached" sounds keep playing even after they are dropped
-        let _ = sound.play_detached(ctx);
+        let sound = audio::Source::new_async::<Context, &str>("/sound.ogg");
 
         let rng = oorandom::Rand32::new(271828);
 
@@ -58,6 +57,7 @@ impl MainState {
             direction: 1,
             image,
             rng,
+            sound,
         };
 
         Ok(s)
@@ -66,6 +66,20 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        let mut loaded = false;
+        if self.sound.poll(ctx)?.is_some() {
+            loaded = true;
+        }
+
+        if let Some(sound) = self.sound.result_mut() {
+            if loaded {
+                // "detached" sounds keep playing even after they are dropped
+                let _ = sound.play_detached(ctx);
+            }
+        }
+
+        self.image.poll(ctx)?;
+
         const DESIRED_FPS: u32 = 60;
         while ctx.time.check_update_time(DESIRED_FPS) {
             self.a += self.direction;

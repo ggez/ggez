@@ -1,7 +1,9 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
+//! Doesn't work on web yet for some reason
 
 use crevice::std140::AsStd140;
+use ggez::coroutine::Loading;
 use ggez::glam::Vec2;
 use ggez::graphics::{
     self, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder, ShaderParamsBuilder,
@@ -50,8 +52,8 @@ const SHADOWS_SHADER_SOURCE: &str = include_str!("../resources/shadows.wgsl");
 const LIGHTS_SHADER_SOURCE: &str = include_str!("../resources/lights.wgsl");
 
 struct MainState {
-    background: graphics::Image,
-    tile: graphics::Image,
+    background: Loading<graphics::Image>,
+    tile: Loading<graphics::Image>,
     light_list: Vec<(Light, ShaderParams<Light>)>,
     foreground: graphics::ScreenImage,
     occlusions: graphics::Image,
@@ -81,8 +83,8 @@ const LIGHT_GLOW_RATE: f32 = 0.9;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let background = graphics::Image::from_path(ctx, "/bg_top.png")?;
-        let tile = graphics::Image::from_path(ctx, "/tile.png")?;
+        let background = graphics::Image::from_path_async("/bg_top.png");
+        let tile = graphics::Image::from_path_async("/tile.png");
 
         let screen_size = {
             let size = ctx.gfx.drawable_size();
@@ -201,6 +203,9 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        self.background.poll(ctx)?;
+        self.tile.poll(ctx)?;
+
         if ctx.time.ticks() % 100 == 0 {
             println!("Average FPS: {}", ctx.time.fps());
         }

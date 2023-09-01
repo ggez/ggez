@@ -3,6 +3,7 @@
 //! You really want to run this one in release mode.
 #![allow(clippy::unnecessary_wraps)]
 
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::glam::*;
 use ggez::graphics::{self, Color};
@@ -13,19 +14,24 @@ use std::path;
 
 struct MainState {
     instances: graphics::InstanceArray,
+    image: Loading<graphics::Image>,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::from_path(ctx, "/tile.png")?;
-        let mut instances = graphics::InstanceArray::new(ctx, image);
-        instances.resize(ctx, 150 * 150);
-        Ok(MainState { instances })
+        let image = graphics::Image::from_path_async("/tile.png");
+        let mut instances = graphics::InstanceArray::new(ctx, None);
+        instances.resize(ctx, 10 * 10);
+        Ok(MainState { instances, image })
     }
 }
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if let Some(image) = self.image.poll(ctx)? {
+            self.instances.set_image(image.clone());
+        }
+
         if ctx.time.ticks() % 100 == 0 {
             println!("Delta frame time: {:?} ", ctx.time.delta());
             println!("Average FPS: {}", ctx.time.fps());
@@ -38,8 +44,8 @@ impl event::EventHandler for MainState {
 
         let time = (ctx.time.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
-        self.instances.set((0..150).flat_map(|x| {
-            (0..150).map(move |y| {
+        self.instances.set((0..10).flat_map(|x| {
+            (0..10).map(move |y| {
                 let x = x as f32;
                 let y = y as f32;
                 graphics::DrawParam::new()
@@ -62,7 +68,6 @@ impl event::EventHandler for MainState {
                 ((time % cycle) as f32 / cycle as f32 * TAU).sin().abs() * 2.0 + 1.0,
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * TAU)
-            .offset(Vec2::new(750.0, 750.0))
             // src has no influence when applied globally to a spritebatch
             .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
         canvas.draw(&self.instances, param);

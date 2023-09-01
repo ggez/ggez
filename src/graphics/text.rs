@@ -2,12 +2,21 @@ use super::{
     gpu::text::{Extra, TextRenderer},
     Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
 };
-use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
+use crate::{
+    context::Has,
+    coroutine::{yield_now, Loading},
+    filesystem::Filesystem,
+    Coroutine, GameError, GameResult,
+};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
-use std::{collections::HashMap, io::Read, path::Path};
+use std::{
+    collections::HashMap,
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 /// Font data that can be used to create a new font in [`GraphicsContext`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FontData {
     pub(crate) font: ab_glyph::FontArc,
 }
@@ -23,6 +32,29 @@ impl FontData {
         Ok(FontData {
             font: ab_glyph::FontArc::try_from_vec(bytes)?,
         })
+    }
+
+    /// Loads font data from a given path in the filesystem except async.
+    #[allow(unsafe_code)]
+    pub fn from_path_async<C: Has<Filesystem> + 'static>(
+        path: impl Into<PathBuf>,
+    ) -> Loading<Self, C> {
+        let path: PathBuf = path.into();
+        Loading::new(Coroutine::<_, C>::new(move |ctx| async move {
+            let fs: &Filesystem = (*ctx).retrieve();
+            let mut bytes_coroutine = fs.read_to_end_async(path);
+            let bytes = loop {
+                if let Some(bytes) = bytes_coroutine.poll(&mut ()) {
+                    break bytes;
+                }
+                yield_now().await;
+            }?;
+
+            // Loading the bytes on a separate thread doesn't seem possible (as of now at least).
+            Ok(FontData {
+                font: ab_glyph::FontArc::try_from_vec(bytes)?,
+            })
+        }))
     }
 
     /// Loads font data from owned bytes.

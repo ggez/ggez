@@ -1,7 +1,7 @@
 //! How to draw a 3D cube in ggez.
 //!
-//! ggez doesn't provide any 3D drawing itself, but it exposes
-//! the underlying `gfx-rs` data types, so you can bypass ggez's
+//! ggez provide's 3D drawing itself, but this may not be suitable for all cases,
+//! so ggez exposes the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
 use crevice::std140::AsStd140;

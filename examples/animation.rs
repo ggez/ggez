@@ -5,6 +5,7 @@
 #[macro_use]
 extern crate num_derive;
 
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::glam::*;
 use ggez::graphics::{self, Color};
@@ -19,7 +20,7 @@ use std::path;
 
 struct MainState {
     ball: graphics::Mesh,
-    spritesheet: graphics::Image,
+    spritesheet: Loading<graphics::Image>,
     easing_enum: EasingEnum,
     animation_type: AnimationType,
     ball_animation: AnimationSequence<Point2<f32>>,
@@ -234,7 +235,7 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        let img = graphics::Image::from_path(ctx, "/player_sheet.png")?;
+        let img = graphics::Image::from_path_async("/player_sheet.png");
         let s = MainState {
             ball,
             spritesheet: img,
@@ -262,6 +263,8 @@ impl event::EventHandler for MainState {
         self.ball_animation.advance_and_maybe_reverse(secs);
         // advance the player animation and wrap around back to the beginning once it reaches its end
         self.player_animation.advance_and_maybe_wrap(secs);
+        // Poll the spritesheet
+        self.spritesheet.poll(ctx)?;
         Ok(())
     }
 

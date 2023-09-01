@@ -13,7 +13,10 @@ use std::{
     task::{Poll, Waker},
 };
 
-use crate::{Context, GameResult};
+use crate::{
+    graphics::{Drawable, Drawable3d},
+    Context, GameResult,
+};
 
 enum CoroutineState<T> {
     Future(Pin<Box<dyn Future<Output = T> + 'static>>),
@@ -74,6 +77,8 @@ impl<T, C> Coroutine<T, C> {
 }
 
 /// Used to help with async loading of assets cleanly
+/// Drawable types will be able to be drawn even if not loaded just nothing
+/// will display. This is for convenience.
 #[allow(missing_debug_implementations)]
 pub struct Loading<T, C = Context> {
     pub(crate) coroutine: Coroutine<GameResult<T>, C>,
@@ -106,6 +111,41 @@ impl<T, C> Loading<T, C> {
     /// Get the mutable result if any
     pub fn result_mut(&mut self) -> &mut Option<T> {
         &mut self.result
+    }
+}
+
+impl<T: Drawable, C> Drawable for Loading<T, C> {
+    fn draw(
+        &self,
+        canvas: &mut crate::graphics::Canvas,
+        param: impl Into<crate::graphics::DrawParam>,
+    ) {
+        if let Some(result) = self.result.as_ref() {
+            result.draw(canvas, param)
+        }
+    }
+
+    fn dimensions(
+        &self,
+        gfx: &impl crate::context::Has<crate::graphics::GraphicsContext>,
+    ) -> crate::graphics::Rect {
+        if let Some(result) = self.result.as_ref() {
+            result.dimensions(gfx)
+        } else {
+            crate::graphics::Rect::new(0.0, 0.0, 1.0, 1.0)
+        }
+    }
+}
+
+impl<T: Drawable3d, C> Drawable3d for Loading<T, C> {
+    fn draw(
+        &self,
+        canvas: &mut crate::graphics::Canvas3d,
+        param: impl Into<crate::graphics::DrawParam3d>,
+    ) {
+        if let Some(result) = self.result.as_ref() {
+            result.draw(canvas, param)
+        }
     }
 }
 

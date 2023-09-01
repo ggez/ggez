@@ -243,11 +243,10 @@ struct Assets {
     rock_image: Loading<graphics::Image>,
     shot_sound: Loading<audio::Source>,
     hit_sound: Loading<audio::Source>,
-    white: graphics::Image,
 }
 
 impl Assets {
-    fn new(ctx: &mut Context) -> GameResult<Assets> {
+    fn new(_ctx: &mut Context) -> GameResult<Assets> {
         let player_image = graphics::Image::from_path_async("/player.png");
         let shot_image = graphics::Image::from_path_async("/shot.png");
         let rock_image = graphics::Image::from_path_async("/rock.png");
@@ -261,7 +260,6 @@ impl Assets {
             rock_image,
             shot_sound,
             hit_sound,
-            white: graphics::Image::from_color(ctx, 1, 1, None),
         })
     }
 
@@ -274,11 +272,11 @@ impl Assets {
         Ok(())
     }
 
-    fn actor_image(&self, actor: &Actor) -> &graphics::Image {
+    fn actor_image(&self, actor: &Actor) -> &Loading<graphics::Image> {
         match actor.tag {
-            ActorType::Player => self.player_image.result().as_ref().unwrap_or(&self.white),
-            ActorType::Rock => self.rock_image.result().as_ref().unwrap_or(&self.white),
-            ActorType::Shot => self.shot_image.result().as_ref().unwrap_or(&self.white),
+            ActorType::Player => &self.player_image,
+            ActorType::Rock => &self.rock_image,
+            ActorType::Shot => &self.shot_image,
         }
     }
 }

@@ -1,8 +1,10 @@
 //! Basic hello world example, drawing
 //! to a canvas.
 
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::glam::*;
+use ggez::graphics::FontData;
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
@@ -13,39 +15,44 @@ struct MainState {
     canvas_image: graphics::ScreenImage,
     frames: usize,
     draw_with_canvas: bool,
+    font: Loading<FontData>,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(ctx, "/LiberationMono-Regular.ttf")?,
-        );
         let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
 
         let s = MainState {
             canvas_image,
             draw_with_canvas: false,
             frames: 0,
+            font: graphics::FontData::from_path_async("/LiberationMono-Regular.ttf"),
         };
         Ok(s)
     }
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if let Some(font) = self.font.poll(ctx)? {
+            ctx.gfx.add_font("LiberationMono", font.clone());
+        }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let dest_point = Vec2::new(10.0, 10.0);
 
-        let text = graphics::Text::new("Hello, world!")
-            .set_font("LiberationMono")
-            .set_scale(48.)
-            .clone();
+        let text = if self.font.result().is_some() {
+            graphics::Text::new("Hello, world!")
+                .set_font("LiberationMono")
+                .set_scale(48.)
+                .clone()
+        } else {
+            graphics::Text::new("Hello, world!").set_scale(48.).clone()
+        };
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");

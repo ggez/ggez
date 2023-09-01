@@ -1,6 +1,7 @@
 //! An example demonstrating vertex shaders.
 
 use crevice::std140::AsStd140;
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::glam::*;
 use ggez::graphics::{self, Color, DrawParam};
@@ -14,7 +15,7 @@ struct ShaderUniforms {
 
 struct MainState {
     square_mesh: graphics::Mesh,
-    shader: graphics::Shader,
+    shader: Loading<graphics::Shader>,
     shader_params: graphics::ShaderParams<ShaderUniforms>,
 }
 
@@ -28,7 +29,7 @@ impl MainState {
         )?;
         let shader = graphics::ShaderBuilder::new()
             .vertex_path("/vertex.wgsl")
-            .build(ctx)?;
+            .build_async();
         let shader_params = graphics::ShaderParamsBuilder::new(&ShaderUniforms {
             rotation: Mat4::IDENTITY.into(),
         })
@@ -44,21 +45,25 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        self.shader.poll(ctx)?;
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
-        self.shader_params.set_uniforms(
-            ctx,
-            &ShaderUniforms {
-                rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32()).into(),
-            },
-        );
-        canvas.set_shader(&self.shader);
-        canvas.set_shader_params(&self.shader_params);
+        if let Some(shader) = self.shader.result() {
+            self.shader_params.set_uniforms(
+                ctx,
+                &ShaderUniforms {
+                    rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32())
+                        .into(),
+                },
+            );
+            canvas.set_shader(shader);
+            canvas.set_shader_params(&self.shader_params);
+        }
         canvas.draw(
             &self.square_mesh,
             DrawParam::default().dest(Vec2::new(200.0, 100.0)),

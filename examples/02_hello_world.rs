@@ -1,21 +1,25 @@
 //! Basic hello world example.
 
-use ggez::{event, graphics, Context, GameResult};
+use ggez::{
+    coroutine::Loading,
+    event,
+    graphics::{self, FontData},
+    Context, GameResult,
+};
 use std::{env, path};
 
 // First we make a structure to contain the game's state
 struct MainState {
     frames: usize,
+    font: Loading<FontData>,
 }
 
 impl MainState {
-    fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(ctx, "/LiberationMono-Regular.ttf")?,
-        );
-
-        let s = MainState { frames: 0 };
+    fn new(_ctx: &mut Context) -> GameResult<MainState> {
+        let s = MainState {
+            frames: 0,
+            font: graphics::FontData::from_path_async("/LiberationMono-Regular.ttf"),
+        };
         Ok(s)
     }
 }
@@ -26,7 +30,10 @@ impl MainState {
 // The `EventHandler` trait also contains callbacks for event handling
 // that you can override if you wish, but the defaults are fine.
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if let Some(font) = self.font.poll(ctx)? {
+            ctx.gfx.add_font("LiberationMono", font.clone());
+        }
         Ok(())
     }
 
@@ -37,12 +44,14 @@ impl event::EventHandler for MainState {
         // Text is drawn from the top-left corner.
         let offset = self.frames as f32 / 10.0;
         let dest_point = ggez::glam::Vec2::new(offset, offset);
-        canvas.draw(
-            graphics::Text::new("Hello, world!")
-                .set_font("LiberationMono")
-                .set_scale(48.),
-            dest_point,
-        );
+        if self.font.result().is_some() {
+            canvas.draw(
+                graphics::Text::new("Hello, world!")
+                    .set_font("LiberationMono")
+                    .set_scale(48.),
+                dest_point,
+            );
+        }
 
         canvas.finish(ctx)?;
 

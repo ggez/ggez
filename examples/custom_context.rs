@@ -1,4 +1,4 @@
-//! The simplest possible example that does something.
+//! The simplest possible example that does something with a custom context.
 #![allow(clippy::unnecessary_wraps)]
 
 use ggez::{

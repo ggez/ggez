@@ -1,4 +1,5 @@
 //! Demonstrates various projection and matrix fiddling/testing.
+use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::glam::*;
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
@@ -14,7 +15,7 @@ const GRID_POINT_RADIUS: f32 = 5.0;
 struct MainState {
     pos_x: f32,
     gridmesh: graphics::Mesh,
-    angle: graphics::Image,
+    angle: Loading<graphics::Image>,
     screen_bounds: Vec<graphics::Rect>,
     screen_bounds_idx: usize,
     screen_coords: graphics::Rect,
@@ -22,7 +23,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let angle = graphics::Image::from_path(ctx, "/angle.png")?;
+        let angle = graphics::Image::from_path_async("/angle.png");
         let gridmesh_builder = &mut graphics::MeshBuilder::new();
         for x in 0..GRID_SIZE {
             for y in 0..GRID_SIZE {

@@ -153,7 +153,7 @@ impl Filesystem {
         _: &str,
         _: &str,
         resources_dir_name: &path::Path,
-        resources_zip_name: &path::Path,
+        _resources_zip_name: &path::Path,
     ) -> GameResult<Filesystem> {
         let root_path: path::PathBuf = Default::default();
         let mut overlay = vfs::OverlayFS::new();

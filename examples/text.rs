@@ -1,7 +1,8 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
+use ggez::coroutine::Loading;
 use ggez::glam::Vec2;
-use ggez::graphics::{self, Color, PxScale, Text, TextAlign, TextFragment};
+use ggez::graphics::{self, Color, FontData, PxScale, Text, TextAlign, TextFragment};
 use ggez::timer;
 use ggez::{
     conf::{WindowMode, WindowSetup},
@@ -23,11 +24,12 @@ struct App {
     // want to retrieve them by trivial handles, and have to preserve ordering.
     texts: BTreeMap<&'static str, Text>,
     rng: oorandom::Rand32,
+    font: Loading<FontData>,
 }
 
 impl App {
     #[allow(clippy::needless_update)]
-    fn new(ctx: &mut Context) -> GameResult<App> {
+    fn new(_ctx: &mut Context) -> GameResult<App> {
         let mut texts = BTreeMap::new();
 
         // We just use a fixed RNG seed for simplicity.
@@ -63,10 +65,7 @@ impl App {
             .add(" another default fragment, to really drive the point home");
 
         // This loads a new TrueType font into the context named "Fancy font".
-        ctx.gfx.add_font(
-            "Fancy font",
-            graphics::FontData::from_path(ctx, "/Tangerine_Regular.ttf")?,
-        );
+        let font = graphics::FontData::from_path_async("/Tangerine_Regular.ttf");
 
         // `Font` is really only an integer handle, and can be copied around.
         text.add(
@@ -125,12 +124,16 @@ impl App {
         }
         texts.insert("3_wonky", wonky_text);
 
-        Ok(App { texts, rng })
+        Ok(App { texts, rng, font })
     }
 }
 
 impl event::EventHandler for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if let Some(font) = self.font.poll(ctx)? {
+            ctx.gfx.add_font("Fancy font", font.clone());
+        }
+
         const DESIRED_FPS: u32 = 60;
         while ctx.time.check_update_time(DESIRED_FPS) {}
         Ok(())
@@ -147,25 +150,27 @@ impl event::EventHandler for App {
             graphics::DrawParam::from([200.0, 0.0]).color(Color::WHITE),
         );
 
-        let mut height = 0.0;
-        for (key, text) in &self.texts {
-            let x = match *key {
-                // (bounds position) + 20
-                "1_demo_text_3" => 500.0 + 20.0,
-                "1_demo_text_4" => (300.0 / 2.0) + 20.0,
-                _ => 20.0,
-            };
-            canvas.draw(text, Vec2::new(x, 20.0 + height));
-            //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + text.dimensions(ctx).h
-        }
+        if self.font.result().is_some() {
+            let mut height = 0.0;
+            for (key, text) in &self.texts {
+                let x = match *key {
+                    // (bounds position) + 20
+                    "1_demo_text_3" => 500.0 + 20.0,
+                    "1_demo_text_4" => (300.0 / 2.0) + 20.0,
+                    _ => 20.0,
+                };
+                canvas.draw(text, Vec2::new(x, 20.0 + height));
+                //height += 20.0 + text.height(ctx) as f32;
+                height += 20.0 + text.dimensions(ctx).h
+            }
 
-        // Individual fragments within the `Text` can be replaced;
-        // this can be used for inlining animated sentences, words, etc.
-        if let Some(text) = self.texts.get_mut("1_demo_text_3") {
-            // `.fragments_mut()` returns a mutable slice of contained fragments.
-            // Fragments are indexed in order of their addition, starting at 0 (of course).
-            text.fragments_mut()[3].color = Some(random_color(&mut self.rng));
+            // Individual fragments within the `Text` can be replaced;
+            // this can be used for inlining animated sentences, words, etc.
+            if let Some(text) = self.texts.get_mut("1_demo_text_3") {
+                // `.fragments_mut()` returns a mutable slice of contained fragments.
+                // Fragments are indexed in order of their addition, starting at 0 (of course).
+                text.fragments_mut()[3].color = Some(random_color(&mut self.rng));
+            }
         }
 
         // Another animation example. Note, this is relatively inefficient as-is.

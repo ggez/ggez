@@ -26,6 +26,10 @@ const DEFAULT_CAPACITY: usize = 16;
 /// Traditionally known as a "batch".
 ///
 /// On web if there is any more than 170 instances it will crash
+/// This is due to how we do instancing on web vertex buffer instances
+/// could allow more but with webgpu coming at some point in the future
+/// we went for the way that requires less reworking till webgpu becomes
+/// prominent
 #[derive(Debug)]
 pub struct InstanceArray {
     pub(crate) buffer: Mutex<ArcBuffer>,
@@ -181,6 +185,11 @@ impl InstanceArray {
                 .iter()
                 .map(|x| DrawUniforms::from_param(x, None).as_std140()),
         );
+    }
+
+    /// Update the image for this instance mainly useful for async loading
+    pub fn set_image(&mut self, image: Image) {
+        self.image = image;
     }
 
     /// Pushes a new instance onto the end.
