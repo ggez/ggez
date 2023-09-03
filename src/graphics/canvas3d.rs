@@ -10,9 +10,9 @@ use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
     internal_canvas3d::{screen_to_mat, InstanceArrayView3d, InternalCanvas3d},
     BlendMode, Color, DrawParam3d, Drawable3d, GraphicsContext, Image, ImageFormat, Mesh3d, Rect,
-    Sampler, ScreenImage, Shader, ShaderParams, WgpuContext, ZIndex,
+    Sampler, ScreenImage, Shader, ShaderParams, WgpuContext,
 };
-use std::{collections::BTreeMap, sync::Arc};
+use std::{cmp::Ordering, sync::Arc};
 
 /// Alpha mode is how to render a given draw. Opaque has no transparency, discard discards transparent pixels under a certain value. Blend will blend them
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,10 +43,11 @@ pub enum AlphaMode {
 pub struct Canvas3d {
     pub(crate) wgpu: Arc<WgpuContext>,
     pub(crate) defaults: DefaultResources3d,
-    draws: BTreeMap<ZIndex, Vec<DrawCommand3d>>,
+    draws: Vec<DrawCommand3d>,
     state: DrawState3d,
     original_state: DrawState3d,
     screen: Option<Rect>,
+    sort_by: fn(&DrawParam3d, &DrawParam3d) -> Ordering,
 
     target: Image,
     target_depth: Image,
@@ -159,10 +160,11 @@ impl Canvas3d {
 
         let mut this = Canvas3d {
             wgpu: gfx.wgpu.clone(),
-            draws: BTreeMap::new(),
+            draws: vec![],
             state: state.clone(),
             original_state: state,
             screen: Some(screen),
+            sort_by: |a, b| a.z.cmp(&b.z),
 
             target,
             target_depth: depth,
@@ -340,6 +342,16 @@ impl Canvas3d {
         self.state.scissor_rect = self.original_state.scissor_rect;
     }
 
+    /// Sets the sorting function for the final draw order of the canvas.
+    /// This is used upon the canvas being finalized (i.e., when [`Canvas3d::finish`] is called).
+    /// As such, it is only necessary to call this once per canvas, and will affect *all* draws in this canvas.
+    ///
+    /// By default, draws will be sorted by the Z index of [`DrawParam3d`].
+    #[inline]
+    pub fn set_sort_by(&mut self, sort_by: fn(&DrawParam3d, &DrawParam3d) -> Ordering) {
+        self.sort_by = sort_by;
+    }
+
     /// Draws the given `Drawable3d` to the canvas with a given `DrawParam3d`.
     #[inline]
     pub fn draw(&mut self, drawable: &impl Drawable3d, param: impl Into<DrawParam3d>) {
@@ -355,7 +367,7 @@ impl Canvas3d {
 
     #[inline]
     pub(crate) fn push_draw(&mut self, draw: Draw3d, param: DrawParam3d) {
-        self.draws.entry(param.z).or_default().push(DrawCommand3d {
+        self.draws.push(DrawCommand3d {
             state: self.state.clone(),
             draw,
             param,
@@ -390,49 +402,50 @@ impl Canvas3d {
             canvas.set_scissor_rect(state.scissor_rect);
         }
 
+        self.draws
+            .sort_by(|a, b| (self.sort_by)(&a.param, &b.param));
+
         canvas.update_uniform(&self.draws);
 
-        for draws in self.draws.values() {
-            for (idx, draw) in draws.iter().enumerate() {
-                if draw.state.shader != state.shader {
-                    canvas.set_shader(draw.state.shader.clone());
-                }
+        for (idx, draw) in self.draws.iter().enumerate() {
+            if draw.state.shader != state.shader {
+                canvas.set_shader(draw.state.shader.clone());
+            }
 
-                if draw.state.params != state.params {
-                    if let Some((bind_group, layout, offset)) = &draw.state.params {
-                        canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
+            if draw.state.params != state.params {
+                if let Some((bind_group, layout, offset)) = &draw.state.params {
+                    canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
+                }
+            }
+
+            if draw.state.sampler != state.sampler {
+                canvas.set_sampler(draw.state.sampler);
+            }
+
+            if draw.state.alpha_mode != state.alpha_mode {
+                canvas.set_alpha_mode(draw.state.alpha_mode);
+            }
+
+            if draw.state.projection != state.projection {
+                canvas.set_projection(draw.state.projection);
+            }
+
+            if draw.state.scissor_rect != state.scissor_rect {
+                canvas.set_scissor_rect(draw.state.scissor_rect);
+            }
+
+            state = draw.state.clone();
+
+            match &draw.draw {
+                Draw3d::Mesh { mesh } => {
+                    if let Some(image) = mesh.texture.clone() {
+                        canvas.draw_mesh(mesh, &image, idx)
+                    } else {
+                        canvas.draw_mesh(mesh, &self.default_resources().image, idx)
                     }
                 }
-
-                if draw.state.sampler != state.sampler {
-                    canvas.set_sampler(draw.state.sampler);
-                }
-
-                if draw.state.alpha_mode != state.alpha_mode {
-                    canvas.set_alpha_mode(draw.state.alpha_mode);
-                }
-
-                if draw.state.projection != state.projection {
-                    canvas.set_projection(draw.state.projection);
-                }
-
-                if draw.state.scissor_rect != state.scissor_rect {
-                    canvas.set_scissor_rect(draw.state.scissor_rect);
-                }
-
-                state = draw.state.clone();
-
-                match &draw.draw {
-                    Draw3d::Mesh { mesh } => {
-                        if let Some(image) = mesh.texture.clone() {
-                            canvas.draw_mesh(mesh, &image, idx)
-                        } else {
-                            canvas.draw_mesh(mesh, &self.default_resources().image, idx)
-                        }
-                    }
-                    Draw3d::MeshInstances { mesh, instances } => {
-                        canvas.draw_mesh_instances(mesh, instances, draw.param)?
-                    }
+                Draw3d::MeshInstances { mesh, instances } => {
+                    canvas.draw_mesh_instances(mesh, instances, draw.param)?
                 }
             }
         }

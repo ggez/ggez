@@ -9,7 +9,7 @@ use super::{
 };
 use crevice::std140::AsStd140;
 use std::{
-    collections::BTreeMap,
+    cmp::Ordering,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering::SeqCst},
         Mutex,
@@ -33,6 +33,7 @@ pub struct InstanceArray {
     capacity: AtomicUsize,
     uniforms: Vec<Std140DrawUniforms>,
     params: Vec<DrawParam>,
+    sort_by: fn(&DrawParam, &DrawParam) -> Ordering,
 }
 
 impl InstanceArray {
@@ -136,6 +137,7 @@ impl InstanceArray {
             capacity: AtomicUsize::new(capacity),
             uniforms,
             params,
+            sort_by: |a, b| a.z.cmp(&b.z),
         }
     }
 
@@ -224,11 +226,9 @@ impl InstanceArray {
         );
 
         if self.ordered {
-            let mut layers = BTreeMap::<_, Vec<_>>::new();
-            for (i, param) in self.params.iter().enumerate() {
-                layers.entry(param.z).or_default().push(i as u32);
-            }
-            let indices = layers.into_values().flatten().collect::<Vec<_>>();
+            let mut sorted: Vec<_> = self.params.iter().enumerate().collect();
+            sorted.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
+            let indices: Vec<_> = sorted.iter().map(|(i, _)| *i as u32).collect();
             wgpu.queue.write_buffer(
                 &self.indices.lock().unwrap(),
                 0,
@@ -280,6 +280,15 @@ impl InstanceArray {
     #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity.load(SeqCst)
+    }
+
+    /// Sets the sorting function for the final draw order of the instance array.
+    /// This is used upon the instance array being drawn to a canvas.
+    ///
+    /// By default, draws will be sorted by the Z index of [`DrawParam`].
+    #[inline]
+    pub fn set_sort_by(&mut self, sort_by: fn(&DrawParam, &DrawParam) -> Ordering) {
+        self.sort_by = sort_by;
     }
 
     /// This is equivalent to `<InstanceArray as Drawable>::dimensions()` (see [`Drawable::dimensions()`]), but with a mesh taken into account.
