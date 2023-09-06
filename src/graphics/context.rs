@@ -760,6 +760,7 @@ impl GraphicsContext {
                 &self.wgpu.device,
                 &layout,
                 RenderPipelineInfo {
+                    layout_id: layout.id(),
                     vs: self.copy_shader.clone(),
                     fs: self.copy_shader.clone(),
                     vs_entry: "vs_main".into(),

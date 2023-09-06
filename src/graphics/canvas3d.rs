@@ -415,6 +415,8 @@ impl Canvas3d {
             if draw.state.params != state.params {
                 if let Some((bind_group, layout, offset)) = &draw.state.params {
                     canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
+                } else {
+                    canvas.reset_shader_params();
                 }
             }
 
