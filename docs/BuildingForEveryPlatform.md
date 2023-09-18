@@ -71,7 +71,7 @@ yum install alsa-lib-devel
 ### Fedora
 
 ```sh
-dnf install rust-libudev-devel rust-libudev-sys-devel alsa-lib-devel pkgconf-pkg-config
+dnf install systemd-devel alsa-lib-devel pkgconf-pkg-config
 ```
 
 ## Distributing
