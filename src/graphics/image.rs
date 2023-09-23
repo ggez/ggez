@@ -353,7 +353,7 @@ impl Image {
         sampler: ArcSampler,
         device: &wgpu::Device,
     ) -> ArcBindGroup {
-        if self.cache.read().is_ok_and(|x| x.contains_key(&sample_id)) {
+        if self.cache.read().as_ref().ok().map(|x| x.contains_key(&sample_id)).unwrap_or(false) {
             self.cache.read().unwrap().get(&sample_id).unwrap().clone() // Should be fine since we already checked if it's ok and contains key
         } else {
             let mut cache = self.cache.write().unwrap(); // Should be fine since ggez doesn't do any async stuff atm
