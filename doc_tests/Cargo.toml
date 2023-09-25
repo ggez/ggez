@@ -1,0 +1,16 @@
+[package]
+name = "doc_tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+skeptic = "0.13"
+
+
+[dev-dependencies]
+ggez = { path = ".." }
+
+rand = "0.8"
+oorandom = "11"
+skeptic = "0.13"
