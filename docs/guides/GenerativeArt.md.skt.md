@@ -24,7 +24,7 @@ impl State {{
     }}
 }}
 
-impl event::EventHandler<GameError> for State {{
+impl event::EventHandler for State {{
     fn update(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}
@@ -123,7 +123,7 @@ struct State {{
     shapes: Vec<Shape>,
 }}
 
-impl event::EventHandler<GameError> for State {{
+impl event::EventHandler for State {{
     fn update(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}
