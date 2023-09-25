@@ -367,21 +367,24 @@ impl Image {
         sampler: ArcSampler,
         device: &wgpu::Device,
     ) -> ArcBindGroup {
-        if self.cache.read().is_ok_and(|x| x.contains_key(&sample_id)) {
-            self.cache.read().unwrap().get(&sample_id).unwrap().clone() // Should be fine since we already checked if it's ok and contains key
-        } else {
-            let mut cache = self.cache.write().unwrap(); // Should be fine since ggez doesn't do any async stuff atm
-            cache
-                .insert(
-                    sample_id,
-                    BindGroupBuilder::new()
-                        .image(&self.view, wgpu::ShaderStages::FRAGMENT)
-                        .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
-                        .create_uncached(device)
-                        .0,
-                )
-                .unwrap_or(cache.get(&sample_id).unwrap().clone()) // Should be fine since we just inserted the key into the btree
+        // Fast path: already in cache
+        if let Some(buffer) = self.cache.read().unwrap().get(&sample_id) {
+            return buffer.clone();
         }
+
+        // Slow path
+        self.cache
+            .write()
+            .unwrap()
+            .entry(sample_id)
+            .or_insert_with(|| {
+                BindGroupBuilder::new()
+                    .image(&self.view, wgpu::ShaderStages::FRAGMENT)
+                    .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
+                    .create_uncached(device)
+                    .0
+            })
+            .clone()
     }
 }
 
