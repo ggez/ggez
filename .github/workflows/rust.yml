@@ -48,6 +48,10 @@ jobs:
       env:
         RUSTFLAGS: "-D warnings"
 
+    - name: Test documentation
+      if: ${{ runner.os == 'Linux' }}
+      run: cargo test -p doc_tests
+
   rustfmt:
     runs-on: ubuntu-20.04
     steps:
