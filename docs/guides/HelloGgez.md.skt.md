@@ -41,7 +41,7 @@ struct State {{
     pub dt: Duration,
 }}
 
-impl event::EventHandler<GameError> for State {{
+impl event::EventHandler for State {{
     fn draw(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}

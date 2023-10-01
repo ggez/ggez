@@ -83,7 +83,7 @@ Let's add `EventHandler` to our `src/main.rs` file:
 ```rust,skt-definition,no_run
 struct State {}
 
-impl ggez::event::EventHandler<GameError> for State {
+impl ggez::event::EventHandler for State {
   fn update(&mut self, ctx: &mut Context) -> GameResult {
       Ok(())
   }

@@ -32,6 +32,9 @@
 //! directory isolation is intended for convenience, not security, so
 //! don't assume it will be secure.
 
+// FIXME: Investigate why an `Arc` exists in the first place
+#![allow(clippy::arc_with_non_send_sync)]
+
 use crate::{
     conf,
     vfs::{self, OverlayFS, VFS},

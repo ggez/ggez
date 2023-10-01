@@ -1,7 +1,7 @@
 //! The simplest possible example that does something.
 #![allow(clippy::unnecessary_wraps)]
 
-use std::{cell::Cell, sync::Arc};
+use std::{cell::Cell, rc::Rc};
 
 use ggez::{
     coroutine::yield_now,
@@ -12,7 +12,7 @@ use ggez::{
 };
 
 struct MainState {
-    pos_x: Arc<Cell<f32>>,
+    pos_x: Rc<Cell<f32>>,
     circle: graphics::Mesh,
     coroutine: Coroutine,
     slow_coroutine: Coroutine<String>,
@@ -29,10 +29,10 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        let pos_x = Arc::new(Cell::new(0.0));
+        let pos_x = Rc::new(Cell::new(0.0));
 
         Ok(MainState {
-            pos_x: Arc::clone(&pos_x),
+            pos_x: Rc::clone(&pos_x),
             circle,
             coroutine: Coroutine::new(async move {
                 loop {

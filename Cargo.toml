@@ -6,17 +6,12 @@ homepage = "https://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
 keywords = ["ggez", "graphics", "2D", "game", "engine"]
-authors = [
-   "Rafael Epplee <raffomania@gmail.com>",
-   "Sven-Hendrik Haase <svenstaro@gmail.com>",
-   "Simon Heath <icefoxen@gmail.com>",
-]
+authors = ["Rafael Epplee <raffomania@gmail.com>", "Sven-Hendrik Haase <svenstaro@gmail.com>", "Simon Heath <icefoxen@gmail.com>"]
 
 edition = "2021"
 license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]
-build = "build.rs"
 exclude = ["docs", "resources", "!LiberationMono-Regular.ttf"]
 
 [lib]
@@ -42,22 +37,8 @@ directories = "5.0"
 wgpu = "0.17"
 glyph_brush = "0.7"
 winit = { version = "0.28.3", features = ["serde"] }
-image = { version = "0.24", default-features = false, features = [
-   "gif",
-   "png",
-   "pnm",
-   "tga",
-   "tiff",
-   "webp",
-   "bmp",
-   "dxt",
-   "jpeg",
-] }
-rodio = { version = "0.17", optional = true, default-features = false, features = [
-   "flac",
-   "vorbis",
-   "wav",
-] }
+image = { version = "0.24", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", "jpeg"] }
+rodio = { version = "0.17", optional = true, default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 log = "0.4"
@@ -93,5 +74,5 @@ num-derive = "0.3"
 skeptic = "0.13"
 getrandom = "0.2"
 
-[build-dependencies]
-skeptic = "0.13"
+[workspace]
+members = ["doc_tests"]
