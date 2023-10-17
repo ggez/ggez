@@ -230,7 +230,7 @@ impl Filesystem {
     /// Opens the given `path` and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
-        self.vfs().open(path.as_ref()).map(|f| File::VfsFile(f))
+        self.vfs().open(path.as_ref()).map(File::VfsFile)
     }
 
     /// Opens a file in the user directory with the given
@@ -244,7 +244,7 @@ impl Filesystem {
     ) -> GameResult<File> {
         self.vfs()
             .open_options(path.as_ref(), options)
-            .map(|f| File::VfsFile(f))
+            .map(File::VfsFile)
             .map_err(|e| {
                 GameError::ResourceLoadError(format!(
                     "Tried to open {:?} but got error: {:?}",
@@ -257,7 +257,7 @@ impl Filesystem {
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
     pub fn create<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
-        self.vfs().create(path.as_ref()).map(|f| File::VfsFile(f))
+        self.vfs().create(path.as_ref()).map(File::VfsFile)
     }
 
     /// Create an empty directory in the user dir
