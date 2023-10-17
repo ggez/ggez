@@ -56,8 +56,6 @@ impl Aabb {
     /// Create an `Aabb` from a minimum point and a maximum point
     #[inline]
     pub fn from_min_max(minimum: Vec3, maximum: Vec3) -> Self {
-        let minimum = minimum;
-        let maximum = maximum;
         let center = 0.5 * (maximum + minimum);
         let half_extents = 0.5 * (maximum - minimum);
         Self {
