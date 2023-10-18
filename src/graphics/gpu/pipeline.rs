@@ -4,6 +4,7 @@ use std::collections::{hash_map::DefaultHasher, HashMap};
 /// Hashable representation of a render pipeline, used as a key in the HashMap cache.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RenderPipelineInfo {
+    pub layout_id: u64,
     pub vs: ArcShaderModule,
     pub fs: ArcShaderModule,
     pub vs_entry: String,

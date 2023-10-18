@@ -240,6 +240,12 @@ impl<'a> InternalCanvas<'a> {
         self.shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout, offset));
     }
 
+    pub fn reset_shader_params(&mut self) {
+        self.flush_text();
+        self.dirty_pipeline = true;
+        self.shader_bind_group = None;
+    }
+
     pub fn set_shader(&mut self, shader: Shader) {
         self.flush_text();
         self.dirty_pipeline = true;
@@ -256,6 +262,12 @@ impl<'a> InternalCanvas<'a> {
         self.dirty_pipeline = true;
         self.text_shader_bind_group =
             Some((self.arenas.bind_groups.alloc(bind_group), layout, offset));
+    }
+
+    pub fn reset_text_shader_params(&mut self) {
+        self.flush_text();
+        self.dirty_pipeline = true;
+        self.text_shader_bind_group = None;
     }
 
     pub fn set_text_shader(&mut self, shader: Shader) {
@@ -585,6 +597,7 @@ impl<'a> InternalCanvas<'a> {
                     &self.wgpu.device,
                     layout.as_ref(),
                     RenderPipelineInfo {
+                        layout_id: layout.id(),
                         vs: if let Some(vs_module) = &shader.vs_module {
                             vs_module.clone()
                         } else {

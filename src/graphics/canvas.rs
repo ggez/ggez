@@ -483,6 +483,8 @@ impl Canvas {
             if draw.state.params != state.params {
                 if let Some((bind_group, layout, offset)) = &draw.state.params {
                     canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
+                } else {
+                    canvas.reset_shader_params();
                 }
             }
 
@@ -493,6 +495,8 @@ impl Canvas {
             if draw.state.text_params != state.text_params {
                 if let Some((bind_group, layout, offset)) = &draw.state.text_params {
                     canvas.set_text_shader_params(bind_group.clone(), layout.clone(), *offset);
+                } else {
+                    canvas.reset_text_shader_params();
                 }
             }
 
