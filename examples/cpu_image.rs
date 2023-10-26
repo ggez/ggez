@@ -23,6 +23,10 @@ impl MainState {
             og_image.width(),
             og_image.height(),
         );
+        match image.encode(ctx, image::ImageFormat::Png, "/wabbit_alpha_repeated.png") {
+            Ok(_) => println!("Image saved"),
+            Err(e) => println!("Error saving image: {}", e),
+        }
         Ok(MainState { image })
     }
 }
