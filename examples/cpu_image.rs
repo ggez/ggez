@@ -59,6 +59,12 @@ pub fn main() -> GameResult {
 
     let cb = ggez::ContextBuilder::new("cpu_image", "ggez").add_resource_path(resource_dir);
     let (mut ctx, event_loop) = cb.build()?;
+
+    println!("Full filesystem info: {:#?}", ctx.fs);
+
+    println!("Resource stats:");
+    ctx.fs.print_all();
+
     let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }
