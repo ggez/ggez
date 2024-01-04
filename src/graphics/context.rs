@@ -115,7 +115,7 @@ impl GraphicsContext {
         let new_instance = |backends| {
             wgpu::Instance::new(wgpu::InstanceDescriptor {
                 backends,
-                dx12_shader_compiler: Default::default(),
+                ..Default::default()
             })
         };
 
@@ -743,10 +743,12 @@ impl GraphicsContext {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
             });
 
             let sampler = &mut self
