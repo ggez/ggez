@@ -297,17 +297,19 @@ impl event::EventHandler for MainState {
                             graphics::LinearColor::from(graphics::Color::new(0.1, 0.1, 0.1, 1.0))
                                 .into(),
                         ),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: depth.wgpu().1,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.),
-                        store: false,
+                        store: wgpu::StoreOp::Discard,
                     }),
                     stencil_ops: None,
                 }),
+                occlusion_query_set: None,
+                timestamp_writes: None,
             });
 
             pass.set_pipeline(&self.pipeline);

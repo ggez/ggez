@@ -77,10 +77,12 @@ impl<'a> InternalCanvas<'a> {
                             None => wgpu::LoadOp::Load,
                             Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
             })
         })
     }
@@ -120,10 +122,12 @@ impl<'a> InternalCanvas<'a> {
                             None => wgpu::LoadOp::Load,
                             Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
             })
         })
     }

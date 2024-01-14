@@ -34,7 +34,7 @@ obj = ["obj-rs", "3d"]
 bitflags = "2.1"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 directories = "5.0"
-wgpu = "0.17"
+wgpu = "0.18"
 glyph_brush = "0.7"
 winit = { version = "0.28.3", features = ["serde"] }
 image = { version = "0.24", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", "jpeg"] }
@@ -44,7 +44,7 @@ toml = "0.5"
 log = "0.4"
 lyon = "1.0"
 smart-default = "0.7"
-glam = { version = "0.24", features = ["mint"] }
+glam = { version = "0.25", features = ["mint"] }
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5.9"
 gilrs = { version = "0.10", optional = true }
@@ -52,9 +52,9 @@ approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
 pollster = "0.3"
 memoffset = "0.9"
-crevice = "0.13"
+crevice = "0.14"
 typed-arena = "2.0"
-ordered-float = "3.3"
+ordered-float = "4.2"
 percent-encoding = { version = "2.3.0", optional = true }
 base64 = { version = "0.21.2", optional = true }
 gltf = { version = "1.2.0", optional = true, default-features = false, features = ["utils"] }
@@ -69,7 +69,7 @@ argh = "0.1"
 rand = "0.8"
 keyframe = "1"
 keyframe_derive = "1"
-num-derive = "0.3"
+num-derive = "0.4"
 
 skeptic = "0.13"
 getrandom = "0.2"

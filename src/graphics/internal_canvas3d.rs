@@ -72,17 +72,19 @@ impl<'a> InternalCanvas3d<'a> {
                             None => wgpu::LoadOp::Load,
                             Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: depth.wgpu().1,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     }),
                     stencil_ops: None,
                 }),
+                occlusion_query_set: None,
+                timestamp_writes: None,
             })
         })
     }
@@ -123,17 +125,19 @@ impl<'a> InternalCanvas3d<'a> {
                             None => wgpu::LoadOp::Load,
                             Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: depth.wgpu().1,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     }),
                     stencil_ops: None,
                 }),
+                occlusion_query_set: None,
+                timestamp_writes: None,
             })
         })
     }
