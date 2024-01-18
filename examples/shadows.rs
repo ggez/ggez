@@ -158,7 +158,7 @@ impl MainState {
 
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
-        let mut canvas = Canvas::from_image(ctx, self.occlusions.clone(), None);
+        let mut canvas = Canvas::from_image(ctx, &self.occlusions, None);
         canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_shader(&self.occlusions_shader);
         canvas.set_shader_params(&self.light_list[light_idx].1);
@@ -228,7 +228,7 @@ impl event::EventHandler for MainState {
         //  - run the occlusions shader to determine where the shadows are
         //  - render to screen once all the shadows are calculated and rendered
         let foreground = self.foreground.image(ctx);
-        let mut canvas = Canvas::from_image(ctx, foreground, Color::new(0.0, 0.0, 0.0, 0.0));
+        let mut canvas = Canvas::from_image(ctx, &foreground, Color::new(0.0, 0.0, 0.0, 0.0));
         canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(598.0, 124.0)));
         canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(92.0, 350.0)));
         canvas.draw(

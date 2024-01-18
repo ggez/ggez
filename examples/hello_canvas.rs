@@ -52,7 +52,7 @@ impl event::EventHandler for MainState {
             let canvas_image = self.canvas_image.image(ctx);
             let mut canvas = graphics::Canvas::from_image(
                 ctx,
-                canvas_image.clone(),
+                &canvas_image,
                 graphics::Color::from((255, 255, 255, 128)),
             );
 
