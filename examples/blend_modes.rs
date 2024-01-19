@@ -142,8 +142,7 @@ impl EventHandler for MainState {
 
         // draw everything onto self.layer
         let layer = self.layer.image(ctx);
-        let mut canvas =
-            graphics::Canvas::from_image(ctx, &layer, Color::new(0., 0., 0., 0.));
+        let mut canvas = graphics::Canvas::from_image(ctx, &layer, Color::new(0., 0., 0., 0.));
         self.draw_venn_diagrams(ctx, (w, h), &mut canvas)?;
         canvas.finish(ctx)?;
 
