@@ -36,8 +36,16 @@ fn vs_main(
     var out: VertexOutput;
     out.tex_coord = model.tex_coords;
     out.clip_position = uniforms.camera_transform * uniforms.model_transform * vec4<f32>(model.position, 1.0);
-    out.color = uniforms.color;
+
+    // convert to linear
+    var threshold = uniforms.color.rgb < vec3<f32>(0.04045);
+    var hi = pow((uniforms.color.rgb + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4));
+    var lo = uniforms.color.rgb * vec3<f32>(12.92);
+    var linear_color = vec4<f32>(select(hi, lo, threshold), uniforms.color.a);
+    out.color = linear_color;
+    
     out.vertex_color = model.color;
+    
     return out;
 }
 

@@ -2,7 +2,7 @@ use glam::{Mat4, Vec3, Vec4};
 
 use crate::graphics::{Canvas3d, Color};
 
-use super::{LinearColor, ZIndex};
+use super::ZIndex;
 
 /// A 3d version of `DrawParam` used for transformation of 3d meshes
 #[derive(Clone, Copy, Debug)]
@@ -374,10 +374,9 @@ impl DrawUniforms3d {
             Transform3d::Matrix(m) => param.transform(Transform3d::Matrix(m)),
         };
 
-        let color = LinearColor::from(param.color);
-
         DrawUniforms3d {
-            color: Vec4::from_array(color.into()),
+            // Draw and per-instance tints are converted to linear in the vertex shader.
+            color: Vec4::from_array(param.color.into()),
             model_transform: param.transform.to_bare_matrix_glam(),
             camera_transform: Mat4::IDENTITY,
         }

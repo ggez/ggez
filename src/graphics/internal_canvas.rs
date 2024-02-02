@@ -410,7 +410,7 @@ impl<'a> InternalCanvas<'a> {
         let uniforms = InstanceUniforms {
             // image scaling is non-sensical for instance array itself as the image scaling is applied locally (see below)
             transform: self.transform * DrawUniforms::from_param(&param, None).transform,
-            color: Vec4::from_array(param.color.into()),
+            color: Vec4::from_array(LinearColor::from(param.color).into()),
             // this is the actual image scale that we apply in the vertex shader.
             // we can't apply this when we first convert the instance array drawparams because we don't know the image size at the time the user inserts the drawparams.
             // we also can't apply image scaling in the global instance transform as it *must* be applied in local space.
