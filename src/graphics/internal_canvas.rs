@@ -410,6 +410,8 @@ impl<'a> InternalCanvas<'a> {
 
         self.set_image(instances.image.clone());
 
+        let color = LinearColor::from(param.color);
+
         let uniforms = InstanceUniforms {
             transform: (self.transform
                 * glam::Mat4::from(
@@ -418,10 +420,10 @@ impl<'a> InternalCanvas<'a> {
                 ))
             .into(),
             color: mint::Vector4::<f32> {
-                x: param.color.r,
-                y: param.color.g,
-                z: param.color.b,
-                w: param.color.a,
+                x: color.r,
+                y: color.g,
+                z: color.b,
+                w: color.a,
             },
             // this is the actual image scale that we apply in the vertex shader.
             // we can't apply this when we first convert the instance array drawparams because we don't know the image size at the time the user inserts the drawparams.
