@@ -114,10 +114,8 @@ impl MainState {
 
         let light_list = vec![(torch, torch_params), (static_light, static_light_params)];
 
-        let color_format = ctx.gfx.surface_format();
         let foreground = graphics::ScreenImage::new(ctx, 1., 1., 1);
-        let occlusions =
-            graphics::Image::new_canvas_image(ctx, color_format, LIGHT_RAY_COUNT.into(), 1, 1);
+        let occlusions = graphics::Image::new_canvas_image(ctx, LIGHT_RAY_COUNT.into(), 1, 1);
         let shadows = graphics::ScreenImage::new(ctx, 1., 1., 1);
         let lights = graphics::ScreenImage::new(ctx, 1., 1., 1);
 

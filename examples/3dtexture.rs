@@ -1,6 +1,6 @@
 use std::{env, path};
 
-use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Image, ImageFormat, Mesh3d, Mesh3dBuilder};
+use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Image, Mesh3d, Mesh3dBuilder};
 
 use ggez::input::keyboard::KeyCode;
 use ggez::{
@@ -25,7 +25,7 @@ impl MainState {
         let mut static_camera = Camera3d::default();
 
         let mesh = Mesh3dBuilder::new().cube(Vec3::splat(10.0)).build(ctx);
-        let canvas_image = Image::new_canvas_image(ctx, ImageFormat::Bgra8UnormSrgb, 320, 240, 1);
+        let canvas_image = Image::new_canvas_image(ctx, 320, 240, 1);
         let mesh_two = Mesh3dBuilder::new()
             .cube(Vec3::splat(10.0))
             .texture(canvas_image.clone())

@@ -9,8 +9,8 @@ use crate::{
 use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
     internal_canvas3d::{screen_to_mat, InstanceArrayView3d, InternalCanvas3d},
-    BlendMode, Color, DrawParam3d, Drawable3d, GraphicsContext, Image, ImageFormat, Mesh3d, Rect,
-    Sampler, ScreenImage, Shader, ShaderParams, WgpuContext,
+    BlendMode, Color, DrawParam3d, Drawable3d, GraphicsContext, Image, Mesh3d, Rect, Sampler,
+    ScreenImage, Shader, ShaderParams, WgpuContext,
 };
 use std::{cmp::Ordering, sync::Arc};
 
@@ -132,13 +132,7 @@ impl Canvas3d {
         resolve: Option<Image>,
         clear: Option<Color>,
     ) -> Self {
-        let depth = Image::new_canvas_image(
-            gfx,
-            ImageFormat::Depth32Float,
-            target.width(),
-            target.height(),
-            1,
-        );
+        let depth = Image::new_depth_canvas_image(gfx, target.width(), target.height(), 1);
 
         let gfx = gfx.retrieve();
 

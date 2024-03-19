@@ -37,7 +37,7 @@ pub struct Image {
 
 impl Image {
     /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
-    pub fn new_canvas_image(
+    pub(crate) fn new_canvas_image_raw(
         gfx: &impl Has<GraphicsContext>,
         format: ImageFormat,
         width: u32,
@@ -55,6 +55,28 @@ impl Image {
                 | wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_SRC,
         )
+    }
+
+    /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
+    pub fn new_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::new_canvas_image_raw(gfx, gfx.surface_format(), width, height, samples)
+    }
+
+    /// Creates a new depth image specifically for use with a [Canvas](crate::graphics::Canvas).
+    pub fn new_depth_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::new_canvas_image_raw(gfx, ImageFormat::Depth32Float, width, height, samples)
     }
 
     /// A little helper function that creates a blank [`Image`] that is of the given width and height and optional color.
@@ -456,7 +478,7 @@ impl ScreenImage {
     ///
     /// Format is Rgba8UnormSrgb
     pub fn new(gfx: &impl Has<GraphicsContext>, width: f32, height: f32, samples: u32) -> Self {
-        Self::new_raw(gfx, ImageFormat::Rgba8UnormSrgb, width, height, samples)
+        Self::new_raw(gfx, ImageFormat::Bgra8UnormSrgb, width, height, samples)
     }
 
     /// Creates a new [`ScreenImage`] with the given parameters.
@@ -492,6 +514,6 @@ impl ScreenImage {
         samples: u32,
     ) -> Image {
         let (width, height) = Self::size(gfx, size);
-        Image::new_canvas_image(gfx, format, width, height, samples)
+        Image::new_canvas_image_raw(gfx, format, width, height, samples)
     }
 }
