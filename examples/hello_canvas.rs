@@ -23,7 +23,7 @@ impl MainState {
             "LiberationMono",
             graphics::FontData::from_path(ctx, "/LiberationMono-Regular.ttf")?,
         );
-        let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
+        let canvas_image = graphics::ScreenImage::new(ctx, 1., 1., 1);
 
         let s = MainState {
             canvas_image,

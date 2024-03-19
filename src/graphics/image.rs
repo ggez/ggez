@@ -427,7 +427,7 @@ impl ScreenImage {
     /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
     ///
     /// If `format` is `None` then the format will be inferred from the surface format.
-    pub fn new(
+    pub fn new_raw(
         gfx: &impl Has<GraphicsContext>,
         format: impl Into<Option<ImageFormat>>,
         width: f32,
@@ -447,6 +447,26 @@ impl ScreenImage {
             size: (width, height),
             samples,
         }
+    }
+
+    /// Creates a new [`ScreenImage`] with the given parameters.
+    ///
+    /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
+    /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// Format is Rgba8UnormSrgb
+    pub fn new(gfx: &impl Has<GraphicsContext>, width: f32, height: f32, samples: u32) -> Self {
+        Self::new_raw(gfx, ImageFormat::Rgba8UnormSrgb, width, height, samples)
+    }
+
+    /// Creates a new [`ScreenImage`] with the given parameters.
+    ///
+    /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
+    /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// Format is Depth32Float
+    pub fn new_depth(gfx: &impl Has<GraphicsContext>) -> Self {
+        ScreenImage::new_raw(gfx, ImageFormat::Depth32Float, 1., 1., 1)
     }
 
     /// Returns the inner [Image], also recreating it if the framebuffer has been resized.

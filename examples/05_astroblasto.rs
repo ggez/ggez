@@ -336,8 +336,7 @@ impl MainState {
         let rocks = create_rocks(&mut rng, 5, player.pos, 100.0, 250.0);
 
         let (width, height) = ctx.gfx.drawable_size();
-        let screen =
-            graphics::ScreenImage::new(ctx, graphics::ImageFormat::Rgba8UnormSrgb, 1., 1., 1);
+        let screen = graphics::ScreenImage::new(ctx, 1., 1., 1);
 
         let s = MainState {
             screen,

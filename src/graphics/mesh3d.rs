@@ -969,6 +969,8 @@ impl Model {
         buffer_data: &mut Vec<Vec<u8>>,
         gfx: &mut GraphicsContext,
     ) -> GameResult {
+        use super::ImageEncodingFormat;
+
         let transform = parent_transform * transform_to_matrix(node.transform());
         for child in node.children() {
             Model::read_node(meshes, &child, transform, buffer_data, gfx)?;
@@ -991,8 +993,8 @@ impl Model {
                             let mime_type = mime_type.replace('/', ".");
                             let dynamic_img = image::load_from_memory_with_format(
                                 data,
-                                image::ImageFormat::from_path(mime_type)
-                                    .unwrap_or(image::ImageFormat::Png),
+                                ImageEncodingFormat::from_path(mime_type)
+                                    .unwrap_or(ImageEncodingFormat::Png),
                             )
                             .unwrap_or_default()
                             .into_rgba8();
@@ -1019,8 +1021,8 @@ impl Model {
                             };
                             let dynamic_img = image::load_from_memory_with_format(
                                 bytes.as_bytes(),
-                                image::ImageFormat::from_path(mime_type.unwrap_or_default())
-                                    .unwrap_or(image::ImageFormat::Png),
+                                ImageEncodingFormat::from_path(mime_type.unwrap_or_default())
+                                    .unwrap_or(ImageEncodingFormat::Png),
                             )
                             .unwrap_or_default()
                             .into_rgba8();

@@ -22,7 +22,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let layer = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
+        let layer = graphics::ScreenImage::new(ctx, 1., 1., 1);
 
         let circle = graphics::Mesh::new_circle(
             ctx,
