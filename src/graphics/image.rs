@@ -37,7 +37,7 @@ pub struct Image {
 
 impl Image {
     /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
-    pub fn new_canvas_image(
+    pub(crate) fn new_canvas_image_raw(
         gfx: &impl Has<GraphicsContext>,
         format: ImageFormat,
         width: u32,
@@ -55,6 +55,28 @@ impl Image {
                 | wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_SRC,
         )
+    }
+
+    /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
+    pub fn new_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::new_canvas_image_raw(gfx, gfx.surface_format(), width, height, samples)
+    }
+
+    /// Creates a new depth image specifically for use with a [Canvas](crate::graphics::Canvas).
+    pub fn new_depth_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::new_canvas_image_raw(gfx, ImageFormat::Depth32Float, width, height, samples)
     }
 
     /// A little helper function that creates a blank [`Image`] that is of the given width and height and optional color.
@@ -427,7 +449,7 @@ impl ScreenImage {
     /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
     ///
     /// If `format` is `None` then the format will be inferred from the surface format.
-    pub fn new(
+    pub fn new_raw(
         gfx: &impl Has<GraphicsContext>,
         format: impl Into<Option<ImageFormat>>,
         width: f32,
@@ -447,6 +469,26 @@ impl ScreenImage {
             size: (width, height),
             samples,
         }
+    }
+
+    /// Creates a new [`ScreenImage`] with the given parameters.
+    ///
+    /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
+    /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// Format is Rgba8UnormSrgb
+    pub fn new(gfx: &impl Has<GraphicsContext>, width: f32, height: f32, samples: u32) -> Self {
+        Self::new_raw(gfx, ImageFormat::Bgra8UnormSrgb, width, height, samples)
+    }
+
+    /// Creates a new [`ScreenImage`] with the given parameters.
+    ///
+    /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
+    /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// Format is Depth32Float
+    pub fn new_depth(gfx: &impl Has<GraphicsContext>) -> Self {
+        ScreenImage::new_raw(gfx, ImageFormat::Depth32Float, 1., 1., 1)
     }
 
     /// Returns the inner [Image], also recreating it if the framebuffer has been resized.
@@ -472,6 +514,6 @@ impl ScreenImage {
         samples: u32,
     ) -> Image {
         let (width, height) = Self::size(gfx, size);
-        Image::new_canvas_image(gfx, format, width, height, samples)
+        Image::new_canvas_image_raw(gfx, format, width, height, samples)
     }
 }

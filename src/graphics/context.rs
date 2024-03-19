@@ -516,10 +516,9 @@ impl GraphicsContext {
 
         this.set_window_mode(&conf.window_mode)?;
 
-        this.frame = Some(ScreenImage::new(&this, None, 1., 1., 1));
+        this.frame = Some(ScreenImage::new(&this, 1., 1., 1));
         this.frame_msaa = Some(ScreenImage::new(
             &this,
-            None,
             1.,
             1.,
             u8::from(conf.window_setup.samples).into(),

@@ -245,7 +245,7 @@ impl MainState {
                 ],
             });
 
-        let depth = graphics::ScreenImage::new(ctx, graphics::ImageFormat::Depth32Float, 1., 1., 1);
+        let depth = graphics::ScreenImage::new_depth(ctx);
 
         // FOV, spect ratio, znear, zfar
         let proj = Mat4::perspective_rh(f32::consts::PI / 4.0, 4.0 / 3.0, 1.0, 10.0);

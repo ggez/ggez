@@ -24,7 +24,7 @@ impl MainState {
         let image = graphics::Image::from_path(ctx, "/tile.png").unwrap();
         let mut instances = graphics::InstanceArray::new(ctx, image);
         instances.resize(ctx, 150 * 150);
-        let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
+        let canvas_image = graphics::ScreenImage::new(ctx, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);
         MainState {
