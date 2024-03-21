@@ -44,7 +44,7 @@ toml = "0.5"
 log = "0.4"
 lyon = "1.0"
 smart-default = "0.7"
-glam = { version = "0.25", features = ["mint"] }
+glam = { version = "0.27", features = ["mint"] }
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5.9"
 gilrs = { version = "0.10", optional = true }
@@ -52,11 +52,11 @@ approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
 pollster = "0.3"
 memoffset = "0.9"
-crevice = "0.14"
+crevice = "0.15"
 typed-arena = "2.0"
 ordered-float = "4.2"
 percent-encoding = { version = "2.3.0", optional = true }
-base64 = { version = "0.21.2", optional = true }
+base64 = { version = "0.22", optional = true }
 gltf = { version = "1.2.0", optional = true, default-features = false, features = ["utils"] }
 obj-rs = { version = "0.7.1", optional = true }
 num-traits = "0.2"
