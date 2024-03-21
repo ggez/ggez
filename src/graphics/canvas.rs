@@ -50,7 +50,7 @@ impl Canvas {
     #[inline]
     pub fn from_image(
         gfx: &impl Has<GraphicsContext>,
-        image: Image,
+        image: &Image,
         clear: impl Into<Option<Color>>,
     ) -> Self {
         Canvas::new(gfx, image, None, clear.into())
@@ -65,7 +65,7 @@ impl Canvas {
     ) -> Self {
         let gfx = gfx.retrieve();
         let image = image.image(gfx);
-        Canvas::from_image(gfx, image, clear)
+        Canvas::from_image(gfx, &image, clear)
     }
 
     /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
@@ -74,8 +74,8 @@ impl Canvas {
     #[inline]
     pub fn from_msaa(
         gfx: &impl Has<GraphicsContext>,
-        msaa_image: Image,
-        resolve: Image,
+        msaa_image: &Image,
+        resolve: &Image,
         clear: impl Into<Option<Color>>,
     ) -> Self {
         Canvas::new(gfx, msaa_image, Some(resolve), clear.into())
@@ -91,7 +91,7 @@ impl Canvas {
     ) -> Self {
         let msaa = msaa_image.image(gfx);
         let resolve = resolve.image(gfx);
-        Canvas::from_msaa(gfx, msaa, resolve, clear)
+        Canvas::from_msaa(gfx, &msaa, &resolve, clear)
     }
 
     /// Create a new [Canvas] that renders directly to the window surface.
@@ -103,19 +103,19 @@ impl Canvas {
         let samples = gfx.frame_msaa_image.as_ref().unwrap().samples();
         let (target, resolve) = if samples > 1 {
             (
-                gfx.frame_msaa_image.clone().unwrap(),
-                Some(gfx.frame_image.clone().unwrap()),
+                gfx.frame_msaa_image.as_ref().unwrap(),
+                Some(gfx.frame_image.as_ref().unwrap()),
             )
         } else {
-            (gfx.frame_image.clone().unwrap(), None)
+            (gfx.frame_image.as_ref().unwrap(), None)
         };
         Canvas::new(gfx, target, resolve, clear.into())
     }
 
     fn new(
         gfx: &impl Has<GraphicsContext>,
-        target: Image,
-        resolve: Option<Image>,
+        target: &Image,
+        resolve: Option<&Image>,
         clear: Option<Color>,
     ) -> Self {
         let gfx = gfx.retrieve();
@@ -150,8 +150,8 @@ impl Canvas {
             defaults,
             sort_by: |a, b| a.z.cmp(&b.z),
 
-            target,
-            resolve,
+            target: target.clone(),
+            resolve: resolve.cloned(),
             clear,
 
             queued_texts: Vec::new(),
