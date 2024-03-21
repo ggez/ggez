@@ -322,9 +322,11 @@ impl Image {
         path: impl AsRef<std::path::Path>,
     ) -> GameResult {
         let color = match self.format {
-            ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => ::image::ColorType::Rgba8,
-            ImageFormat::R8Unorm => ::image::ColorType::L8,
-            ImageFormat::R16Unorm => ::image::ColorType::L16,
+            ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => {
+                ::image::ExtendedColorType::Rgba8
+            }
+            ImageFormat::R8Unorm => ::image::ExtendedColorType::L8,
+            ImageFormat::R16Unorm => ::image::ExtendedColorType::L16,
             format => {
                 return Err(GameError::RenderError(format!(
                     "cannot ImageView::encode for the {format:#?} GPU image format"
