@@ -1,4 +1,4 @@
-use super::{Canvas, Color, GraphicsContext, LinearColor, Rect};
+use super::{Canvas, Color, GraphicsContext, Rect};
 use crate::context::Has;
 
 /// A struct that represents where to put a drawable object.
@@ -329,10 +329,14 @@ impl DrawUniforms {
             ),
         };
 
-        let color = LinearColor::from(param.color);
-
         DrawUniforms {
-            color: <[f32; 4]>::from(color).into(),
+            // convert to linear in the shaders
+            color: mint::Vector4 {
+                x: param.color.r,
+                y: param.color.g,
+                z: param.color.b,
+                w: param.color.a,
+            },
             src_rect: mint::Vector4 {
                 x: param.src.x,
                 y: param.src.y,

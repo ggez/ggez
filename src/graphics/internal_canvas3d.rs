@@ -359,14 +359,15 @@ impl<'a> InternalCanvas3d<'a> {
 
         self.set_image(instances.image.clone());
         let draw_uniforms = DrawUniforms3d::from_param(&param).projection(self.transform);
+        let color = LinearColor::from(param.color);
         let uniforms = InstanceUniforms3d {
             model_transform: draw_uniforms.model_transform,
             camera_transform: draw_uniforms.camera_transform,
             color: mint::Vector4::<f32> {
-                x: param.color.r,
-                y: param.color.g,
-                z: param.color.b,
-                w: param.color.a,
+                x: color.r,
+                y: color.g,
+                z: color.b,
+                w: color.a,
             },
         };
 

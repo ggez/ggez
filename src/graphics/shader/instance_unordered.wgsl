@@ -66,7 +66,14 @@ fn vs_main(
     var out: VertexOutput;
     out.position = uniforms.transform * instance.transform * scale_mat * vec4<f32>(position, 0.0, 1.0);
     out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
-    out.color = uniforms.color * instance.color * color;
+
+    // convert to linear
+    var threshold = instance.color.rgb < vec3<f32>(0.04045);
+    var hi = pow((instance.color.rgb + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4));
+    var lo = instance.color.rgb * vec3<f32>(12.92);
+    var linear_color = vec4<f32>(select(hi, lo, threshold), instance.color.a);
+    out.color = uniforms.color * linear_color * color;
+    
     return out;
 }
 
