@@ -14,7 +14,7 @@
 //! For a more detailed tutorial in how to handle frame timings in games,
 //! see <http://gafferongames.com/game-physics/fix-your-timestep/>
 
-use std::{cmp, convert::TryFrom, f64, thread, time};
+use std::{cmp, f64, thread, time};
 
 use crate::Context;
 

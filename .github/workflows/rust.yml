@@ -47,7 +47,8 @@ jobs:
         RUSTFLAGS: "-D warnings"
 
     - name: Test documentation
-      if: ${{ runner.os == 'Linux' }}
+      if: false # Skeptic is broken as of Rust 1.77
+      # if: ${{ runner.os == 'Linux' }}
       run: cargo test -p doc_tests
 
   rustfmt:

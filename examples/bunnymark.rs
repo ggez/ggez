@@ -8,7 +8,6 @@ use ggez::input::keyboard;
 use oorandom::Rand32;
 
 use ggez::graphics::{Color, Image, InstanceArray};
-use ggez::Context;
 use ggez::*;
 
 use ggez::glam::*;

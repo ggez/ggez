@@ -27,10 +27,7 @@ use glyph_brush::FontId;
 use image as imgcrate;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
-use winit::{
-    self,
-    dpi::{self, PhysicalPosition},
-};
+use winit::dpi::{self, PhysicalPosition};
 
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,

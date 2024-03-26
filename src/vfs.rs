@@ -109,6 +109,7 @@ pub trait VFS: Debug {
         )
     }
     /// Open the file at this path for appending, creating it if necessary
+    #[allow(dead_code)]
     fn append(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(
             path,
@@ -146,6 +147,7 @@ pub trait VMetadata {
     fn is_file(&self) -> bool;
     /// Returns the length of the thing.  If it is a directory,
     /// the result of this is undefined/platform dependent.
+    #[allow(dead_code)]
     fn len(&self) -> u64;
 }
 
@@ -812,7 +814,7 @@ impl VFS for ZipFS {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{self, BufRead};
+    use std::io::BufRead;
 
     #[test]
     fn headless_test_path_filtering() {

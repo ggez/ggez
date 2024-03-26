@@ -12,7 +12,6 @@
 //! If no file is found, it will create a `Conf` object from the settings
 //! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
 
-use std::convert::TryFrom;
 use std::io;
 
 use winit::dpi::PhysicalSize;

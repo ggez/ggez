@@ -1,7 +1,7 @@
 use super::{
     context::{FrameArenas, GraphicsContext},
     gpu::{
-        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
+        arc::{ArcBindGroup, ArcBindGroupLayout, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
         growing::{ArenaAllocation, GrowingBufferArena},
         pipeline::{PipelineCache, RenderPipelineInfo},
@@ -535,8 +535,6 @@ impl<'a> Drop for InternalCanvas3d<'a> {
 
 #[derive(Debug)]
 pub struct InstanceArrayView3d {
-    pub buffer: ArcBuffer,
-    pub indices: ArcBuffer,
     pub bind_group: ArcBindGroup,
     pub image: Image,
     pub len: u32,
@@ -546,8 +544,6 @@ pub struct InstanceArrayView3d {
 impl InstanceArrayView3d {
     pub fn from_instances(ia: &InstanceArray3d) -> GameResult<Self> {
         Ok(InstanceArrayView3d {
-            buffer: ia.buffer.lock().map_err(|_| GameError::LockError)?.clone(),
-            indices: ia.indices.lock().map_err(|_| GameError::LockError)?.clone(),
             bind_group: ia
                 .bind_group
                 .lock()

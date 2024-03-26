@@ -2,7 +2,6 @@
 //! resize windows, etc.
 //!
 //! Prints instructions to the console.
-use std::convert::TryFrom;
 
 use ggez::conf;
 use ggez::event;
