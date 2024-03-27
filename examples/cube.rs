@@ -4,6 +4,7 @@
 //! the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
+// You must depend on the same version of `crevice` that ggez uses
 use crevice::std140::AsStd140;
 use ggez::event;
 use ggez::glam::*;
