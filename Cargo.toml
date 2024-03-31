@@ -71,7 +71,7 @@ keyframe = "1"
 keyframe_derive = "1"
 num-derive = "0.4"
 
-skeptic = "0.13"
+skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }
 getrandom = "0.2"
 
 [workspace]
