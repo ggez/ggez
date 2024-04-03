@@ -1,6 +1,7 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
+// You must depend on the same version of `crevice` that ggez uses
 use crevice::std140::AsStd140;
 use ggez::glam::Vec2;
 use ggez::graphics::{

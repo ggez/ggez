@@ -1,5 +1,6 @@
 //! A very simple shader example.
 
+// You must depend on the same version of `crevice` that ggez uses
 use crevice::std140::AsStd140;
 use ggez::event;
 use ggez::glam::Vec2;
