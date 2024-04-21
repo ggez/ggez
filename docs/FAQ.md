@@ -48,7 +48,7 @@ filesystem lookup path by pulling it from the environment variable, see
 the examples for how.  Sorry, there's no especially good way of doing it
 automatically; we've tried.
 
-If that doesn't help, call `Filesystem::print_all()`.  That should print
+If that doesn't help, call `Filesystem::print_all()`.  That should
 print out all the files it can find, and where it is finding them.
 
 If you want to add a non-standard location to the resources lookup
