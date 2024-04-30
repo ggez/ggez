@@ -209,11 +209,9 @@ More details can be found [here](https://docs.rs/winit/latest/winit/dpi/index.ht
 
 ## Using AsStd140 requires crevice to be included
 
-If you want to create your own structs to send as uniforms to your shaders, similar as we to in the [shader example](https://github.com/ggez/ggez/blob/master/examples/shader.rs),
-then those structs need to implement `AsStd140`, which can luckily be easily derived using crevice.
+If you want to create your own structs to send as uniforms to your shaders, similar to the [shader example](https://github.com/ggez/ggez/blob/master/examples/shader.rs), those structs need to implement `AsStd140`, which can be easily derived using crevice.
 
-So far, so good. But now I have to tell you that you also need to **depend on the version of crevice that we are using
-yourself, directly**, which at the time of writing (ggez 0.9.3) is `0.14` currently. So add `crevice = "0.14"` to your Cargo.toml .
+So far, so good. But you also need to **depend on the version of crevice used in ggez directly**, which at the time of writing (ggez 0.9.3) is `0.15` currently. So add `crevice = "0.15"` to your Cargo.toml .
 
 There may or may not be ways around this via writing our own wrapper macro using `Span::mixed_site` and re-exporting `crevice`,
 but we lowly mortals haven't yet found a way to actually do this. If you manage to solve this problem, please let us know! :)
