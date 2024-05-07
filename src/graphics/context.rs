@@ -881,12 +881,7 @@ impl GraphicsContext {
                 }
             }
             FullscreenType::Desktop => {
-                window.set_fullscreen(None);
-                window.set_decorations(false);
-                if let Some(monitor) = window.current_monitor() {
-                    window.set_inner_size(monitor.size());
-                    window.set_outer_position(monitor.position());
-                }
+                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
             }
         }
 
