@@ -265,8 +265,10 @@ impl KeyboardContext {
     /// you need to call this at the end of every update in order to use the functions `is_key_just_pressed`
     /// and `is_key_just_released`. Otherwise this is handled for you.
     pub fn save_keyboard_state(&mut self) {
-        self.previously_pressed_keys_set = self.pressed_keys_set.clone();
-        self.previously_pressed_scancodes_set = self.pressed_scancodes_set.clone();
+        self.previously_pressed_keys_set
+            .clone_from(&self.pressed_keys_set);
+        self.previously_pressed_scancodes_set
+            .clone_from(&self.pressed_scancodes_set);
     }
 
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {

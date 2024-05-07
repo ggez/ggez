@@ -266,7 +266,7 @@ impl WindowSetup {
     /// Set window title.
     #[must_use]
     pub fn title(mut self, title: &str) -> Self {
-        self.title = title.to_owned();
+        title.clone_into(&mut self.title);
         self
     }
 
@@ -287,7 +287,7 @@ impl WindowSetup {
     /// Set the window's icon.
     #[must_use]
     pub fn icon(mut self, icon: &str) -> Self {
-        self.icon = icon.to_owned();
+        icon.clone_into(&mut self.icon);
         self
     }
 

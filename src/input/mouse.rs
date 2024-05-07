@@ -127,7 +127,8 @@ impl MouseContext {
     /// you need to call this at the end of every update in order to use the functions `is_button_just_pressed`
     /// and `is_button_just_released`. Otherwise this is handled for you.
     pub fn save_mouse_state(&mut self) {
-        self.previous_buttons_pressed = self.buttons_pressed.clone();
+        self.previous_buttons_pressed
+            .clone_from(&self.buttons_pressed);
     }
 
     pub(crate) fn set_last_position(&mut self, p: glam::Vec2) {
