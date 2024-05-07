@@ -604,9 +604,8 @@ impl GraphicsContext {
     pub fn supported_resolutions(&self) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
         self.window
             .current_monitor()
-            .unwrap() // Unwrap is fine current monitor should always exist
-            .video_modes()
-            .map(|vm| vm.size())
+            .into_iter()
+            .flat_map(|monitor| monitor.video_modes().map(|vm| vm.size()))
     }
 
     /// Returns a reference to the Winit window.
