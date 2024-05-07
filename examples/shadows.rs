@@ -3,7 +3,7 @@
 
 // You must depend on the same version of `crevice` that ggez uses
 use crevice::std140::AsStd140;
-use ggez::glam::Vec2;
+use ggez::glam::{Vec2, Vec4};
 use ggez::graphics::{
     self, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder, ShaderParamsBuilder,
 };
@@ -14,10 +14,10 @@ use std::path;
 
 #[derive(AsStd140)]
 struct Light {
-    light_color: mint::Vector4<f32>,
-    shadow_color: mint::Vector4<f32>,
-    pos: mint::Vector2<f32>,
-    screen_size: mint::Vector2<f32>,
+    light_color: Vec4,
+    shadow_color: Vec4,
+    pos: Vec2,
+    screen_size: Vec2,
     glow: f32,
     strength: f32,
 }
@@ -91,7 +91,7 @@ impl MainState {
         };
 
         let torch = Light {
-            pos: [0.0, 0.0].into(),
+            pos: Vec2::ZERO,
             light_color: TORCH_COLOR.into(),
             shadow_color: AMBIENT_COLOR.into(),
             screen_size: screen_size.into(),

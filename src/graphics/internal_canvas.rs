@@ -16,6 +16,7 @@ use super::{
 };
 use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
+use glam::{Mat4, Vec2, Vec4};
 use std::{collections::HashMap, hash::Hash};
 
 /// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
@@ -189,11 +190,7 @@ impl<'a> InternalCanvas<'a> {
         wgpu.queue.write_buffer(
             &text_uniforms.buffer,
             text_uniforms.offset,
-            (TextUniforms {
-                transform: transform.into(),
-            })
-            .as_std140()
-            .as_bytes(),
+            (TextUniforms { transform }).as_std140().as_bytes(),
         );
 
         Ok(InternalCanvas {
@@ -306,7 +303,7 @@ impl<'a> InternalCanvas<'a> {
             &self.text_uniforms.buffer,
             self.text_uniforms.offset,
             (TextUniforms {
-                transform: self.transform.into(),
+                transform: self.transform,
             })
             .as_std140()
             .as_bytes(),
@@ -347,7 +344,7 @@ impl<'a> InternalCanvas<'a> {
                 None
             },
         );
-        uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
+        uniforms.transform = self.transform * uniforms.transform;
 
         // 1. allocate some uniform buffer memory from GrowingBufferArena.
         // 2. write the uniform data to that memory
@@ -411,18 +408,9 @@ impl<'a> InternalCanvas<'a> {
         self.set_image(instances.image.clone());
 
         let uniforms = InstanceUniforms {
-            transform: (self.transform
-                * glam::Mat4::from(
-                    // image scaling is non-sensical for instance array itself as the image scaling is applied locally (see below)
-                    DrawUniforms::from_param(&param, None).transform,
-                ))
-            .into(),
-            color: mint::Vector4::<f32> {
-                x: param.color.r,
-                y: param.color.g,
-                z: param.color.b,
-                w: param.color.a,
-            },
+            // image scaling is non-sensical for instance array itself as the image scaling is applied locally (see below)
+            transform: self.transform * DrawUniforms::from_param(&param, None).transform,
+            color: Vec4::from_array(param.color.into()),
             // this is the actual image scale that we apply in the vertex shader.
             // we can't apply this when we first convert the instance array drawparams because we don't know the image size at the time the user inserts the drawparams.
             // we also can't apply image scaling in the global instance transform as it *must* be applied in local space.
@@ -433,8 +421,7 @@ impl<'a> InternalCanvas<'a> {
                 )
             } else {
                 glam::Vec2::ZERO
-            }
-            .into(),
+            },
         };
 
         self.wgpu.queue.write_buffer(
@@ -734,14 +721,14 @@ enum ShaderType {
 
 #[derive(crevice::std140::AsStd140)]
 struct InstanceUniforms {
-    pub transform: mint::ColumnMatrix4<f32>,
-    pub color: mint::Vector4<f32>,
-    pub scale: mint::Vector2<f32>,
+    pub transform: Mat4,
+    pub color: Vec4,
+    pub scale: Vec2,
 }
 
 #[derive(crevice::std140::AsStd140)]
 struct TextUniforms {
-    transform: mint::ColumnMatrix4<f32>,
+    transform: Mat4,
 }
 
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
