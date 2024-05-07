@@ -283,9 +283,9 @@ where
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
 #[allow(clippy::needless_return)] // necessary as the returns used here are actually necessary to break early from the event loop
-pub fn run<S: 'static, C, E>(mut ctx: C, event_loop: EventLoop<()>, mut state: S) -> !
+pub fn run<S, C, E>(mut ctx: C, event_loop: EventLoop<()>, mut state: S) -> !
 where
-    S: EventHandler<C, E>,
+    S: EventHandler<C, E> + 'static,
     E: std::fmt::Debug,
     C: 'static
         + HasMut<ContextFields>
@@ -624,7 +624,7 @@ where
     })
 }
 
-fn catch_error<T, C, E, S: 'static>(
+fn catch_error<T, C, E, S>(
     ctx: &mut C,
     event_result: Result<T, E>,
     state: &mut S,
@@ -632,7 +632,7 @@ fn catch_error<T, C, E, S: 'static>(
     origin: ErrorOrigin,
 ) -> bool
 where
-    S: EventHandler<C, E>,
+    S: EventHandler<C, E> + 'static,
     E: std::fmt::Debug,
     C: HasMut<ContextFields> + HasMut<input::mouse::MouseContext>,
 {
