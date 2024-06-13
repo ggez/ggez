@@ -4,7 +4,6 @@ use super::{
     growing::GrowingBufferArena,
 };
 use crate::graphics::{context::FrameArenas, LinearColor};
-use crevice::std140::AsStd140;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use ordered_float::OrderedFloat;
 use std::cell::RefCell;
@@ -237,11 +236,6 @@ impl std::hash::Hash for Extra {
             .into_iter()
             .for_each(|x| OrderedFloat::from(x).hash(state));
     }
-}
-
-#[derive(AsStd140)]
-struct TextUniforms {
-    transform: mint::ColumnMatrix4<f32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, bytemuck::Zeroable, bytemuck::Pod)]

@@ -37,8 +37,8 @@ impl Vertex {
 
 #[derive(AsStd140)]
 struct Locals {
-    transform: mint::ColumnMatrix4<f32>,
-    rotation: mint::ColumnMatrix4<f32>,
+    transform: Mat4,
+    rotation: Mat4,
 }
 
 fn default_view() -> Isometry3 {
@@ -52,7 +52,7 @@ fn default_view() -> Isometry3 {
 
 struct MainState {
     frames: usize,
-    transform: mint::ColumnMatrix4<f32>,
+    transform: Mat4,
     rotation: f32,
 
     verts: wgpu::Buffer,
@@ -254,7 +254,7 @@ impl MainState {
 
         MainState {
             frames: 0,
-            transform: transform.into(),
+            transform,
             rotation: 0.0,
 
             verts,
@@ -277,7 +277,7 @@ impl event::EventHandler for MainState {
         {
             let locals = Locals {
                 transform: self.transform,
-                rotation: Mat4::from_rotation_z(self.rotation).into(),
+                rotation: Mat4::from_rotation_z(self.rotation),
             };
             ctx.gfx
                 .wgpu()

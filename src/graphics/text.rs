@@ -274,7 +274,7 @@ impl Text {
                             .ok_or_else(|| GameError::FontSelectError(font.clone()))?,
                         extra: Extra {
                             color: text.color.unwrap_or(param.color).into(),
-                            transform: param.transform.to_bare_matrix().into(),
+                            transform: param.transform.to_bare_matrix_glam(),
                         },
                     })
                 })

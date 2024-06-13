@@ -15,6 +15,7 @@ use super::{
 };
 use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
+use glam::{Mat4, Vec4};
 use std::hash::Hash;
 
 /// A canvas represents a render pass and is how you render meshes .
@@ -362,12 +363,7 @@ impl<'a> InternalCanvas3d<'a> {
         let uniforms = InstanceUniforms3d {
             model_transform: draw_uniforms.model_transform,
             camera_transform: draw_uniforms.camera_transform,
-            color: mint::Vector4::<f32> {
-                x: param.color.r,
-                y: param.color.g,
-                z: param.color.b,
-                w: param.color.a,
-            },
+            color: glam::Vec4::from_array(param.color.into()),
         };
 
         self.wgpu.queue.write_buffer(
@@ -564,9 +560,9 @@ enum ShaderType3d {
 
 #[derive(crevice::std140::AsStd140)]
 struct InstanceUniforms3d {
-    pub color: mint::Vector4<f32>,
-    pub model_transform: mint::ColumnMatrix4<f32>,
-    pub camera_transform: mint::ColumnMatrix4<f32>,
+    pub color: Vec4,
+    pub model_transform: Mat4,
+    pub camera_transform: Mat4,
 }
 
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {

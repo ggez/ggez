@@ -6,11 +6,10 @@ use ggez::event;
 use ggez::glam::*;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
-use mint::ColumnMatrix4;
 
 #[derive(AsStd140)]
 struct ShaderUniforms {
-    rotation: ColumnMatrix4<f32>,
+    rotation: Mat4,
 }
 
 struct MainState {
@@ -31,7 +30,7 @@ impl MainState {
             .vertex_path("/vertex.wgsl")
             .build(ctx)?;
         let shader_params = graphics::ShaderParamsBuilder::new(&ShaderUniforms {
-            rotation: Mat4::IDENTITY.into(),
+            rotation: Mat4::IDENTITY,
         })
         .build(ctx);
 
@@ -55,7 +54,7 @@ impl event::EventHandler for MainState {
         self.shader_params.set_uniforms(
             ctx,
             &ShaderUniforms {
-                rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32()).into(),
+                rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32()),
             },
         );
         canvas.set_shader(&self.shader);

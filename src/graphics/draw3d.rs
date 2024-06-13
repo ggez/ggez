@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Vec3, Vec4};
 
 use crate::graphics::{Canvas3d, Color};
 
@@ -152,6 +152,30 @@ pub enum Transform3d {
     /// matrices of each hierarchy item and store a calculated world-space model matrix of an item.
     /// This lets you implement transform stacks, skeletal animations, etc.
     Matrix(mint::ColumnMatrix4<f32>),
+}
+
+fn transform_to_matrix(
+    pos: mint::Point3<f32>,
+    rotation: mint::Quaternion<f32>,
+    scale: mint::Vector3<f32>,
+    offset: Option<mint::Point3<f32>>,
+    pivot: Option<mint::Point3<f32>>,
+) -> Mat4 {
+    let offset = if let Some(offset) = offset {
+        offset
+    } else {
+        Vec3::ZERO.into()
+    };
+    let pivot = if let Some(piv) = pivot {
+        Vec3::from(piv) + Vec3::from(offset)
+    } else {
+        Vec3::from(pos) + Vec3::from(offset)
+    };
+    Mat4::from_translation(pivot)
+        * Mat4::from_scale(scale.into())
+        * Mat4::from_quat(rotation.into())
+        * Mat4::from_translation(-(pivot))
+        * Mat4::from_translation(Vec3::from(pos))
 }
 
 impl Default for Transform3d {
@@ -309,25 +333,22 @@ impl Transform3d {
                 scale,
                 offset,
                 pivot,
-            } => {
-                let offset = if let Some(offset) = offset {
-                    offset
-                } else {
-                    Vec3::ZERO.into()
-                };
-                let pivot = if let Some(piv) = pivot {
-                    Vec3::from(piv) + Vec3::from(offset)
-                } else {
-                    Vec3::from(pos) + Vec3::from(offset)
-                };
-                let transform = Mat4::from_translation(pivot)
-                    * Mat4::from_scale(scale.into())
-                    * Mat4::from_quat(rotation.into())
-                    * Mat4::from_translation(-(pivot))
-                    * Mat4::from_translation(Vec3::from(pos));
+            } => transform_to_matrix(pos, rotation, scale, offset, pivot).into(),
+        }
+    }
 
-                transform.into()
-            }
+    /// Same as `to_matrix()` but just returns a bare `glam` matrix.
+    #[must_use]
+    pub(crate) fn to_bare_matrix_glam(self) -> Mat4 {
+        match self {
+            Transform3d::Matrix(m) => m.into(),
+            Transform3d::Values {
+                pos,
+                rotation,
+                scale,
+                offset,
+                pivot,
+            } => transform_to_matrix(pos, rotation, scale, offset, pivot),
         }
     }
 }
@@ -340,9 +361,9 @@ pub trait Drawable3d {
 
 #[derive(Debug, Copy, Clone, crevice::std140::AsStd140)]
 pub(crate) struct DrawUniforms3d {
-    pub color: mint::Vector4<f32>,
-    pub model_transform: mint::ColumnMatrix4<f32>,
-    pub camera_transform: mint::ColumnMatrix4<f32>,
+    pub color: Vec4,
+    pub model_transform: Mat4,
+    pub camera_transform: Mat4,
 }
 
 #[allow(unsafe_code)]
@@ -354,22 +375,20 @@ impl DrawUniforms3d {
     pub fn from_param(param: &DrawParam3d) -> Self {
         let param = match param.transform {
             Transform3d::Values { .. } => *param,
-            Transform3d::Matrix(m) => {
-                param.transform(Transform3d::Matrix(glam::Mat4::from(m).into()))
-            }
+            Transform3d::Matrix(m) => param.transform(Transform3d::Matrix(m)),
         };
 
         let color = LinearColor::from(param.color);
 
         DrawUniforms3d {
-            color: <[f32; 4]>::from(color).into(),
-            model_transform: param.transform.to_bare_matrix(),
-            camera_transform: Mat4::IDENTITY.into(),
+            color: Vec4::from_array(color.into()),
+            model_transform: param.transform.to_bare_matrix_glam(),
+            camera_transform: Mat4::IDENTITY,
         }
     }
 
     pub fn projection(mut self, projection: impl Into<mint::ColumnMatrix4<f32>>) -> Self {
-        self.camera_transform = projection.into();
+        self.camera_transform = projection.into().into();
         self
     }
 }
