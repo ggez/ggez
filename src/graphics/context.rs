@@ -120,6 +120,7 @@ impl GraphicsContext {
             match Self::new_from_instance(
                 game_id,
                 new_instance(wgpu::Backends::PRIMARY),
+                wgpu::Limits::downlevel_webgl2_defaults(),
                 event_loop,
                 conf,
                 filesystem,
@@ -136,6 +137,7 @@ impl GraphicsContext {
                     Self::new_from_instance(
                         game_id,
                         new_instance(wgpu::Backends::SECONDARY),
+                        wgpu::Limits::downlevel_webgl2_defaults(),
                         event_loop,
                         conf,
                         filesystem,
@@ -155,7 +157,12 @@ impl GraphicsContext {
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
 
-            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem)
+            let base_limits = match conf.backend {
+                Backend::Gl => wgpu::Limits::downlevel_webgl2_defaults(),
+                _ => wgpu::Limits::default(),
+            };
+
+            Self::new_from_instance(game_id, instance, base_limits, event_loop, conf, filesystem)
         }
     }
 
@@ -234,6 +241,7 @@ impl GraphicsContext {
     pub(crate) fn new_from_instance(
         #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
+        base_limits: wgpu::Limits,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
         filesystem: &Filesystem,
@@ -306,7 +314,7 @@ impl GraphicsContext {
                     max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
                     max_texture_dimension_1d: 8192,
                     max_texture_dimension_2d: 8192,
-                    ..wgpu::Limits::downlevel_webgl2_defaults()
+                    ..base_limits
                 },
             },
             None,
