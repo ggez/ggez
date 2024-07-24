@@ -14,6 +14,7 @@ use std::{
     path::Path,
     sync::{Arc, RwLock},
 };
+use image::DynamicImage;
 
 // maintaing a massive enum of all possible texture formats?
 // screw that.
@@ -147,6 +148,20 @@ impl Image {
         let decoded = image::load_from_memory(encoded)
             .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
         let rgba8 = decoded.to_rgba8();
+        let (width, height) = (rgba8.width(), rgba8.height());
+
+        Ok(Self::from_pixels(
+            gfx,
+            rgba8.as_ref(),
+            ImageFormat::Rgba8UnormSrgb,
+            width,
+            height,
+        ))
+    }
+
+    /// Creates a new image from a DynamicImage
+    pub fn from_dynamic_image(gfx: &impl Has<GraphicsContext>, image: DynamicImage) -> Result<Image, GameError>{
+        let rgba8 = image.to_rgb8();
         let (width, height) = (rgba8.width(), rgba8.height());
 
         Ok(Self::from_pixels(
