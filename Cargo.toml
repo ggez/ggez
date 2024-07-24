@@ -71,6 +71,7 @@ memoffset = "0.8"
 crevice = "0.13"
 typed-arena = "2.0"
 ordered-float = "3.3"
+image = "0.25.2"
 
 [dev-dependencies]
 chrono = "0.4"
