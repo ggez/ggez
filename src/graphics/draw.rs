@@ -1,5 +1,4 @@
-use super::{Canvas, Color, GraphicsContext, Rect};
-use crate::context::Has;
+use super::{Canvas, Color, Rect};
 use glam::{Mat4, Vec4};
 
 /// A struct that represents where to put a drawable object.
