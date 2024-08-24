@@ -312,12 +312,6 @@ where
 pub trait Drawable {
     /// Draws the drawable onto the canvas.
     fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>);
-
-    /// Returns a bounding box in the form of a `Rect`.
-    ///
-    /// It returns `Option` because some `Drawable`s may have no bounding box,
-    /// namely `InstanceArray` (as there is no true bounds for the instances given the instanced mesh can differ).
-    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Rect;
 }
 
 #[derive(Debug, Copy, Clone, crevice::std140::AsStd140)]
