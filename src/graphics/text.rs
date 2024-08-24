@@ -1,6 +1,6 @@
 use super::{
     gpu::text::{Extra, TextRenderer},
-    Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
+    Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext,
 };
 use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
