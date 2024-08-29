@@ -328,8 +328,6 @@ pub enum Backend {
     Metal,
     /// Use the Microsoft DirectX 12 API.
     Dx12,
-    /// Use the Microsoft DirectX 11 API. This is not a recommended backend.
-    Dx11,
     /// Use the Khronos OpenGL API. This is not a recommended backend.
     Gl,
     /// Use the WebGPU API. Targets the web.

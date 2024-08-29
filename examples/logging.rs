@@ -12,11 +12,12 @@ use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::EventHandler;
 use ggez::filesystem::File;
 use ggez::graphics;
-use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::input::keyboard::KeyInput;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::io::Write;
 use std::sync::mpsc;
+use winit::keyboard::{Key, NamedKey};
 
 /// A basic file writer.
 /// Hogs it's log file until dropped, writes to it whenever `update()` is called.
@@ -101,9 +102,9 @@ impl EventHandler for App {
         // Log the keypress to info channel!
         info!(
             "Key down event: {:?}, modifiers: {:?}, repeat: {}",
-            input.keycode, input.mods, repeated
+            input.event.logical_key, input.mods, repeated
         );
-        if input.keycode == Some(KeyCode::Escape) {
+        if input.event.logical_key == Key::Named(NamedKey::Escape) {
             // Escape key closes the app.
             ctx.request_quit();
         }
@@ -171,7 +172,9 @@ pub fn main() -> GameResult {
         Err(e) => {
             error!("Could not initialize: {}", e);
         }
-        Ok(app) => ggez::event::run(ctx, events_loop, app),
+        Ok(app) => {
+            let _ = ggez::event::run(ctx, events_loop, app);
+        }
     }
 
     trace!("Since file logger is dropped with App, this line will cause an error in fern!");

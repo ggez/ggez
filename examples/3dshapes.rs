@@ -1,5 +1,6 @@
 use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Drawable3d, Mesh3d, Mesh3dBuilder};
 use std::{env, path};
+use winit::keyboard::{Key, NamedKey, PhysicalKey};
 
 use ggez::input::keyboard::KeyCode;
 use ggez::{
@@ -74,34 +75,34 @@ impl event::EventHandler for MainState {
         let forward = Vec3::new(yaw_cos, 0.0, yaw_sin).normalize();
         let right = Vec3::new(-yaw_sin, 0.0, yaw_cos).normalize();
 
-        if k_ctx.is_key_pressed(KeyCode::Space) {
+        if k_ctx.is_logical_key_pressed(&Key::Named(NamedKey::Space)) {
             self.camera.transform.position.y += 1.0;
         }
-        if k_ctx.is_key_pressed(KeyCode::C) {
+        if k_ctx.is_logical_key_pressed(&Key::Character("c".into())) {
             self.camera.transform.position.y -= 1.0;
         }
-        if k_ctx.is_key_pressed(KeyCode::W) {
+        if k_ctx.is_physical_key_pressed(&PhysicalKey::Code(KeyCode::KeyW)) {
             self.camera.transform = self.camera.transform.translate(forward);
         }
-        if k_ctx.is_key_pressed(KeyCode::S) {
+        if k_ctx.is_physical_key_pressed(&PhysicalKey::Code(KeyCode::KeyS)) {
             self.camera.transform = self.camera.transform.translate(-forward);
         }
-        if k_ctx.is_key_pressed(KeyCode::D) {
+        if k_ctx.is_physical_key_pressed(&PhysicalKey::Code(KeyCode::KeyD)) {
             self.camera.transform = self.camera.transform.translate(right);
         }
-        if k_ctx.is_key_pressed(KeyCode::A) {
+        if k_ctx.is_physical_key_pressed(&PhysicalKey::Code(KeyCode::KeyA)) {
             self.camera.transform = self.camera.transform.translate(-right);
         }
-        if k_ctx.is_key_pressed(KeyCode::Right) {
+        if k_ctx.is_logical_key_pressed(&Key::Named(NamedKey::ArrowRight)) {
             self.camera.transform.yaw += 1.0_f32.to_radians();
         }
-        if k_ctx.is_key_pressed(KeyCode::Left) {
+        if k_ctx.is_logical_key_pressed(&Key::Named(NamedKey::ArrowLeft)) {
             self.camera.transform.yaw -= 1.0_f32.to_radians();
         }
-        if k_ctx.is_key_pressed(KeyCode::Up) {
+        if k_ctx.is_logical_key_pressed(&Key::Named(NamedKey::ArrowUp)) {
             self.camera.transform.pitch += 1.0_f32.to_radians();
         }
-        if k_ctx.is_key_pressed(KeyCode::Down) {
+        if k_ctx.is_logical_key_pressed(&Key::Named(NamedKey::ArrowDown)) {
             self.camera.transform.pitch -= 1.0_f32.to_radians();
         }
         Ok(())

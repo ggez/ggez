@@ -2,7 +2,6 @@ use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;
 use ggez::graphics;
-use ggez::input;
 use ggez::{Context, GameResult};
 
 use ggez::glam::*;
@@ -11,6 +10,10 @@ use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 use std::time::Duration;
+use winit::keyboard::Key;
+use winit::keyboard::KeyCode;
+use winit::keyboard::NamedKey;
+use winit::keyboard::PhysicalKey;
 
 struct MainState {
     sound: audio::Source,
@@ -82,14 +85,17 @@ impl event::EventHandler for MainState {
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
-        match input.keycode {
-            Some(input::keyboard::KeyCode::Key1) => self.play_detached(ctx),
-            Some(input::keyboard::KeyCode::Key2) => self.play_later(ctx),
-            Some(input::keyboard::KeyCode::Key3) => self.play_fadein(ctx),
-            Some(input::keyboard::KeyCode::Key4) => self.play_highpitch(ctx),
-            Some(input::keyboard::KeyCode::Key5) => self.play_lowpitch(ctx),
-            Some(input::keyboard::KeyCode::Key6) => self.play_stats(ctx),
-            Some(input::keyboard::KeyCode::Escape) => ctx.request_quit(),
+        match input.event.physical_key {
+            PhysicalKey::Code(KeyCode::Digit1) => self.play_detached(ctx),
+            PhysicalKey::Code(KeyCode::Digit2) => self.play_later(ctx),
+            PhysicalKey::Code(KeyCode::Digit3) => self.play_fadein(ctx),
+            PhysicalKey::Code(KeyCode::Digit4) => self.play_highpitch(ctx),
+            PhysicalKey::Code(KeyCode::Digit5) => self.play_lowpitch(ctx),
+            PhysicalKey::Code(KeyCode::Digit6) => self.play_stats(ctx),
+            _ => (),
+        }
+        match input.event.logical_key {
+            Key::Named(NamedKey::Escape) => ctx.request_quit(),
             _ => (),
         }
         Ok(())

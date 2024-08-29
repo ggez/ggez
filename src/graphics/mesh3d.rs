@@ -687,12 +687,12 @@ impl Mesh3d {
             minimum = minimum.min(Vec3::from_array(p.pos));
             maximum = maximum.max(Vec3::from_array(p.pos));
         }
-        if minimum.x != std::f32::MAX
-            && minimum.y != std::f32::MAX
-            && minimum.z != std::f32::MAX
-            && maximum.x != std::f32::MIN
-            && maximum.y != std::f32::MIN
-            && maximum.z != std::f32::MIN
+        if minimum.x != f32::MAX
+            && minimum.y != f32::MAX
+            && minimum.z != f32::MAX
+            && maximum.x != f32::MIN
+            && maximum.y != f32::MIN
+            && maximum.z != f32::MIN
         {
             self.aabb = Some(Aabb::from_min_max(minimum, maximum))
         } else {
@@ -1175,12 +1175,12 @@ impl Model {
                 maximum = maximum.max(Vec3::from_array(p.pos));
             }
         }
-        if minimum.x != std::f32::MAX
-            && minimum.y != std::f32::MAX
-            && minimum.z != std::f32::MAX
-            && maximum.x != std::f32::MIN
-            && maximum.y != std::f32::MIN
-            && maximum.z != std::f32::MIN
+        if minimum.x != f32::MAX
+            && minimum.y != f32::MAX
+            && minimum.z != f32::MAX
+            && maximum.x != f32::MIN
+            && maximum.y != f32::MIN
+            && maximum.z != f32::MIN
         {
             self.aabb = Some(Aabb::from_min_max(minimum, maximum))
         } else {

@@ -4,7 +4,6 @@
 use std::env;
 use std::path;
 
-use ggez::input::keyboard;
 use oorandom::Rand32;
 
 use ggez::graphics::{Color, Image, InstanceArray};
@@ -12,6 +11,8 @@ use ggez::*;
 
 use ggez::glam::*;
 use ggez::input::keyboard::KeyInput;
+use winit::keyboard::Key;
+use winit::keyboard::NamedKey;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...
@@ -147,7 +148,7 @@ impl event::EventHandler for GameState {
     }
 
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
-        if input.keycode == Some(keyboard::KeyCode::Space) {
+        if input.event.logical_key == Key::Named(NamedKey::Space) {
             self.batched_drawing = !self.batched_drawing;
         }
         Ok(())

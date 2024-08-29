@@ -3,16 +3,16 @@
 //! This module provides access to files in specific places:
 //!
 //! * The `resources/` subdirectory in the same directory as the
-//! program executable, if any,
+//!   program executable, if any,
 //! * The `resources.zip` file in the same
-//! directory as the program executable, if any,
+//!   directory as the program executable, if any,
 //! * The root folder of the  game's "save" directory which is in a
-//! platform-dependent location,
-//! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
-//! is the the string passed to
-//! [`ContextBuilder::new()`](../struct.ContextBuilder.html#method.new).
-//! Some platforms such as Windows also incorporate the `author` string into
-//! the path.
+//!   platform-dependent location,
+//!   such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
+//!   is the the string passed to
+//!   [`ContextBuilder::new()`](../struct.ContextBuilder.html#method.new).
+//!   Some platforms such as Windows also incorporate the `author` string into
+//!   the path.
 //!
 //! These locations will be searched for files in the order listed, and the first file
 //! found used.  That allows game assets to be easily distributed as an archive

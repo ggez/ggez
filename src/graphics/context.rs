@@ -49,7 +49,7 @@ pub(crate) struct FrameArenas {
 #[allow(missing_docs)]
 pub struct WgpuContext {
     pub instance: wgpu::Instance,
-    pub surface: wgpu::Surface,
+    pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
 }
@@ -59,7 +59,7 @@ pub struct WgpuContext {
 pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
 
-    pub(crate) window: winit::window::Window,
+    pub(crate) window: Arc<winit::window::Window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
     pub(crate) bind_group_cache: BindGroupCache,
@@ -150,7 +150,6 @@ impl GraphicsContext {
                 Backend::Vulkan => wgpu::Backends::VULKAN,
                 Backend::Metal => wgpu::Backends::METAL,
                 Backend::Dx12 => wgpu::Backends::DX12,
-                Backend::Dx11 => wgpu::Backends::DX11,
                 Backend::Gl => wgpu::Backends::GL,
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
@@ -276,8 +275,9 @@ impl GraphicsContext {
             window_builder
         };
 
-        let window = window_builder.build(event_loop)?;
-        let surface = unsafe { instance.create_surface(&window) }
+        let window = Arc::new(window_builder.build(event_loop)?);
+        let surface = instance
+            .create_surface(window.clone())
             .map_err(|_| GameError::GraphicsInitializationError)?;
 
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
@@ -294,8 +294,8 @@ impl GraphicsContext {
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::default(),
-                limits: wgpu::Limits {
+                required_features: wgpu::Features::default(),
+                required_limits: wgpu::Limits {
                     // 1st: DrawParams
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
@@ -308,6 +308,7 @@ impl GraphicsContext {
                     max_texture_dimension_2d: 8192,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
+                memory_hints: wgpu::MemoryHints::default(),
             },
             None,
         ))?;
@@ -332,6 +333,7 @@ impl GraphicsContext {
             } else {
                 wgpu::PresentMode::AutoNoVsync
             },
+            desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
@@ -853,7 +855,7 @@ impl GraphicsContext {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(mode.actual_size()?);
+                let _ = window.request_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
                 window.set_maximized(mode.maximized);
             }

@@ -1,11 +1,12 @@
 //! Example that just prints out all the input events.
 
 use ggez::conf;
-use ggez::event::{self, Axis, Button, GamepadId, MouseButton};
+use ggez::event::{self, Axis, Button, GamepadId};
 use ggez::glam::*;
 use ggez::graphics::{self, Color, DrawMode};
-use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
+use winit::keyboard::Key;
 
 struct MainState {
     pos_x: f32,
@@ -25,17 +26,21 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if ctx.keyboard.is_key_pressed(KeyCode::A) {
+        if ctx
+            .keyboard
+            .is_logical_key_pressed(&Key::Character("a".into()))
+        {
             println!("The A key is pressed");
             if ctx
                 .keyboard
-                .is_mod_active(ggez::input::keyboard::KeyMods::SHIFT)
+                .active_modifiers
+                .contains(winit::keyboard::ModifiersState::SHIFT)
             {
                 println!("The shift key is held too.");
             }
             println!(
                 "Full list of pressed keys: {:?}",
-                ctx.keyboard.pressed_keys()
+                ctx.keyboard.pressed_logical_keys
             );
         }
         Ok(())
@@ -62,7 +67,7 @@ impl event::EventHandler for MainState {
     fn mouse_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        button: MouseButton,
+        button: winit::event::MouseButton,
         x: f32,
         y: f32,
     ) -> GameResult {
@@ -74,7 +79,7 @@ impl event::EventHandler for MainState {
     fn mouse_button_up_event(
         &mut self,
         _ctx: &mut Context,
-        button: MouseButton,
+        button: winit::event::MouseButton,
         x: f32,
         y: f32,
     ) -> GameResult {
@@ -119,16 +124,16 @@ impl event::EventHandler for MainState {
 
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, repeat: bool) -> GameResult {
         println!(
-            "Key pressed: scancode {}, keycode {:?}, modifier {:?}, repeat: {}",
-            input.scancode, input.keycode, input.mods, repeat
+            "Key pressed: physical key {:?}, logical key {:?}, modifier {:?}, repeat: {}",
+            input.event.physical_key, input.event.logical_key, input.mods, repeat
         );
         Ok(())
     }
 
     fn key_up_event(&mut self, _ctx: &mut Context, input: KeyInput) -> GameResult {
         println!(
-            "Key released: scancode {}, keycode {:?}, modifier {:?}",
-            input.scancode, input.keycode, input.mods
+            "Key released: physical key {:?}, logical key {:?}, modifier {:?}",
+            input.event.physical_key, input.event.logical_key, input.mods
         );
         Ok(())
     }

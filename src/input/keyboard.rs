@@ -1,39 +1,33 @@
 //! Keyboard utility functions; allow querying state of keyboard keys and modifiers.
 //!
-//! # On Keycodes and Scancodes
+//! # On logical keys and physical keys
 //!
-//! You can see functions for keys and functions for scancodes listed here.
-//!
-//! Keycodes are the "meaning" of a key once keyboard layout translation
+//! Logical keys are the "meaning" of a key once keyboard layout translation
 //! has been applied. For example, when the user presses "Q" in their
 //! layout, the enum value for Q is provided to this function.
 //!
-//! Scancodes are hardware dependent names for keys that refer to the key's
+//! Physical keys are hardware dependent names for keys that refer to the key's
 //! location rather than the character it prints when pressed. They are not
 //! necessarily cross platform (e.g. between Windows and Linux).
 //!
 //! For example, on a US QWERTY keyboard layout, the WASD keys are located
 //! in an inverted T shape on the left of the keyboard. This is not the
 //! case for AZERTY keyboards, which have those keys in a different
-//! location. Using scan codes over key codes in this case would map those
+//! location. Using physical keys in this case would map those
 //! characters to their physical location on the keyboard.
 //!
-//! In general, keycodes should be used when the meaning of the typed
-//! character is important (e.g. "I" to open the inventory), and scancodes
-//! for when the location is important (e.g. the WASD key block). The
-//! `text_input_event` handler should be used to collect raw text.
-//!
-//! The keycode is optional because not all inputs can be matched to a
-//! specific key code. This will happen on non-English keyboards, for
-//! example.
+//! In general, logical keys should be used when the meaning of the typed
+//! character is important (e.g. "I" to open the inventory), and physical keys 
+//! for when the location is important (e.g. the WASD key block).
 //!
 //! -----
 //!
 //! Example:
 //!
 //! ```rust, compile
+//! use winit::keyboard::{Key, ModifiersState, NamedKey};
 //! use ggez::event::{self, EventHandler};
-//! use ggez::input::keyboard::{KeyCode, KeyMods, KeyInput};
+//! use ggez::input::keyboard::KeyInput;
 //! use ggez::{graphics::{self, Color}, timer};
 //! use ggez::{Context, GameResult};
 //!
@@ -45,13 +39,13 @@
 //!     fn update(&mut self, ctx: &mut Context) -> GameResult {
 //!         let k_ctx = &ctx.keyboard;
 //!         // Increase or decrease `position_x` by 0.5, or by 5.0 if Shift is held.
-//!         if k_ctx.is_key_pressed(KeyCode::Right) {
-//!             if k_ctx.is_mod_active(KeyMods::SHIFT) {
+//!         if k_ctx.is_logical_key_pressed(&Key::Named(NamedKey::ArrowRight)) {
+//!             if k_ctx.active_modifiers.contains(ModifiersState::SHIFT) {
 //!                 self.position_x += 4.5;
 //!             }
 //!             self.position_x += 0.5;
-//!         } else if k_ctx.is_key_pressed(KeyCode::Left) {
-//!             if k_ctx.is_mod_active(KeyMods::SHIFT) {
+//!         } else if k_ctx.is_logical_key_pressed(&Key::Named(NamedKey::ArrowLeft)) {
+//!             if k_ctx.active_modifiers.contains(ModifiersState::SHIFT) {
 //!                 self.position_x -= 4.5;
 //!             }
 //!             self.position_x -= 0.5;
@@ -80,16 +74,18 @@
 //!     }
 //!
 //!     fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
-//!         match input.keycode {
+//!         match input.event.logical_key {
 //!             // Quit if Shift+Ctrl+Q is pressed.
-//!             Some(KeyCode::Q) => {
-//!                 if input.mods.contains(KeyMods::SHIFT) && input.mods.contains(KeyMods::CTRL) {
-//!                     println!("Terminating!");
-//!                     ctx.request_quit();
-//!                 } else if input.mods.contains(KeyMods::SHIFT) || input.mods.contains(KeyMods::CTRL) {
-//!                     println!("You need to hold both Shift and Control to quit.");
-//!                 } else {
-//!                     println!("Now you're not even trying!");
+//!             Key::Character(c) => {
+//!                 if c == "q" {
+//!                     if input.mods.contains(ModifiersState::SHIFT) && input.mods.contains(ModifiersState::CONTROL) {
+//!                         println!("Terminating!");
+//!                         ctx.request_quit();
+//!                     } else if input.mods.contains(ModifiersState::SHIFT) || input.mods.contains(ModifiersState::CONTROL) {
+//!                         println!("You need to hold both Shift and Control to quit.");
+//!                     } else {
+//!                         println!("Now you're not even trying!");
+//!                     }
 //!                 }
 //!             }
 //!             _ => (),
@@ -107,128 +103,90 @@
 //! }
 //! ```
 
-use crate::context::Context;
-
 use std::collections::HashSet;
-use winit::event::ModifiersState;
-pub use winit::event::ScanCode;
-/// A key code.
-pub use winit::event::VirtualKeyCode as KeyCode;
+pub use winit::keyboard::{Key, KeyCode};
+use winit::{
+    event::KeyEvent,
+    keyboard::{ModifiersState, PhysicalKey},
+};
 
-bitflags::bitflags! {
-    /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
-    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-    pub struct KeyMods: u8 {
-        /// No modifiers; equivalent to `KeyMods::default()` and
-        /// [`KeyMods::empty()`](struct.KeyMods.html#method.empty).
-        const NONE  = 0b0000_0000;
-        /// Left or right Shift key.
-        const SHIFT = 0b0000_0001;
-        /// Left or right Control key.
-        const CTRL  = 0b0000_0010;
-        /// Left or right Alt key.
-        const ALT   = 0b0000_0100;
-        /// Left or right Win/Cmd/equivalent key.
-        const LOGO  = 0b0000_1000;
-    }
-}
-
-impl From<ModifiersState> for KeyMods {
-    fn from(state: ModifiersState) -> Self {
-        let mut keymod = KeyMods::empty();
-        if state.shift() {
-            keymod |= Self::SHIFT;
-        }
-        if state.ctrl() {
-            keymod |= Self::CTRL;
-        }
-        if state.alt() {
-            keymod |= Self::ALT;
-        }
-        if state.logo() {
-            keymod |= Self::LOGO;
-        }
-        keymod
-    }
-}
-
-/// A simple wrapper bundling the four properties of a keyboard stroke.
-#[derive(Copy, Clone, Debug)]
+/// A simple wrapper bundling the properties of a keyboard stroke.
+/// See [`winit`](winit::event::KeyEvent) for more information.
+#[derive(Clone, Debug)]
 pub struct KeyInput {
-    /// The scancode. For more info on what they are and when to use them refer to the
-    /// [`keyboard`](crate::input::keyboard) module.
-    pub scancode: ScanCode,
-    /// The keycode corresponding to the scancode, if there is one.
-    pub keycode: Option<KeyCode>,
+    /// The key that was pressed.
+    pub event: KeyEvent,
     /// The keyboard modifiers active at the moment of input.
-    pub mods: KeyMods,
+    pub mods: ModifiersState,
 }
 
 /// Tracks held down keyboard keys, active keyboard modifiers,
 /// and figures out if the system is sending repeat keystrokes.
 #[derive(Clone, Debug)]
 pub struct KeyboardContext {
-    active_modifiers: KeyMods,
-    /// A simple mapping of which key code has been pressed.
-    /// We COULD use a `Vec<bool>` but turning Rust enums to and from
-    /// integers is unsafe and a set really is what we want anyway.
-    pressed_keys_set: HashSet<KeyCode>,
-    pressed_scancodes_set: HashSet<ScanCode>,
+    /// The currently active modifiers.
+    pub active_modifiers: ModifiersState,
+    /// The currently pressed physical keys.
+    pub pressed_physical_keys: HashSet<PhysicalKey>,
+    /// The currently pressed logical keys.
+    pub pressed_logical_keys: HashSet<Key>,
 
     // These two are necessary for tracking key-repeat.
-    last_pressed: Option<ScanCode>,
-    current_pressed: Option<ScanCode>,
+    last_pressed: Option<PhysicalKey>,
+    current_pressed: Option<PhysicalKey>,
 
-    // Represents the state of pressed_keys_set last frame.
-    previously_pressed_keys_set: HashSet<KeyCode>,
-    previously_pressed_scancodes_set: HashSet<ScanCode>,
+    // Represents the state of pressed_logical_keys last frame.
+    previously_pressed_physical_keys: HashSet<PhysicalKey>,
+    previously_pressed_logical_keys: HashSet<Key>,
 }
 
 impl KeyboardContext {
     /// Create a new KeyboardContext
     pub fn new() -> Self {
         Self {
-            active_modifiers: KeyMods::empty(),
+            active_modifiers: ModifiersState::default(),
             // We just use 256 as a number Big Enough For Keyboard Keys to try to avoid resizing.
-            pressed_keys_set: HashSet::with_capacity(256),
-            pressed_scancodes_set: HashSet::with_capacity(256),
+            pressed_physical_keys: HashSet::with_capacity(256),
+            pressed_logical_keys: HashSet::with_capacity(256),
             last_pressed: None,
             current_pressed: None,
-            previously_pressed_keys_set: HashSet::with_capacity(256),
-            previously_pressed_scancodes_set: HashSet::with_capacity(256),
+            previously_pressed_physical_keys: HashSet::with_capacity(256),
+            previously_pressed_logical_keys: HashSet::with_capacity(256),
         }
     }
 
     /// Checks if a key is currently pressed down.
-    pub fn is_key_pressed(&self, key: KeyCode) -> bool {
-        self.pressed_keys_set.contains(&key)
+    pub fn is_logical_key_pressed(&self, key: &Key) -> bool {
+        self.pressed_logical_keys.contains(key)
     }
 
     /// Checks if a key has been pressed down this frame.
-    pub fn is_key_just_pressed(&self, key: KeyCode) -> bool {
-        self.pressed_keys_set.contains(&key) && !self.previously_pressed_keys_set.contains(&key)
+    pub fn is_logical_key_just_pressed(&self, key: &Key) -> bool {
+        self.pressed_logical_keys.contains(key)
+            && !self.previously_pressed_logical_keys.contains(key)
     }
 
     /// Checks if a key has been released this frame.
-    pub fn is_key_just_released(&self, key: KeyCode) -> bool {
-        !self.pressed_keys_set.contains(&key) && self.previously_pressed_keys_set.contains(&key)
+    pub fn is_logical_key_just_released(&self, key: &Key) -> bool {
+        !self.pressed_logical_keys.contains(key)
+            && self.previously_pressed_logical_keys.contains(key)
     }
 
     /// Checks if a key with the corresponding scan code is currently pressed down.
-    pub fn is_scancode_pressed(&self, code: ScanCode) -> bool {
-        self.pressed_scancodes_set.contains(&code)
+    pub fn is_physical_key_pressed(&self, physical_key: &PhysicalKey) -> bool {
+        self.pressed_physical_keys.contains(physical_key)
     }
 
     /// Checks if a key with the corresponding scan code has been pressed down this frame.
-    pub fn is_scancode_just_pressed(&self, code: ScanCode) -> bool {
-        self.pressed_scancodes_set.contains(&code)
-            && !self.previously_pressed_scancodes_set.contains(&code)
+    pub fn is_physical_key_just_pressed(&self, physical_key: &PhysicalKey) -> bool {
+        self.pressed_physical_keys.contains(physical_key)
+            && !self.previously_pressed_physical_keys.contains(physical_key)
     }
 
     /// Checks if a key with the corresponding scan code has been released this frame.
-    pub fn is_scancode_just_released(&self, code: ScanCode) -> bool {
-        !self.pressed_scancodes_set.contains(&code)
-            && self.previously_pressed_scancodes_set.contains(&code)
+    pub fn is_physical_key_just_released(&self, physical_key: &PhysicalKey) -> bool {
+        !self.pressed_physical_keys.contains(physical_key)
+            && self.previously_pressed_physical_keys.contains(physical_key)
     }
 
     /// Checks if the last keystroke sent by the system is repeated,
@@ -241,89 +199,32 @@ impl KeyboardContext {
         }
     }
 
-    /// Returns a reference to the set of currently pressed keys.
-    pub fn pressed_keys(&self) -> &HashSet<KeyCode> {
-        &self.pressed_keys_set
-    }
-
-    /// Returns a reference to the set of currently pressed scancodes.
-    pub fn pressed_scancodes(&self) -> &HashSet<ScanCode> {
-        &self.pressed_scancodes_set
-    }
-
-    /// Checks if keyboard modifier (or several) is active.
-    pub fn is_mod_active(&self, keymods: KeyMods) -> bool {
-        self.active_mods().contains(keymods)
-    }
-
-    /// Returns currently active keyboard modifiers.
-    pub fn active_mods(&self) -> KeyMods {
-        self.active_modifiers
-    }
-
     /// Copies the current state of the keyboard into the context. If you are writing your own event loop
     /// you need to call this at the end of every update in order to use the functions `is_key_just_pressed`
     /// and `is_key_just_released`. Otherwise this is handled for you.
     pub fn save_keyboard_state(&mut self) {
-        self.previously_pressed_keys_set
-            .clone_from(&self.pressed_keys_set);
-        self.previously_pressed_scancodes_set
-            .clone_from(&self.pressed_scancodes_set);
+        self.previously_pressed_logical_keys
+            .clone_from(&self.pressed_logical_keys);
+        self.previously_pressed_physical_keys
+            .clone_from(&self.pressed_physical_keys);
     }
 
-    pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
+    pub(crate) fn set_logical_key(&mut self, key: &Key, pressed: bool) {
         if pressed {
-            let _ = self.pressed_keys_set.insert(key);
+            let _ = self.pressed_logical_keys.insert(key.clone());
         } else {
-            let _ = self.pressed_keys_set.remove(&key);
+            let _ = self.pressed_logical_keys.remove(key);
         }
-
-        self.set_key_modifier(key, pressed);
     }
 
-    pub(crate) fn set_scancode(&mut self, code: ScanCode, pressed: bool) {
+    pub(crate) fn set_physical_key(&mut self, physical_key: &PhysicalKey, pressed: bool) {
         if pressed {
-            let _ = self.pressed_scancodes_set.insert(code);
+            let _ = self.pressed_physical_keys.insert(*physical_key);
             self.last_pressed = self.current_pressed;
-            self.current_pressed = Some(code);
+            self.current_pressed = Some(*physical_key);
         } else {
-            let _ = self.pressed_scancodes_set.remove(&code);
+            let _ = self.pressed_physical_keys.remove(physical_key);
             self.current_pressed = None;
-        }
-    }
-
-    /// Set the keyboard active modifiers
-    /// Really useful only if you are writing your own event loop
-    pub fn set_modifiers(&mut self, keymods: KeyMods) {
-        self.active_modifiers = keymods;
-    }
-
-    /// Take a modifier key code and alter our state.
-    ///
-    /// Double check that this edge handling is necessary;
-    /// winit sounds like it should do this for us,
-    /// see <https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers>
-    ///
-    /// ...more specifically, we should refactor all this to consistant-ify events a bit and
-    /// make winit do more of the work.
-    /// But to quote Scott Pilgrim, "This is... this is... Booooooring."
-    fn set_key_modifier(&mut self, key: KeyCode, pressed: bool) {
-        if pressed {
-            match key {
-                KeyCode::LShift | KeyCode::RShift => self.active_modifiers |= KeyMods::SHIFT,
-                KeyCode::LControl | KeyCode::RControl => self.active_modifiers |= KeyMods::CTRL,
-                KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers |= KeyMods::ALT,
-                KeyCode::LWin | KeyCode::RWin => self.active_modifiers |= KeyMods::LOGO,
-                _ => (),
-            }
-        } else {
-            match key {
-                KeyCode::LShift | KeyCode::RShift => self.active_modifiers -= KeyMods::SHIFT,
-                KeyCode::LControl | KeyCode::RControl => self.active_modifiers -= KeyMods::CTRL,
-                KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers -= KeyMods::ALT,
-                KeyCode::LWin | KeyCode::RWin => self.active_modifiers -= KeyMods::LOGO,
-                _ => (),
-            }
         }
     }
 }
@@ -334,215 +235,140 @@ impl Default for KeyboardContext {
     }
 }
 
-/// Checks if a key is currently pressed down.
-#[deprecated(since = "0.8.0", note = "Use `ctx.keyboard.is_key_pressed` instead")]
-pub fn is_key_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard.is_key_pressed(key)
-}
-
-/// Checks if a key has been pressed down this frame.
-#[deprecated(
-    since = "0.8.0",
-    note = "Use `ctx.keyboard.is_key_just_pressed` instead"
-)]
-pub fn is_key_just_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard.is_key_just_pressed(key)
-}
-
-/// Checks if a key has been released this frame.
-#[deprecated(
-    since = "0.8.0",
-    note = "Use `ctx.keyboard.is_key_just_released` instead"
-)]
-pub fn is_key_just_released(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard.is_key_just_released(key)
-}
-
-/// Checks if the last keystroke sent by the system is repeated,
-/// like when a key is held down for a period of time.
-#[deprecated(since = "0.8.0", note = "Use `ctx.keyboard.is_key_repeated` instead")]
-pub fn is_key_repeated(ctx: &Context) -> bool {
-    ctx.keyboard.is_key_repeated()
-}
-
-/// Returns a reference to the set of currently pressed keys.
-#[deprecated(since = "0.8.0", note = "Use `ctx.keyboard.pressed_keys` instead")]
-pub fn pressed_keys(ctx: &Context) -> &HashSet<KeyCode> {
-    ctx.keyboard.pressed_keys()
-}
-
-/// Checks if keyboard modifier (or several) is active.
-#[deprecated(since = "0.8.0", note = "Use `ctx.keyboard.is_mod_active` instead")]
-pub fn is_mod_active(ctx: &Context, keymods: KeyMods) -> bool {
-    ctx.keyboard.is_mod_active(keymods)
-}
-
-/// Returns currently active keyboard modifiers.
-#[deprecated(since = "0.8.0", note = "Use `ctx.keyboard.active_mods` instead")]
-pub fn active_mods(ctx: &Context) -> KeyMods {
-    ctx.keyboard.active_mods()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn key_mod_conversions() {
-        let shift = winit::event::ModifiersState::SHIFT;
-        let alt = winit::event::ModifiersState::ALT;
-        let ctrl = winit::event::ModifiersState::CTRL;
-
-        assert_eq!(KeyMods::empty(), KeyMods::from(ModifiersState::empty()));
-        assert_eq!(KeyMods::SHIFT, KeyMods::from(shift));
-        assert_eq!(KeyMods::SHIFT | KeyMods::ALT, KeyMods::from(shift | alt));
-        assert_eq!(
-            KeyMods::SHIFT | KeyMods::ALT | KeyMods::CTRL,
-            KeyMods::from(shift | alt | ctrl)
-        );
-        assert_eq!(KeyMods::SHIFT - KeyMods::ALT, KeyMods::from(shift));
-        assert_eq!(
-            (KeyMods::SHIFT | KeyMods::ALT) - KeyMods::ALT,
-            KeyMods::from(shift)
-        );
-        assert_eq!(
-            KeyMods::SHIFT - (KeyMods::ALT | KeyMods::SHIFT),
-            KeyMods::from(ModifiersState::empty())
-        );
-    }
-
-    #[test]
-    fn pressed_keys_tracking() {
+    fn pressed_logical_keys_tracking() {
+        let a = &Key::Character("a".into());
+        let b = &Key::Character("b".into());
+        let empty = HashSet::new();
         let mut keyboard = KeyboardContext::new();
-        assert_eq!(keyboard.pressed_keys(), &[].iter().copied().collect());
-        assert!(!keyboard.is_key_pressed(KeyCode::A));
-        keyboard.set_key(KeyCode::A, true);
+        assert_eq!(keyboard.pressed_logical_keys, empty);
+        assert!(!keyboard.is_logical_key_pressed(a));
+        keyboard.set_logical_key(a, true);
         assert_eq!(
-            keyboard.pressed_keys(),
-            &[KeyCode::A].iter().copied().collect()
+            keyboard.pressed_logical_keys,
+            [a.clone()].iter().cloned().collect()
         );
-        assert!(keyboard.is_key_pressed(KeyCode::A));
-        keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.pressed_keys(), &[].iter().copied().collect());
-        assert!(!keyboard.is_key_pressed(KeyCode::A));
-        keyboard.set_key(KeyCode::A, true);
+        assert!(keyboard.is_logical_key_pressed(a));
+        keyboard.set_logical_key(a, false);
+        assert_eq!(keyboard.pressed_logical_keys, empty);
+        assert!(!keyboard.is_logical_key_pressed(a));
+        keyboard.set_logical_key(a, true);
         assert_eq!(
-            keyboard.pressed_keys(),
-            &[KeyCode::A].iter().copied().collect()
+            keyboard.pressed_logical_keys,
+            [a.clone()].iter().cloned().collect()
         );
-        assert!(keyboard.is_key_pressed(KeyCode::A));
-        keyboard.set_key(KeyCode::A, true);
+        assert!(keyboard.is_logical_key_pressed(a));
+        keyboard.set_logical_key(a, true);
         assert_eq!(
-            keyboard.pressed_keys(),
-            &[KeyCode::A].iter().copied().collect()
+            keyboard.pressed_logical_keys,
+            [a.clone()].iter().cloned().collect()
         );
-        keyboard.set_key(KeyCode::B, true);
+        keyboard.set_logical_key(b, true);
         assert_eq!(
-            keyboard.pressed_keys(),
-            &[KeyCode::A, KeyCode::B].iter().copied().collect()
+            keyboard.pressed_logical_keys,
+            [a.clone(), b.clone()].iter().cloned().collect()
         );
-        keyboard.set_key(KeyCode::B, true);
+        keyboard.set_logical_key(b, true);
         assert_eq!(
-            keyboard.pressed_keys(),
-            &[KeyCode::A, KeyCode::B].iter().copied().collect()
+            keyboard.pressed_logical_keys,
+            [a.clone(), b.clone()].iter().cloned().collect()
         );
-        keyboard.set_key(KeyCode::A, false);
+        keyboard.set_logical_key(a, false);
         assert_eq!(
-            keyboard.pressed_keys(),
-            &[KeyCode::B].iter().copied().collect()
+            keyboard.pressed_logical_keys,
+            [b.clone()].iter().cloned().collect()
         );
-        keyboard.set_key(KeyCode::A, false);
+        keyboard.set_logical_key(a, false);
         assert_eq!(
-            keyboard.pressed_keys(),
-            &[KeyCode::B].iter().copied().collect()
+            keyboard.pressed_logical_keys,
+            [b.clone()].iter().cloned().collect()
         );
-        keyboard.set_key(KeyCode::B, false);
-        assert_eq!(keyboard.pressed_keys(), &[].iter().copied().collect());
+        keyboard.set_logical_key(b, false);
+        assert_eq!(keyboard.pressed_logical_keys, empty);
     }
 
     #[test]
     fn pressed_scancodes_tracking() {
         let mut keyboard = KeyboardContext::new();
-        assert_eq!(keyboard.pressed_scancodes(), &[].iter().copied().collect());
-        assert!(!keyboard.is_scancode_pressed(3));
-        keyboard.set_scancode(3, true);
-        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().copied().collect());
-        assert!(keyboard.is_scancode_pressed(3));
-        keyboard.set_scancode(3, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[].iter().copied().collect());
-        assert!(!keyboard.is_scancode_pressed(3));
-        keyboard.set_scancode(3, true);
-        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().copied().collect());
-        assert!(keyboard.is_scancode_pressed(3));
-        keyboard.set_scancode(3, true);
-        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().copied().collect());
-        keyboard.set_scancode(4, true);
+        let a = &PhysicalKey::Code(KeyCode::KeyA);
+        let b = &PhysicalKey::Code(KeyCode::KeyB);
+        assert_eq!(keyboard.pressed_physical_keys, [].iter().copied().collect());
+        assert!(!keyboard.is_physical_key_pressed(a));
+        keyboard.set_physical_key(a, true);
         assert_eq!(
-            keyboard.pressed_scancodes(),
-            &[3, 4].iter().copied().collect()
+            keyboard.pressed_physical_keys,
+            [*a].iter().copied().collect()
         );
-        keyboard.set_scancode(4, true);
+        assert!(keyboard.is_physical_key_pressed(a));
+        keyboard.set_physical_key(a, false);
+        assert_eq!(keyboard.pressed_physical_keys, [].iter().copied().collect());
+        assert!(!keyboard.is_physical_key_pressed(a));
+        keyboard.set_physical_key(a, true);
         assert_eq!(
-            keyboard.pressed_scancodes(),
-            &[3, 4].iter().copied().collect()
+            keyboard.pressed_physical_keys,
+            [*a].iter().copied().collect()
         );
-        keyboard.set_scancode(3, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().copied().collect());
-        keyboard.set_scancode(3, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().copied().collect());
-        keyboard.set_scancode(4, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[].iter().copied().collect());
-    }
-
-    #[test]
-    fn keyboard_modifiers() {
-        let mut keyboard = KeyboardContext::new();
-
-        // this test is mostly useless and is primarily for code coverage
-        assert_eq!(keyboard.active_mods(), KeyMods::default());
-        keyboard.set_modifiers(KeyMods::from(ModifiersState::all()));
-
-        // these test the workaround for https://github.com/tomaka/winit/issues/600
+        assert!(keyboard.is_physical_key_pressed(a));
+        keyboard.set_physical_key(a, true);
         assert_eq!(
-            keyboard.active_mods(),
-            KeyMods::SHIFT | KeyMods::CTRL | KeyMods::ALT | KeyMods::LOGO
+            keyboard.pressed_physical_keys,
+            [*a].iter().copied().collect()
         );
-        keyboard.set_key(KeyCode::LControl, false);
+        keyboard.set_physical_key(b, true);
         assert_eq!(
-            keyboard.active_mods(),
-            KeyMods::SHIFT | KeyMods::ALT | KeyMods::LOGO
+            keyboard.pressed_physical_keys,
+            [*a, *b].iter().copied().collect()
         );
-        keyboard.set_key(KeyCode::RAlt, false);
-        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT | KeyMods::LOGO);
-        keyboard.set_key(KeyCode::LWin, false);
-        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT);
+        keyboard.set_physical_key(b, true);
+        assert_eq!(
+            keyboard.pressed_physical_keys,
+            [*a, *b].iter().copied().collect()
+        );
+        keyboard.set_physical_key(a, false);
+        assert_eq!(
+            keyboard.pressed_physical_keys,
+            [*b].iter().copied().collect()
+        );
+        keyboard.set_physical_key(a, false);
+        assert_eq!(
+            keyboard.pressed_physical_keys,
+            [*b].iter().copied().collect()
+        );
+        keyboard.set_physical_key(b, false);
+        assert_eq!(keyboard.pressed_physical_keys, [].iter().copied().collect());
     }
 
     #[test]
     fn repeated_keys_tracking() {
+        let a = &PhysicalKey::Code(KeyCode::KeyA);
+        let b = &PhysicalKey::Code(KeyCode::KeyB);
         let mut keyboard = KeyboardContext::new();
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(1, true);
+        keyboard.set_physical_key(a, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(1, false);
+        keyboard.set_physical_key(a, false);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(1, true);
+        keyboard.set_physical_key(a, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(1, true);
+        keyboard.set_physical_key(a, true);
         assert!(keyboard.is_key_repeated());
-        keyboard.set_scancode(1, false);
+        keyboard.set_physical_key(a, false);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(1, true);
+        keyboard.set_physical_key(a, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(2, true);
+        keyboard.set_physical_key(b, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(1, true);
+        keyboard.set_physical_key(a, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(1, true);
+        keyboard.set_physical_key(a, true);
         assert!(keyboard.is_key_repeated());
-        keyboard.set_scancode(2, true);
+        keyboard.set_physical_key(b, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_scancode(2, true);
+        keyboard.set_physical_key(b, true);
         assert!(keyboard.is_key_repeated());
     }
 }

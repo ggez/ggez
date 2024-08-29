@@ -8,7 +8,6 @@ use ggez::conf;
 use ggez::event::{self, EventHandler};
 use ggez::glam::*;
 use ggez::graphics::{self, Color};
-use ggez::input::keyboard::KeyCode;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use oorandom::Rand32;
@@ -16,6 +15,7 @@ use oorandom::Rand32;
 use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
+use winit::keyboard::{Key, NamedKey};
 
 type Point2 = Vec2;
 type Vector2 = Vec2;
@@ -555,41 +555,43 @@ impl EventHandler for MainState {
         input: KeyInput,
         _repeated: bool,
     ) -> GameResult {
-        match input.keycode {
-            Some(KeyCode::Up) => {
+        match input.event.logical_key {
+            Key::Named(NamedKey::ArrowUp) => {
                 self.input.yaxis = 1.0;
             }
-            Some(KeyCode::Left) => {
+            Key::Named(NamedKey::ArrowLeft) => {
                 self.input.xaxis = -1.0;
             }
-            Some(KeyCode::Right) => {
+            Key::Named(NamedKey::ArrowRight) => {
                 self.input.xaxis = 1.0;
             }
-            Some(KeyCode::Space) => {
+            Key::Named(NamedKey::Space) => {
                 self.input.fire = true;
             }
-            Some(KeyCode::P) => {
-                self.screen.image(ctx).encode(
-                    ctx,
-                    graphics::ImageEncodingFormat::Png,
-                    "/screenshot.png",
-                )?;
+            Key::Character(c) => {
+                if c == "p" {
+                    self.screen.image(ctx).encode(
+                        ctx,
+                        graphics::ImageEncodingFormat::Png,
+                        "/screenshot.png",
+                    )?;
+                }
             }
-            Some(KeyCode::Escape) => ctx.request_quit(),
+            Key::Named(NamedKey::Escape) => ctx.request_quit(),
             _ => (), // Do nothing
         }
         Ok(())
     }
 
     fn key_up_event(&mut self, _ctx: &mut Context, input: KeyInput) -> GameResult {
-        match input.keycode {
-            Some(KeyCode::Up) => {
+        match input.event.logical_key {
+            Key::Named(NamedKey::ArrowUp) => {
                 self.input.yaxis = 0.0;
             }
-            Some(KeyCode::Left | KeyCode::Right) => {
+            Key::Named(NamedKey::ArrowLeft | NamedKey::ArrowRight) => {
                 self.input.xaxis = 0.0;
             }
-            Some(KeyCode::Space) => {
+            Key::Named(NamedKey::Space) => {
                 self.input.fire = false;
             }
             _ => (), // Do nothing

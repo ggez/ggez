@@ -193,6 +193,7 @@ extern crate log;
 
 pub use glam;
 pub use mint;
+pub use winit;
 
 pub mod audio;
 pub mod conf;
@@ -208,5 +209,5 @@ mod vfs;
 pub mod coroutine;
 pub use crate::coroutine::Coroutine;
 
-pub use crate::context::{winit, Context, ContextBuilder};
+pub use crate::context::{Context, ContextBuilder};
 pub use crate::error::*;
