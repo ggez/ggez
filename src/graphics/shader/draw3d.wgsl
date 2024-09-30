@@ -40,7 +40,7 @@ fn vs_main(
     // convert to linear
     var threshold = uniforms.color.rgb < vec3<f32>(0.04045);
     var hi = pow((uniforms.color.rgb + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4));
-    var lo = uniforms.color.rgb * vec3<f32>(12.92);
+    var lo = uniforms.color.rgb * vec3<f32>(1.0 / 12.92);
     var linear_color = vec4<f32>(select(hi, lo, threshold), uniforms.color.a);
     out.color = linear_color;
     
