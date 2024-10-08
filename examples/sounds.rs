@@ -10,9 +10,7 @@ use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 use std::time::Duration;
-use winit::keyboard::Key;
 use winit::keyboard::KeyCode;
-use winit::keyboard::NamedKey;
 use winit::keyboard::PhysicalKey;
 
 struct MainState {
@@ -92,10 +90,7 @@ impl event::EventHandler for MainState {
             PhysicalKey::Code(KeyCode::Digit4) => self.play_highpitch(ctx),
             PhysicalKey::Code(KeyCode::Digit5) => self.play_lowpitch(ctx),
             PhysicalKey::Code(KeyCode::Digit6) => self.play_stats(ctx),
-            _ => (),
-        }
-        match input.event.logical_key {
-            Key::Named(NamedKey::Escape) => ctx.request_quit(),
+            PhysicalKey::Code(KeyCode::Escape) => ctx.request_quit(),
             _ => (),
         }
         Ok(())

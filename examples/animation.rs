@@ -8,7 +8,7 @@ extern crate num_derive;
 use ggez::event;
 use ggez::glam::*;
 use ggez::graphics::{self, Color};
-use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::input::keyboard::KeyInput;
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
 use keyframe::{ease, functions::*, keyframes, AnimationSequence, EasingFunction};
@@ -18,7 +18,6 @@ use std::env;
 use std::path;
 use winit::keyboard::Key;
 use winit::keyboard::NamedKey;
-use winit::keyboard::PhysicalKey;
 
 struct MainState {
     ball: graphics::Mesh,
@@ -314,48 +313,38 @@ impl event::EventHandler for MainState {
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         const DELTA: f32 = 0.2;
         match input.event.logical_key {
-            Key::Named(nk) => {
-                match nk {
-                    NamedKey::ArrowUp | NamedKey::ArrowDown => {
-                        // easing change
-                        let new_easing_enum = new_enum_after_key(
-                            &self.easing_enum,
-                            &EasingEnum::EaseInOut3Point,
-                            NamedKey::ArrowDown,
-                            NamedKey::ArrowUp,
-                            &input.event.logical_key,
-                        );
+            Key::Named(NamedKey::ArrowUp | NamedKey::ArrowDown) => {
+                // easing change
+                let new_easing_enum = new_enum_after_key(
+                    &self.easing_enum,
+                    &EasingEnum::EaseInOut3Point,
+                    NamedKey::ArrowDown,
+                    NamedKey::ArrowUp,
+                    &input.event.logical_key,
+                );
 
-                        if self.easing_enum != new_easing_enum {
-                            self.easing_enum = new_easing_enum;
-                        }
-                    }
-                    NamedKey::ArrowLeft | NamedKey::ArrowRight => {
-                        // animation change
-                        let new_animation_type = new_enum_after_key(
-                            &self.animation_type,
-                            &AnimationType::Crawl,
-                            NamedKey::ArrowLeft,
-                            NamedKey::ArrowRight,
-                            &input.event.logical_key,
-                        );
-
-                        if self.animation_type != new_animation_type {
-                            self.animation_type = new_animation_type;
-                        }
-                    }
-                    _ => {}
+                if self.easing_enum != new_easing_enum {
+                    self.easing_enum = new_easing_enum;
                 }
             }
-            _ => {}
-        }
-        match input.event.physical_key {
-            // duration change
-            PhysicalKey::Code(kc) => match kc {
-                KeyCode::KeyW => {
-                    self.duration += DELTA;
+            Key::Named(NamedKey::ArrowLeft | NamedKey::ArrowRight) => {
+                // animation change
+                let new_animation_type = new_enum_after_key(
+                    &self.animation_type,
+                    &AnimationType::Crawl,
+                    NamedKey::ArrowLeft,
+                    NamedKey::ArrowRight,
+                    &input.event.logical_key,
+                );
+
+                if self.animation_type != new_animation_type {
+                    self.animation_type = new_animation_type;
                 }
-                KeyCode::KeyS => {
+            }
+            // duration change
+            Key::Character(c) => match &*c {
+                "c" | "C" => self.duration += DELTA,
+                "s" | "S" => {
                     if self.duration - DELTA > 0.1 {
                         self.duration -= DELTA;
                     }
