@@ -19,7 +19,12 @@ use oorandom::Rand32;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::{context::{ContextFields, HasMut}, event, graphics, input::keyboard::KeyInput, Context, GameResult};
+use ggez::{
+    context::{ContextFields, HasMut},
+    event, graphics,
+    input::keyboard::KeyInput,
+    Context, GameResult,
+};
 use winit::keyboard::{Key, NamedKey};
 
 // We'll bring in some things from `std` to help us in the future.

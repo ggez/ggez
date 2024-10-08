@@ -17,7 +17,7 @@
 //! characters to their physical location on the keyboard.
 //!
 //! In general, logical keys should be used when the meaning of the typed
-//! character is important (e.g. "I" to open the inventory), and physical keys 
+//! character is important (e.g. "I" to open the inventory), and physical keys
 //! for when the location is important (e.g. the WASD key block).
 //!
 //! -----
