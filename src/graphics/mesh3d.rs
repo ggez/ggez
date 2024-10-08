@@ -785,8 +785,9 @@ impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
             let mut map = |pi: usize| -> obj::ObjResult<()> {
                 inds.push(match I::from_usize(pi) {
                     Some(val) => val,
+                    #[allow(deprecated)]
                     None => {
-                        return obj::ObjResult::Err(obj::ObjError::Load(obj::LoadError::new(
+                        return Err(obj::ObjError::Load(obj::LoadError::new(
                             obj::LoadErrorKind::IndexOutOfRange,
                             "Unable to convert the index from usize",
                         )));
@@ -815,6 +816,7 @@ impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
                             map(pi)?
                         }
                     }
+                    #[allow(deprecated)]
                     _ => {
                         return Err(obj::ObjError::Load(obj::LoadError::new(
                             obj::LoadErrorKind::UntriangulatedModel,
