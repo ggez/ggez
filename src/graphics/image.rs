@@ -140,7 +140,7 @@ impl Image {
             pixels,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(format.block_size(None).unwrap() * width), // Unwrap since it only fails with depth formats.
+                bytes_per_row: Some(format.block_copy_size(None).unwrap() * width), // Unwrap since it only fails with depth formats.
                 rows_per_image: None,
             },
             wgpu::Extent3d {
@@ -249,7 +249,7 @@ impl Image {
             )));
         }
 
-        let block_size = u64::from(self.format.block_size(None).unwrap()); // Unwrap since it only fails with depth formats.
+        let block_size = u64::from(self.format.block_copy_size(None).unwrap()); // Unwrap since it only fails with depth formats.
 
         let bytes_per_pixel = block_size;
         let unpadded_bytes_per_row = self.width as usize * bytes_per_pixel as usize;

@@ -6,6 +6,8 @@ use ggez::input::keyboard;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
+use winit::keyboard::Key;
+use winit::keyboard::NamedKey;
 
 const GRID_INTERVAL: f32 = 100.0;
 const GRID_SIZE: usize = 10;
@@ -104,7 +106,7 @@ impl event::EventHandler for MainState {
         input: keyboard::KeyInput,
         _repeat: bool,
     ) -> GameResult {
-        if let Some(keyboard::KeyCode::Space) = input.keycode {
+        if Key::Named(NamedKey::Space) == input.event.logical_key {
             self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
             self.screen_coords = self.screen_bounds[self.screen_bounds_idx];
         }

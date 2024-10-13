@@ -21,7 +21,7 @@ pub enum Transform {
         /// For most objects this works as a relative offset (meaning `[0.5,0.5]` is an offset which
         /// centers the object on the destination). These objects are:
         /// * `Image`, `Canvas`, `Text` and the sprites inside an `InstanceArray` (as long as you're
-        /// not making an instanced mesh-draw)
+        ///   not making an instanced mesh-draw)
         offset: mint::Point2<f32>,
     },
     /// Transform made of an arbitrary matrix.

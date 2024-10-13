@@ -146,6 +146,7 @@ impl MainState {
                     vertex: wgpu::VertexState {
                         module: &shader,
                         entry_point: "vs_main",
+                        compilation_options: Default::default(),
                         buffers: &[wgpu::VertexBufferLayout {
                             array_stride: std::mem::size_of::<Vertex>() as _,
                             step_mode: wgpu::VertexStepMode::Vertex,
@@ -189,6 +190,7 @@ impl MainState {
                     fragment: Some(wgpu::FragmentState {
                         module: &shader,
                         entry_point: "fs_main",
+                        compilation_options: Default::default(),
                         targets: &[Some(wgpu::ColorTargetState {
                             format: ctx.gfx.surface_format(),
                             blend: None,
@@ -196,6 +198,7 @@ impl MainState {
                         })],
                     }),
                     multiview: None,
+                    cache: None,
                 });
 
         // Create 1-pixel blue texture.

@@ -7,7 +7,6 @@ use ggez::conf;
 use ggez::event;
 use ggez::graphics::Rect;
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
-use ggez::input::keyboard::KeyCode;
 use ggez::{Context, GameResult};
 
 use argh::FromArgs;
@@ -15,6 +14,8 @@ use argh::FromArgs;
 use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
+use winit::keyboard::Key;
+use winit::keyboard::NamedKey;
 
 type Point2 = ggez::glam::Vec2;
 
@@ -138,7 +139,7 @@ impl event::EventHandler for MainState {
     fn mouse_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        _btn: event::MouseButton,
+        _btn: winit::event::MouseButton,
         x: f32,
         y: f32,
     ) -> GameResult {
@@ -147,26 +148,28 @@ impl event::EventHandler for MainState {
     }
 
     fn key_up_event(&mut self, ctx: &mut Context, input: KeyInput) -> GameResult {
-        match input.keycode {
-            Some(KeyCode::F) => {
-                self.window_settings.toggle_fullscreen = true;
-                self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
+        match input.event.logical_key {
+            Key::Character(c) => {
+                if c == "f" {
+                    self.window_settings.toggle_fullscreen = true;
+                    self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
+                }
             }
-            Some(KeyCode::Up) => {
+            Key::Named(NamedKey::ArrowUp) => {
                 self.zoom += 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = ctx.gfx.drawable_size();
                 let new_rect = graphics::Rect::new(0.0, 0.0, w * self.zoom, h * self.zoom);
                 self.screen_coords = new_rect;
             }
-            Some(KeyCode::Down) => {
+            Key::Named(NamedKey::ArrowDown) => {
                 self.zoom -= 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = ctx.gfx.drawable_size();
                 let new_rect = graphics::Rect::new(0.0, 0.0, w * self.zoom, h * self.zoom);
                 self.screen_coords = new_rect;
             }
-            Some(KeyCode::Space) => {
+            Key::Named(NamedKey::Space) => {
                 self.window_settings.resize_projection = !self.window_settings.resize_projection;
                 println!(
                     "Resizing the projection on window resize is now: {}",

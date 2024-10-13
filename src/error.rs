@@ -15,7 +15,7 @@ pub enum GameError {
     ConfigError(String),
     /// Happens when an `winit::event_loop::EventLoopProxy` attempts to
     /// wake up an `winit::event_loop::EventLoop` that no longer exists.
-    EventLoopError(String),
+    EventLoopError(winit::error::EventLoopError),
     /// An error trying to load a resource, such as getting an invalid image file.
     ResourceLoadError(String),
     /// Unable to find a resource; the `Vec` is the paths it searched for and associated errors
@@ -31,7 +31,7 @@ pub enum GameError {
     /// Something went wrong trying to set or get window properties.
     WindowError(String),
     /// Something went wrong trying to create a window
-    WindowCreationError(Arc<winit::error::OsError>),
+    WindowCreationError(winit::error::OsError),
     /// Something went wrong trying to read from a file
     #[allow(clippy::upper_case_acronyms)]
     IOError(Arc<std::io::Error>),
@@ -86,11 +86,12 @@ impl Error for GameError {
     fn cause(&self) -> Option<&dyn Error> {
         match *self {
             GameError::RequestDeviceError(ref e) => Some(e),
-            GameError::WindowCreationError(ref e) => Some(&**e),
+            GameError::WindowCreationError(ref e) => Some(e),
             GameError::IOError(ref e) => Some(&**e),
             GameError::FontError(ref e) => Some(e),
             GameError::GlyphBrushError(ref e) => Some(e),
             GameError::BufferAsyncError(ref e) => Some(e),
+            GameError::EventLoopError(ref e) => Some(e),
             _ => None,
         }
     }
@@ -150,8 +151,8 @@ impl From<image::ImageError> for GameError {
     }
 }
 impl From<winit::error::OsError> for GameError {
-    fn from(s: winit::error::OsError) -> GameError {
-        GameError::WindowCreationError(Arc::new(s))
+    fn from(e: winit::error::OsError) -> GameError {
+        GameError::WindowCreationError(e)
     }
 }
 
@@ -185,9 +186,9 @@ impl From<wgpu::RequestDeviceError> for GameError {
     }
 }
 
-impl From<Arc<winit::error::OsError>> for GameError {
-    fn from(s: Arc<winit::error::OsError>) -> GameError {
-        GameError::WindowCreationError(s)
+impl From<winit::error::EventLoopError> for GameError {
+    fn from(e: winit::error::EventLoopError) -> GameError {
+        GameError::EventLoopError(e)
     }
 }
 

@@ -8,7 +8,7 @@ extern crate num_derive;
 use ggez::event;
 use ggez::glam::*;
 use ggez::graphics::{self, Color};
-use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::input::keyboard::KeyInput;
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
 use keyframe::{ease, functions::*, keyframes, AnimationSequence, EasingFunction};
@@ -16,6 +16,8 @@ use keyframe_derive::CanTween;
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::env;
 use std::path;
+use winit::keyboard::Key;
+use winit::keyboard::NamedKey;
 
 struct MainState {
     ball: graphics::Mesh,
@@ -310,29 +312,29 @@ impl event::EventHandler for MainState {
 
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         const DELTA: f32 = 0.2;
-        match input.keycode {
-            Some(KeyCode::Up | KeyCode::Down) => {
+        match input.event.logical_key {
+            Key::Named(NamedKey::ArrowUp | NamedKey::ArrowDown) => {
                 // easing change
                 let new_easing_enum = new_enum_after_key(
                     &self.easing_enum,
                     &EasingEnum::EaseInOut3Point,
-                    KeyCode::Down,
-                    KeyCode::Up,
-                    input.keycode.unwrap(),
+                    NamedKey::ArrowDown,
+                    NamedKey::ArrowUp,
+                    &input.event.logical_key,
                 );
 
                 if self.easing_enum != new_easing_enum {
                     self.easing_enum = new_easing_enum;
                 }
             }
-            Some(KeyCode::Left | KeyCode::Right) => {
+            Key::Named(NamedKey::ArrowLeft | NamedKey::ArrowRight) => {
                 // animation change
                 let new_animation_type = new_enum_after_key(
                     &self.animation_type,
                     &AnimationType::Crawl,
-                    KeyCode::Left,
-                    KeyCode::Right,
-                    input.keycode.unwrap(),
+                    NamedKey::ArrowLeft,
+                    NamedKey::ArrowRight,
+                    &input.event.logical_key,
                 );
 
                 if self.animation_type != new_animation_type {
@@ -340,14 +342,15 @@ impl event::EventHandler for MainState {
                 }
             }
             // duration change
-            Some(KeyCode::W) => {
-                self.duration += DELTA;
-            }
-            Some(KeyCode::S) => {
-                if self.duration - DELTA > 0.1 {
-                    self.duration -= DELTA;
+            Key::Character(c) => match &*c {
+                "c" | "C" => self.duration += DELTA,
+                "s" | "S" => {
+                    if self.duration - DELTA > 0.1 {
+                        self.duration -= DELTA;
+                    }
                 }
-            }
+                _ => {}
+            },
             _ => {}
         }
 
@@ -361,14 +364,14 @@ impl event::EventHandler for MainState {
 fn new_enum_after_key<E: ToPrimitive + FromPrimitive>(
     old_enum: &E,
     max_enum: &E,
-    dec_key: KeyCode,
-    inc_key: KeyCode,
-    key: KeyCode,
+    dec_key: NamedKey,
+    inc_key: NamedKey,
+    key: &Key,
 ) -> E {
     let mut new_val = ToPrimitive::to_i32(old_enum).unwrap();
     new_val += match key {
-        _ if key == dec_key => -1,
-        _ if key == inc_key => 1,
+        _ if *key == dec_key => -1,
+        _ if *key == inc_key => 1,
         _ => 0,
     };
 

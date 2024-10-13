@@ -121,7 +121,7 @@ pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("super_simple", "ggez");
     let (mut ctx, event_loop) =
         cb.custom_build::<MyContext>(|game_id: String, conf: Conf, fs: Filesystem| {
-            let events_loop = winit::event_loop::EventLoop::new();
+            let events_loop = winit::event_loop::EventLoop::new()?;
             let timer_context = timer::TimeContext::new();
             let graphics_context =
                 graphics::context::GraphicsContext::new(&game_id, &events_loop, &conf, &fs)?;
