@@ -48,6 +48,7 @@ pub(crate) mod shader;
 pub(crate) mod text;
 mod types;
 
+pub use lyon::path;
 pub use lyon::tessellation::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 pub use {
     self::image::*, canvas::*, context::*, draw::*, instance::*, mesh::*, sampler::*, shader::*,
