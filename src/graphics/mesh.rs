@@ -1,9 +1,10 @@
 use super::{
-    context::GraphicsContext, Canvas, Color, Draw, DrawMode, DrawParam, Drawable, LinearColor,
-    Rect, WgpuContext,
+    context::GraphicsContext,
+    path::{Path, Polygon},
+    Canvas, Color, Draw, DrawMode, DrawParam, Drawable, LinearColor, Rect, WgpuContext,
 };
 use crate::{context::Has, GameError, GameResult};
-use lyon::{math::Point as LPoint, path::Polygon, tessellation as tess};
+use lyon::{math::Point as LPoint, tessellation as tess};
 use wgpu::util::DeviceExt;
 
 /// Vertex format uploaded to vertex buffers.
@@ -420,6 +421,44 @@ impl MeshBuilder {
                 }
             };
         }
+        Ok(self)
+    }
+
+    /// Extend the mesh with a [`Path`].
+    ///
+    /// ```
+    /// use ggez::graphics::{Color, DrawMode, MeshBuilder, path::Path};
+    /// let mut path = Path::builder();
+    /// path.begin([0., 0.].into());
+    /// path.cubic_bezier_to(
+    ///     [10., 0.].into(),
+    ///     [0., 10.].into(),
+    ///     [10., 10.].into(),
+    /// );
+    /// path.end(false);
+    ///
+    /// let mut builder = MeshBuilder::new();
+    /// builder.path(DrawMode::stroke(1.), &path.build(), Color::BLACK);
+    /// ```
+    pub fn path(&mut self, mode: DrawMode, path: &Path, color: Color) -> GameResult<&mut Self> {
+        let buffers = &mut self.buffer;
+        let vb = VertexBuilder {
+            color: LinearColor::from(color),
+        };
+
+        let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+
+        match mode {
+            DrawMode::Fill(options) => {
+                let mut tessellator = tess::FillTessellator::new();
+                tessellator.tessellate_path(path, &options, builder)?;
+            }
+            DrawMode::Stroke(options) => {
+                let mut tessellator = tess::StrokeTessellator::new();
+                tessellator.tessellate_path(path, &options, builder)?;
+            }
+        }
+
         Ok(self)
     }
 
