@@ -137,6 +137,21 @@ impl Mesh {
         ))
     }
 
+    /// Create a new mesh for a [`Path`].
+    ///
+    /// See [`MeshBuilder::path`] for an example of constructing a [`Path`].
+    pub fn new_path(
+        gfx: &impl Has<GraphicsContext>,
+        mode: DrawMode,
+        path: &Path,
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_data(
+            gfx,
+            MeshBuilder::new().path(mode, path, color)?.build(),
+        ))
+    }
+
     /// Create a new mesh for a series of connected lines.
     pub fn new_polyline(
         gfx: &impl Has<GraphicsContext>,
