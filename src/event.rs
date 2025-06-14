@@ -558,7 +558,7 @@ where
         if let DeviceEvent::MouseMotion { delta } = event {
             let res = self
                 .state
-                .raw_mouse_motion_event(&mut self.ctx, delta.0, delta.0);
+                .raw_mouse_motion_event(&mut self.ctx, delta.0, delta.1);
             if catch_error(
                 &mut self.ctx,
                 res,
