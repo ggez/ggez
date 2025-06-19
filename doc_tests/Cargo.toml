@@ -11,6 +11,6 @@ skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust
 [dev-dependencies]
 ggez = { path = ".." }
 
-rand = "0.8"
+rand = "0.9"
 oorandom = "11"
 skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }

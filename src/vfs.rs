@@ -623,7 +623,7 @@ pub struct ZipFileWrapper {
 }
 
 impl ZipFileWrapper {
-    fn new(z: &mut zip::read::ZipFile) -> GameResult<Self> {
+    fn new(z: &mut zip::read::ZipFile<Box<dyn ReadSeek>>) -> GameResult<Self> {
         let mut b = Vec::new();
         let _ = z.read_to_end(&mut b)?;
         Ok(Self {
@@ -723,7 +723,7 @@ impl VMetadata for ZipMetadata {
 fn archive_get_by_name<'a>(
     archive: &'a mut zip::ZipArchive<Box<dyn ReadSeek>>,
     name: &str,
-) -> zip::result::ZipResult<zip::read::ZipFile<'a>> {
+) -> zip::result::ZipResult<zip::read::ZipFile<'a, Box<dyn ReadSeek>>> {
     let filename =
         sanitize_path_for_zip(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
     archive.by_name(&filename)
@@ -955,7 +955,7 @@ mod tests {
             let mut zip_archive = zip::ZipWriter::new(zip_bytes);
 
             zip_archive
-                .start_file("fake_file_name.txt", zip::write::FileOptions::default())
+                .start_file::<_, ()>("fake_file_name.txt", zip::write::FileOptions::default())
                 .unwrap();
             let _bytes = zip_archive.write(b"Zip contents!").unwrap();
             zip_archive.finish().unwrap()
