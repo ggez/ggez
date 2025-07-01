@@ -5,12 +5,12 @@
 //! which specifies hardware setup stuff, mostly video display settings.
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
-//! file and load values from it when the [`Context`](../struct.Context.html) is created.  This file
+//! file and load values from it when the [`Context`](../context/struct.Context.html) is created.  This file
 //! must be complete (ie you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
 //! can be tweaked such as window resolution, multisampling options, etc.
 //! If no file is found, it will create a `Conf` object from the settings
-//! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
+//! passed to the [`ContextBuilder`](../context/struct.ContextBuilder.html).
 
 use std::io;
 
