@@ -170,7 +170,7 @@ pub fn main() -> GameResult {
     // Creates our state, and starts `ggez`' loop.
     match App::new(&mut ctx, file_logger) {
         Err(e) => {
-            error!("Could not initialize: {}", e);
+            error!("Could not initialize: {e}");
         }
         Ok(app) => {
             let _ = ggez::event::run(ctx, events_loop, app);

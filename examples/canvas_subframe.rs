@@ -81,7 +81,7 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if ctx.time.ticks() % 100 == 0 {
+        if ctx.time.ticks().is_multiple_of(100) {
             println!("Delta frame time: {:?} ", ctx.time.delta());
             println!("Average FPS: {}", ctx.time.fps());
         }
