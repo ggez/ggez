@@ -169,7 +169,7 @@ impl Filesystem {
         {
             resources_path = root_path.clone();
             resources_path.push(resources_dir_name);
-            trace!("Resources path: {:?}", resources_path);
+            trace!("Resources path: {resources_path:?}");
             let physfs = vfs::PhysicalFS::new(&resources_path, true);
             overlay.push_back(Box::new(physfs));
         }
@@ -179,7 +179,7 @@ impl Filesystem {
             resources_zip_path = root_path;
             resources_zip_path.push(resources_zip_name);
             if resources_zip_path.exists() {
-                trace!("Resources zip file: {:?}", resources_zip_path);
+                trace!("Resources zip file: {resources_zip_path:?}");
                 let zipfs = vfs::ZipFS::new(&resources_zip_path)?;
                 overlay.push_back(Box::new(zipfs));
             } else {
@@ -191,7 +191,7 @@ impl Filesystem {
         // ~/.local/share/whatever/
         {
             user_data_path = project_dirs.data_local_dir();
-            trace!("User-local data path: {:?}", user_data_path);
+            trace!("User-local data path: {user_data_path:?}");
             let physfs = vfs::PhysicalFS::new(user_data_path, true);
             overlay.push_back(Box::new(physfs));
         }
@@ -200,7 +200,7 @@ impl Filesystem {
         // Save game dir is read-write
         {
             user_config_path = project_dirs.config_dir();
-            trace!("User-local configuration path: {:?}", user_config_path);
+            trace!("User-local configuration path: {user_config_path:?}");
             let physfs = vfs::PhysicalFS::new(user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }
@@ -363,7 +363,7 @@ impl Filesystem {
     /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
     pub fn mount(&self, path: &path::Path, readonly: bool) {
         let physfs = vfs::PhysicalFS::new(path, readonly);
-        trace!("Mounting new path: {:?}", physfs);
+        trace!("Mounting new path: {physfs:?}");
         self.vfs_mut().push_back(Box::new(physfs));
     }
 

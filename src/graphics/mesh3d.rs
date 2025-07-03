@@ -760,7 +760,7 @@ impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
             std::iter::zip(vertices, tex_coords)
                 .zip(normals)
                 .map(|v| {
-                    println!("{:?}", v);
+                    println!("{v:?}");
                     Vertex3d {
                         pos: [v.0 .0 .0, v.0 .0 .1, v.0 .0 .2],
                         tex_coord: [v.0 .1 .0, v.0 .1 .1],
