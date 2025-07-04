@@ -50,12 +50,12 @@ impl GamepadContext {
     }
 
     /// Returns the `Gamepad` associated with an `id`.
-    pub fn gamepad(&self, id: GamepadId) -> Gamepad {
+    pub fn gamepad(&'_ self, id: GamepadId) -> Gamepad<'_> {
         self.gilrs.gamepad(id.0)
     }
 
     /// Return an iterator of all the `Gamepads` that are connected.
-    pub fn gamepads(&self) -> GamepadsIterator {
+    pub fn gamepads(&'_ self) -> GamepadsIterator<'_> {
         GamepadsIterator {
             wrapped: self.gilrs.gamepads(),
         }
@@ -83,13 +83,13 @@ impl<'a> Iterator for GamepadsIterator<'a> {
 
 /// Returns the `Gamepad` associated with an `id`.
 #[deprecated(since = "0.8.0", note = "Use `ctx.gamepad.gamepad` instead")]
-pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
+pub fn gamepad(ctx: &'_ Context, id: GamepadId) -> Gamepad<'_> {
     ctx.gamepad.gamepad(id)
 }
 
 /// Return an iterator of all the `Gamepads` that are connected.
 #[deprecated(since = "0.8.0", note = "Use `ctx.gamepad.gamepads` instead")]
-pub fn gamepads(ctx: &Context) -> GamepadsIterator {
+pub fn gamepads(ctx: &'_ Context) -> GamepadsIterator<'_> {
     ctx.gamepad.gamepads()
 }
 

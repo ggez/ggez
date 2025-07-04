@@ -602,7 +602,7 @@ impl MeshBuilder {
         P: Into<mint::Point2<f32>> + Clone,
     {
         {
-            if (triangles.len() % 3) != 0 {
+            if !triangles.len().is_multiple_of(3) {
                 return Err(GameError::LyonError(String::from(
                     "Called Mesh::triangles() with points that have a length not a multiple of 3.",
                 )));
@@ -641,7 +641,7 @@ impl MeshBuilder {
     }
 
     /// Takes the accumulated geometry and return it as [`MeshData`].
-    pub fn build(&self) -> MeshData {
+    pub fn build(&'_ self) -> MeshData<'_> {
         MeshData {
             vertices: &self.buffer.vertices,
             indices: &self.buffer.indices,

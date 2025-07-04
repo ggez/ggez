@@ -82,7 +82,7 @@ impl event::EventHandler for MainState {
         }
 
         self.frames += 1;
-        if (self.frames % 100) == 0 {
+        if self.frames.is_multiple_of(100) {
             println!("FPS: {}", ctx.time.fps());
         }
 

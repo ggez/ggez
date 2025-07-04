@@ -196,7 +196,7 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
         _ => return None,
     }
 
-    fn is_normal_component(comp: path::Component) -> Option<&str> {
+    fn is_normal_component(comp: path::Component<'_>) -> Option<&str> {
         match comp {
             path::Component::Normal(s) => s.to_str(),
             _ => None,
@@ -226,7 +226,7 @@ fn sanitize_path_for_zip(path: &path::Path) -> Option<String> {
         _ => return None,
     }
 
-    fn is_normal_component(comp: path::Component) -> Option<&str> {
+    fn is_normal_component(comp: path::Component<'_>) -> Option<&str> {
         match comp {
             path::Component::Normal(s) => s.to_str(),
             _ => None,

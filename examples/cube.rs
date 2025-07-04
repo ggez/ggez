@@ -340,7 +340,7 @@ impl event::EventHandler for MainState {
         canvas.finish(ctx)?;
 
         self.frames += 1;
-        if (self.frames % 10) == 0 {
+        if self.frames.is_multiple_of(10) {
             println!("FPS: {}", ctx.time.fps());
         }
 

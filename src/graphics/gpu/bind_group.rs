@@ -214,7 +214,7 @@ impl<'a> BindGroupBuilder<'a> {
     }
 
     #[inline]
-    pub fn entries(&self) -> &[wgpu::BindGroupEntry] {
+    pub fn entries(&'_ self) -> &'_ [wgpu::BindGroupEntry<'_>] {
         &self.entries
     }
 }
