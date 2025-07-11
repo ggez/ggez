@@ -40,7 +40,7 @@ winit = { version = "0.30", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "jpeg"] }
 rodio = { version = "0.20", optional = true, default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.5"
+toml = "0.9"
 log = "0.4"
 lyon = "1.0"
 smart-default = "0.7"

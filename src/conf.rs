@@ -420,8 +420,8 @@ impl Conf {
     /// Saves the `Conf` to the given `Write` object,
     /// formatted as TOML.
     pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult {
-        let s = toml::to_vec(self)?;
-        file.write_all(&s)?;
+        let s = toml::to_string(self)?;
+        file.write_all(s.as_bytes())?;
         Ok(())
     }
 
