@@ -65,6 +65,7 @@ impl<'a> InternalCanvas3d<'a> {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &image.view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: match clear.into() {
@@ -75,7 +76,7 @@ impl<'a> InternalCanvas3d<'a> {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: depth.wgpu().1,
+                    view: depth.wgpu(),
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: wgpu::StoreOp::Store,
@@ -118,6 +119,7 @@ impl<'a> InternalCanvas3d<'a> {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &msaa_image.view,
+                    depth_slice: None,
                     resolve_target: Some(&resolve_image.view),
                     ops: wgpu::Operations {
                         load: match clear.into() {
@@ -128,7 +130,7 @@ impl<'a> InternalCanvas3d<'a> {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: depth.wgpu().1,
+                    view: depth.wgpu(),
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: wgpu::StoreOp::Store,

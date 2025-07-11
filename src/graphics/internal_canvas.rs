@@ -70,6 +70,7 @@ impl<'a> InternalCanvas<'a> {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &image.view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: match clear.into() {
@@ -115,6 +116,7 @@ impl<'a> InternalCanvas<'a> {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &msaa_image.view,
+                    depth_slice: None,
                     resolve_target: Some(&resolve_image.view),
                     ops: wgpu::Operations {
                         load: match clear.into() {
