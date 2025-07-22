@@ -21,9 +21,8 @@ path = "src/lib.rs"
 [features]
 default = ["c_dependencies", "audio", "gamepad", "3d", "gltf", "obj"]
 zip-compression = ["zip/bzip2", "zip/zstd"]
-mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/rayon"]
-c_dependencies = ["zip-compression", "mp3"]
+c_dependencies = ["zip-compression"]
 audio = ["rodio"]
 gamepad = ["gilrs"]
 3d = []
@@ -38,7 +37,7 @@ wgpu = "26"
 glyph_brush = "0.7"
 winit = { version = "0.30", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "jpeg"] }
-rodio = { version = "0.20", optional = true, default-features = false, features = ["flac", "vorbis", "wav"] }
+rodio = { version = "0.21", optional = true, default-features = false, features = ["playback", "flac", "mp3", "vorbis", "wav"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.9"
 log = "0.4"
