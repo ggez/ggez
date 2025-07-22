@@ -42,7 +42,6 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.9"
 log = "0.4"
 lyon = "1.0"
-smart-default = "0.7"
 glam = { version = "0.30", features = ["mint", "bytemuck"] }
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5.9"
@@ -52,7 +51,6 @@ bytemuck = { version = "1.12", features = ["derive"] }
 pollster = "0.4"
 memoffset = "0.9"
 crevice = { version = "0.18", features = ["glam"] }
-typed-arena = "2.0"
 ordered-float = "5"
 percent-encoding = { version = "2.3.0", optional = true }
 base64 = { version = "0.22", optional = true }
