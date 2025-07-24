@@ -240,7 +240,7 @@ impl MainState {
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::TextureView(image.wgpu().1),
+                        resource: wgpu::BindingResource::TextureView(image.wgpu()),
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
@@ -294,7 +294,8 @@ impl event::EventHandler for MainState {
             let mut pass = cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: frame.wgpu().1,
+                    view: frame.wgpu(),
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(
@@ -305,7 +306,7 @@ impl event::EventHandler for MainState {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: depth.wgpu().1,
+                    view: depth.wgpu(),
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.),
                         store: wgpu::StoreOp::Discard,

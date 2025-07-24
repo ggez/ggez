@@ -21,7 +21,6 @@ pub type ImageEncodingFormat = ::image::ImageFormat;
 /// Handle to an image stored in GPU memory.
 #[derive(Debug, Clone)]
 pub struct Image {
-    pub(crate) texture: wgpu::Texture,
     pub(crate) view: wgpu::TextureView,
     pub(crate) format: ImageFormat,
     pub(crate) width: u32,
@@ -131,7 +130,7 @@ impl Image {
         );
 
         wgpu.queue.write_texture(
-            image.texture.as_image_copy(),
+            image.view.texture().as_image_copy(),
             pixels,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
@@ -213,7 +212,6 @@ impl Image {
         });
 
         Image {
-            texture,
             view,
             format,
             width,
@@ -223,10 +221,12 @@ impl Image {
         }
     }
 
-    /// Returns the underlying [`wgpu::Texture`] and [`wgpu::TextureView`] for this [`Image`].
+    /// Returns the underlying [`wgpu::TextureView`] for this [`Image`].
+    ///
+    /// If needed, the [`wgpu::Texture`] can be obtained through its view.
     #[inline]
-    pub fn wgpu(&self) -> (&wgpu::Texture, &wgpu::TextureView) {
-        (&self.texture, &self.view)
+    pub fn wgpu(&self) -> &wgpu::TextureView {
+        &self.view
     }
 
     /// Reads the pixels of this `ImageView` and returns as `Vec<u8>`.
@@ -262,7 +262,7 @@ impl Image {
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
             encoder.copy_texture_to_buffer(
-                self.texture.as_image_copy(),
+                self.view.texture().as_image_copy(),
                 wgpu::TexelCopyBufferInfo {
                     buffer: &buffer,
                     layout: wgpu::TexelCopyBufferLayout {

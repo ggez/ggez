@@ -7,7 +7,6 @@ use std::cell::RefCell;
 pub(crate) struct TextRenderer {
     // RefCell to make various getter not take &mut.
     pub glyph_brush: RefCell<GlyphBrush<TextVertex, Extra>>,
-    pub cache: wgpu::Texture,
     pub cache_view: wgpu::TextureView,
     pub cache_bind: wgpu::BindGroup,
     pub cache_bind_layout: wgpu::BindGroupLayout,
@@ -65,7 +64,6 @@ impl TextRenderer {
 
         TextRenderer {
             glyph_brush: RefCell::new(glyph_brush),
-            cache,
             cache_view,
             cache_bind,
             cache_bind_layout,
@@ -98,7 +96,7 @@ impl TextRenderer {
             |rect, pixels| {
                 queue.write_texture(
                     wgpu::TexelCopyTextureInfo {
-                        texture: &self.cache,
+                        texture: self.cache_view.texture(),
                         mip_level: 0,
                         origin: wgpu::Origin3d {
                             x: rect.min[0],
@@ -168,7 +166,7 @@ impl TextRenderer {
                     .borrow_mut()
                     .resize_texture(self.cache_size.0, self.cache_size.1);
 
-                self.cache = device.create_texture(&wgpu::TextureDescriptor {
+                let cache = device.create_texture(&wgpu::TextureDescriptor {
                     label: None,
                     size: wgpu::Extent3d {
                         width: self.cache_size.0,
@@ -183,9 +181,7 @@ impl TextRenderer {
                     view_formats: &[],
                 });
 
-                self.cache_view = self
-                    .cache
-                    .create_view(&wgpu::TextureViewDescriptor::default());
+                self.cache_view = cache.create_view(&wgpu::TextureViewDescriptor::default());
 
                 let cache_bind =
                     BindGroupBuilder::new().image(&self.cache_view, wgpu::ShaderStages::FRAGMENT);

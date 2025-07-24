@@ -26,30 +26,29 @@ use crate::filesystem::Filesystem;
 /// of your `Context` object.
 pub struct AudioContext {
     fs: Filesystem,
-    _stream: rodio::OutputStream,
-    stream_handle: rodio::OutputStreamHandle,
+    stream: rodio::OutputStream,
 }
 
 impl AudioContext {
     /// Create new `AudioContext`.
     pub fn new(fs: &Filesystem) -> GameResult<Self> {
-        let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|_e| {
+        let stream = rodio::OutputStreamBuilder::open_default_stream().map_err(|_e| {
             GameError::AudioError(String::from(
                 "Could not initialize sound system using default output device (for some reason)",
             ))
         })?;
         Ok(Self {
             fs: fs.clone(),
-            _stream: stream,
-            stream_handle,
+            stream,
         })
     }
 }
 
 impl AudioContext {
     /// Returns the audio device.
-    pub fn device(&self) -> &rodio::OutputStreamHandle {
-        &self.stream_handle
+    #[inline]
+    pub fn device(&self) -> &rodio::OutputStream {
+        &self.stream
     }
 }
 
@@ -300,7 +299,7 @@ impl Source {
                 "Could not decode the given audio data".to_string(),
             ));
         }
-        let sink = rodio::Sink::try_new(audio.device())?;
+        let sink = rodio::Sink::connect_new(audio.stream.mixer());
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
@@ -353,7 +352,7 @@ impl SoundSource for Source {
         self.stop(audio)?;
         self.play_later()?;
 
-        let new_sink = rodio::Sink::try_new(audio.device())?;
+        let new_sink = rodio::Sink::connect_new(audio.stream.mixer());
         let old_sink = mem::replace(&mut self.sink, new_sink);
         old_sink.detach();
 
@@ -398,8 +397,7 @@ impl SoundSource for Source {
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = audio.device();
-        self.sink = rodio::Sink::try_new(device)?;
+        self.sink = rodio::Sink::connect_new(audio.stream.mixer());
         self.state.play_time.store(0, Ordering::SeqCst);
 
         // Restore information from the previous link.
@@ -472,12 +470,12 @@ impl SpatialSource {
                 "Could not decode the given audio data".to_string(),
             ));
         }
-        let sink = rodio::SpatialSink::try_new(
-            audio.device(),
+        let sink = rodio::SpatialSink::connect_new(
+            audio.stream.mixer(),
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
-        )?;
+        );
 
         let cursor = io::Cursor::new(data);
 
@@ -536,13 +534,12 @@ impl SoundSource for SpatialSource {
         self.stop(audio)?;
         self.play_later()?;
 
-        let device = audio.device();
-        let new_sink = rodio::SpatialSink::try_new(
-            device,
+        let new_sink = rodio::SpatialSink::connect_new(
+            audio.stream.mixer(),
             self.emitter_position.into(),
             self.left_ear.into(),
             self.right_ear.into(),
-        )?;
+        );
         let old_sink = mem::replace(&mut self.sink, new_sink);
         old_sink.detach();
 
@@ -593,13 +590,12 @@ impl SoundSource for SpatialSource {
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = audio.device();
-        self.sink = rodio::SpatialSink::try_new(
-            device,
+        self.sink = rodio::SpatialSink::connect_new(
+            audio.stream.mixer(),
             self.emitter_position.into(),
             self.left_ear.into(),
             self.right_ear.into(),
-        )?;
+        );
         self.state.play_time.store(0, Ordering::SeqCst);
 
         // Restore information from the previous link.
