@@ -46,17 +46,20 @@ impl MainState {
     /// Fades the sound in over a second
     /// Which isn't really ideal 'cause the sound is barely a second long, but still.
     fn play_fadein(&mut self) {
-        self.sound.set_fade_in(Duration::from_millis(1000));
+        self.sound.set_fade_in(Duration::from_secs(1));
         self.sound.play();
+        self.sound.set_fade_in(Duration::ZERO);
     }
 
     fn play_highpitch(&mut self) {
         self.sound.set_pitch(2.0);
         self.sound.play();
+        self.sound.set_pitch(1.0);
     }
     fn play_lowpitch(&mut self) {
         self.sound.set_pitch(0.5);
         self.sound.play();
+        self.sound.set_pitch(1.0);
     }
 
     /// Plays the sound and prints out stats until it's done.
