@@ -270,7 +270,7 @@ your game such as glam or nalgebra, usually with a "mint" feature.  For
 example. You can add
 
  ```rust
- glam = { version = "0.15.2", features = ["mint"] }
+ glam = { version = "0.30", features = ["mint"] }
  ```
 
  in your Cargo.toml, then when you try to pass

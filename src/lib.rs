@@ -11,8 +11,6 @@
 //!
 //! ggez is a Rust library to create a Good Game Easily.
 //!
-//! The current version is 0.9.3.
-//!
 //! More specifically, ggez is a lightweight cross-platform game framework
 //! for making 2D games with minimum friction.  It aims to implement an
 //! API based on (a Rustified version of) the [LÖVE](https://love2d.org/)
@@ -61,7 +59,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.9.3"
+//! ggez = "0.10.0-rc0"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
