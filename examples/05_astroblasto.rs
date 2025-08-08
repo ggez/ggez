@@ -358,7 +358,7 @@ impl MainState {
         Ok(s)
     }
 
-    fn fire_player_shot(&mut self, ctx: &Context) -> GameResult {
+    fn fire_player_shot(&mut self) {
         self.player_shot_timeout = PLAYER_SHOT_TIME;
 
         let player = &self.player;
@@ -370,9 +370,7 @@ impl MainState {
 
         self.shots.push(shot);
 
-        self.assets.shot_sound.play(ctx)?;
-
-        Ok(())
+        self.assets.shot_sound.play();
     }
 
     fn clear_dead_stuff(&mut self) {
@@ -380,7 +378,7 @@ impl MainState {
         self.rocks.retain(|r| r.life > 0.0);
     }
 
-    fn handle_collisions(&mut self, ctx: &Context) -> GameResult {
+    fn handle_collisions(&mut self) {
         for rock in &mut self.rocks {
             let pdistance = rock.pos - self.player.pos;
             if pdistance.length() < (self.player.bbox_size + rock.bbox_size) {
@@ -393,11 +391,10 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
 
-                    self.assets.hit_sound.play(ctx)?;
+                    self.assets.hit_sound.play();
                 }
             }
         }
-        Ok(())
     }
 
     fn check_for_level_respawn(&mut self) {
@@ -455,7 +452,7 @@ impl EventHandler for MainState {
             player_handle_input(&mut self.player, &self.input, seconds);
             self.player_shot_timeout -= seconds;
             if self.input.fire && self.player_shot_timeout < 0.0 {
-                self.fire_player_shot(ctx)?;
+                self.fire_player_shot();
             }
 
             // Update the physics for all actors.
@@ -480,7 +477,7 @@ impl EventHandler for MainState {
             // collision detection, object death, and if
             // we have killed all the rocks in the level,
             // spawn more of them.
-            self.handle_collisions(ctx)?;
+            self.handle_collisions();
 
             self.clear_dead_stuff();
 
