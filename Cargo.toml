@@ -45,6 +45,8 @@ lyon = "1.0"
 glam = { version = "0.30", features = ["mint", "bytemuck"] }
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5.9"
+# Has to be the same version of euclid that lyon uses, so that we can enable its mint feature.
+euclid = { version = "0.22.4", default-features = false, features = ["mint"] }
 gilrs = { version = "0.11", optional = true }
 approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
