@@ -3,16 +3,16 @@
 //! This module provides access to files in specific places:
 //!
 //! * The `resources/` subdirectory in the same directory as the
-//! program executable, if any,
+//!   program executable, if any,
 //! * The `resources.zip` file in the same
-//! directory as the program executable, if any,
+//!   directory as the program executable, if any,
 //! * The root folder of the  game's "save" directory which is in a
-//! platform-dependent location,
-//! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
-//! is the the string passed to
-//! [`ContextBuilder::new()`](../struct.ContextBuilder.html#method.new).
-//! Some platforms such as Windows also incorporate the `author` string into
-//! the path.
+//!   platform-dependent location,
+//!   such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
+//!   is the the string passed to
+//!   [`ContextBuilder::new()`](../struct.ContextBuilder.html#method.new).
+//!   Some platforms such as Windows also incorporate the `author` string into
+//!   the path.
 //!
 //! These locations will be searched for files in the order listed, and the first file
 //! found used.  That allows game assets to be easily distributed as an archive
@@ -35,15 +35,14 @@
 use crate::{
     conf,
     vfs::{self, OverlayFS, VFS},
-    Context, GameError, GameResult,
+    GameError, GameResult,
 };
 use directories::ProjectDirs;
 use std::{
-    env, io,
-    io::SeekFrom,
-    ops::DerefMut,
+    env,
+    io::{self, Read},
     path,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
 pub use crate::vfs::OpenOptions;
@@ -51,71 +50,68 @@ pub use crate::vfs::OpenOptions;
 const CONFIG_NAME: &str = "/conf.toml";
 
 /// A structure that contains the filesystem state and cache.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Filesystem {
-    vfs: Arc<Mutex<vfs::OverlayFS>>,
+    vfs: Arc<RwLock<vfs::OverlayFS>>,
     resources_dir: path::PathBuf,
     zip_dir: path::PathBuf,
     user_config_dir: path::PathBuf,
     user_data_dir: path::PathBuf,
 }
 
-/// This is the same as [`std::clone::Clone`] but only accessible to ggez
-/// via a non-public implementation.
-///
-/// We don't need to expose the fact that [`Filesystem`] can be cloned to user,
-/// in case we want to change this in the future.
-pub(crate) trait InternalClone {
-    fn clone(&self) -> Self;
-}
-
-impl InternalClone for Filesystem {
-    fn clone(&self) -> Self {
-        Filesystem {
-            vfs: self.vfs.clone(),
-            resources_dir: self.resources_dir.clone(),
-            zip_dir: self.zip_dir.clone(),
-            user_config_dir: self.user_config_dir.clone(),
-            user_data_dir: self.user_data_dir.clone(),
-        }
-    }
-}
-
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
 #[derive(Debug)]
-pub enum File {
-    /// A wrapper for a VFile trait object.
-    VfsFile(Box<dyn vfs::VFile>),
-}
+pub struct File(Box<dyn vfs::VFile>);
 
 impl io::Read for File {
+    #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        match *self {
-            File::VfsFile(ref mut f) => f.read(buf),
-        }
+        self.0.read(buf)
+    }
+
+    #[inline]
+    fn read_exact(&mut self, buf: &mut [u8]) -> io::Result<()> {
+        self.0.read_exact(buf)
+    }
+
+    #[inline]
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        self.0.read_to_end(buf)
+    }
+
+    #[inline]
+    fn read_to_string(&mut self, buf: &mut String) -> io::Result<usize> {
+        self.0.read_to_string(buf)
     }
 }
 
 impl io::Write for File {
+    #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match *self {
-            File::VfsFile(ref mut f) => f.write(buf),
-        }
+        self.0.write(buf)
     }
 
+    #[inline]
+    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
+        self.0.write_all(buf)
+    }
+
+    #[inline]
     fn flush(&mut self) -> io::Result<()> {
-        match *self {
-            File::VfsFile(ref mut f) => f.flush(),
-        }
+        self.0.flush()
     }
 }
 
 impl io::Seek for File {
-    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        match *self {
-            File::VfsFile(ref mut f) => f.seek(pos),
-        }
+    #[inline]
+    fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
+        self.0.seek(pos)
+    }
+
+    #[inline]
+    fn stream_position(&mut self) -> io::Result<u64> {
+        self.0.stream_position()
     }
 }
 
@@ -173,7 +169,7 @@ impl Filesystem {
         {
             resources_path = root_path.clone();
             resources_path.push(resources_dir_name);
-            trace!("Resources path: {:?}", resources_path);
+            trace!("Resources path: {resources_path:?}");
             let physfs = vfs::PhysicalFS::new(&resources_path, true);
             overlay.push_back(Box::new(physfs));
         }
@@ -183,7 +179,7 @@ impl Filesystem {
             resources_zip_path = root_path;
             resources_zip_path.push(resources_zip_name);
             if resources_zip_path.exists() {
-                trace!("Resources zip file: {:?}", resources_zip_path);
+                trace!("Resources zip file: {resources_zip_path:?}");
                 let zipfs = vfs::ZipFS::new(&resources_zip_path)?;
                 overlay.push_back(Box::new(zipfs));
             } else {
@@ -195,7 +191,7 @@ impl Filesystem {
         // ~/.local/share/whatever/
         {
             user_data_path = project_dirs.data_local_dir();
-            trace!("User-local data path: {:?}", user_data_path);
+            trace!("User-local data path: {user_data_path:?}");
             let physfs = vfs::PhysicalFS::new(user_data_path, true);
             overlay.push_back(Box::new(physfs));
         }
@@ -204,13 +200,13 @@ impl Filesystem {
         // Save game dir is read-write
         {
             user_config_path = project_dirs.config_dir();
-            trace!("User-local configuration path: {:?}", user_config_path);
+            trace!("User-local configuration path: {user_config_path:?}");
             let physfs = vfs::PhysicalFS::new(user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }
 
         let fs = Filesystem {
-            vfs: Arc::new(Mutex::new(overlay)),
+            vfs: Arc::new(RwLock::new(overlay)),
             resources_dir: resources_path,
             zip_dir: resources_zip_path,
             user_config_dir: user_config_path.to_path_buf(),
@@ -220,14 +216,18 @@ impl Filesystem {
         Ok(fs)
     }
 
-    fn vfs(&self) -> impl DerefMut<Target = OverlayFS> + '_ {
-        self.vfs.lock().unwrap()
+    fn vfs(&self) -> impl std::ops::Deref<Target = OverlayFS> + '_ {
+        self.vfs.read().unwrap()
+    }
+
+    fn vfs_mut(&self) -> impl std::ops::DerefMut<Target = OverlayFS> + '_ {
+        self.vfs.write().unwrap()
     }
 
     /// Opens the given `path` and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
-        self.vfs().open(path.as_ref()).map(|f| File::VfsFile(f))
+        self.vfs().open(path.as_ref()).map(File)
     }
 
     /// Opens a file in the user directory with the given
@@ -241,7 +241,7 @@ impl Filesystem {
     ) -> GameResult<File> {
         self.vfs()
             .open_options(path.as_ref(), options)
-            .map(|f| File::VfsFile(f))
+            .map(File)
             .map_err(|e| {
                 GameError::ResourceLoadError(format!(
                     "Tried to open {:?} but got error: {:?}",
@@ -254,7 +254,23 @@ impl Filesystem {
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
     pub fn create<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
-        self.vfs().create(path.as_ref()).map(|f| File::VfsFile(f))
+        self.vfs().create(path.as_ref()).map(File)
+    }
+
+    /// Reads the whole content of a file to a `Vec`.
+    pub fn read<P: AsRef<path::Path>>(&self, path: P) -> GameResult<Vec<u8>> {
+        let mut file = self.open(path)?;
+        let mut buf = Vec::new();
+        let _ = file.read_to_end(&mut buf)?;
+        Ok(buf)
+    }
+
+    /// Reads the whole content of a file to a `String`.
+    pub fn read_to_string<P: AsRef<path::Path>>(&self, path: P) -> GameResult<String> {
+        let mut file = self.open(path)?;
+        let mut buf = String::new();
+        let _ = file.read_to_string(&mut buf)?;
+        Ok(buf)
     }
 
     /// Create an empty directory in the user dir
@@ -300,14 +316,10 @@ impl Filesystem {
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
-    pub fn read_dir<P: AsRef<path::Path>>(
-        &self,
-        path: P,
-    ) -> GameResult<Box<dyn Iterator<Item = path::PathBuf>>> {
-        let itr = self.vfs().read_dir(path.as_ref())?.map(|fname| {
-            fname.expect("Could not read file in read_dir()?  Should never happen, I hope!")
-        });
-        Ok(Box::new(itr))
+    pub fn read_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult<Vec<path::PathBuf>> {
+        let mut paths = Vec::new();
+        self.vfs().read_dir(path.as_ref(), &mut paths)?;
+        Ok(paths)
     }
 
     fn write_to_string(&self) -> String {
@@ -315,7 +327,7 @@ impl Filesystem {
         let mut s = String::new();
         for vfs in self.vfs().roots() {
             write!(s, "Source {vfs:?}").expect("Could not write to string; should never happen?");
-            match vfs.read_dir(path::Path::new("/")) {
+            match self.read_dir("/") {
                 Ok(files) => {
                     for itm in files {
                         write!(s, "  {itm:?}")
@@ -351,8 +363,8 @@ impl Filesystem {
     /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
     pub fn mount(&self, path: &path::Path, readonly: bool) {
         let physfs = vfs::PhysicalFS::new(path, readonly);
-        trace!("Mounting new path: {:?}", physfs);
-        self.vfs().push_back(Box::new(physfs));
+        trace!("Mounting new path: {physfs:?}");
+        self.vfs_mut().push_back(Box::new(physfs));
     }
 
     /// Adds any object that implements Read + Seek as a zip file.
@@ -361,10 +373,10 @@ impl Filesystem {
     /// for `.mount()`. Rather, it can be used to read zip files from sources
     /// such as `std::io::Cursor::new(includes_bytes!(...))` in order to embed
     /// resources into the game's executable.
-    pub fn add_zip_file<R: io::Read + io::Seek + 'static>(&self, reader: R) -> GameResult {
+    pub fn add_zip_file<R: io::Read + io::Seek + Send + 'static>(&self, reader: R) -> GameResult {
         let zipfs = vfs::ZipFS::from_read(reader)?;
         trace!("Adding zip file from reader");
-        self.vfs().push_back(Box::new(zipfs));
+        self.vfs_mut().push_back(Box::new(zipfs));
         Ok(())
     }
 
@@ -422,158 +434,11 @@ impl Filesystem {
     }
 }
 
-/// Opens the given path and returns the resulting `File`
-/// in read-only mode.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.open` instead")]
-pub fn open<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> {
-    ctx.fs.open(path)
-}
-
-/// Opens a file in the user directory with the given `filesystem::OpenOptions`.
-/// Note that even if you open a file read-only, it can only access
-/// files in the user directory.
-#[deprecated(note = "Use `ctx.fs.open_options` instead")]
-pub fn open_options<P: AsRef<path::Path>>(
-    ctx: &Context,
-    path: P,
-    options: OpenOptions,
-) -> GameResult<File> {
-    ctx.fs.open_options(path, options)
-}
-
-/// Creates a new file in the user directory and opens it
-/// to be written to, truncating it if it already exists.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.create` instead")]
-pub fn create<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> {
-    ctx.fs.create(path)
-}
-
-/// Create an empty directory in the user dir
-/// with the given name.  Any parents to that directory
-/// that do not exist will be created.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.create_dir` instead")]
-pub fn create_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
-    ctx.fs.create_dir(path.as_ref())
-}
-
-/// Deletes the specified file in the user dir.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.delete` instead")]
-pub fn delete<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
-    ctx.fs.delete(path.as_ref())
-}
-
-/// Deletes the specified directory in the user dir,
-/// and all its contents!
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.delete_dir` instead")]
-pub fn delete_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
-    ctx.fs.delete_dir(path.as_ref())
-}
-
-/// Check whether a file or directory exists.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.exists` instead")]
-pub fn exists<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
-    ctx.fs.exists(path.as_ref())
-}
-
-/// Check whether a path points at a file.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.is_file` instead")]
-pub fn is_file<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
-    ctx.fs.is_file(path)
-}
-
-/// Check whether a path points at a directory.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.is_dir` instead")]
-pub fn is_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
-    ctx.fs.is_dir(path)
-}
-
-/// Return the full path to the user data directory.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.user_data_dir` instead")]
-pub fn user_data_dir(ctx: &Context) -> &path::Path {
-    ctx.fs.user_data_dir()
-}
-
-/// Return the full path to the user config directory.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.user_config_dir` instead")]
-pub fn user_config_dir(ctx: &Context) -> &path::Path {
-    ctx.fs.user_config_dir()
-}
-
-/// Returns the full path to the resource directory
-/// (even if it doesn't exist)
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.resources_dir` instead")]
-pub fn resources_dir(ctx: &Context) -> &path::Path {
-    ctx.fs.resources_dir()
-}
-
-/// Return the full path to the user data directory
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.zip_dir` instead")]
-pub fn zip_dir(ctx: &Context) -> &path::Path {
-    ctx.fs.zip_dir()
-}
-
-/// Returns a list of all files and directories in the resource directory,
-/// in no particular order.
-///
-/// Lists the base directory if an empty path is given.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.read_dir` instead")]
-pub fn read_dir<P: AsRef<path::Path>>(
-    ctx: &Context,
-    path: P,
-) -> GameResult<Box<dyn Iterator<Item = path::PathBuf>>> {
-    ctx.fs.read_dir(path)
-}
-
-/// Prints the contents of all data directories.
-/// Useful for debugging.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.print_all` instead")]
-pub fn print_all(ctx: &Context) {
-    ctx.fs.print_all()
-}
-
-/// Outputs the contents of all data directories,
-/// using the "info" log level of the `log` crate.
-/// Useful for debugging.
-///
-/// See the [`logging` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs)
-/// for how to collect log information.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.log_all` instead")]
-pub fn log_all(ctx: &Context) {
-    ctx.fs.log_all()
-}
-
-/// Adds the given (absolute) path to the list of directories
-/// it will search to look for resources.
-///
-/// You probably shouldn't use this in the general case, since it is
-/// harder than it looks to make it bulletproof across platforms.
-/// But it can be very nice for debugging and dev purposes, such as
-/// by pushing `$CARGO_MANIFEST_DIR/resources` to it
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.mount` instead")]
-pub fn mount(ctx: &mut Context, path: &path::Path, readonly: bool) {
-    ctx.fs.mount(path, readonly)
-}
-
-/// Looks for a file named `/conf.toml` in any resource directory and
-/// loads it if it finds it.
-/// If it can't read it for some reason, returns an error.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.read_config` instead")]
-pub fn read_config(ctx: &Context) -> GameResult<conf::Conf> {
-    ctx.fs.read_config()
-}
-
-/// Takes a `Conf` object and saves it to the user directory,
-/// overwriting any file already there.
-#[deprecated(since = "0.8.0", note = "Use `ctx.fs.write_config` instead")]
-pub fn write_config(ctx: &Context, conf: &conf::Conf) -> GameResult {
-    ctx.fs.write_config(conf)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::conf;
     use crate::error::GameError;
-    use crate::filesystem::{env, vfs, Arc, Filesystem, Mutex, CONFIG_NAME};
+    use crate::filesystem::{env, vfs, Arc, Filesystem, RwLock, CONFIG_NAME};
     use std::io::{Read, Write};
     use std::path;
 
@@ -584,7 +449,7 @@ mod tests {
         let mut ofs = vfs::OverlayFS::new();
         ofs.push_front(Box::new(physfs));
         Filesystem {
-            vfs: Arc::new(Mutex::new(ofs)),
+            vfs: Arc::new(RwLock::new(ofs)),
 
             resources_dir: "".into(),
             zip_dir: "".into(),
@@ -611,7 +476,7 @@ mod tests {
     fn headless_test_read_dir() {
         let f = dummy_fs_for_tests();
 
-        let dir_contents_size = f.read_dir("/").unwrap().count();
+        let dir_contents_size = f.read_dir("/").unwrap().len();
         assert!(dir_contents_size > 0);
     }
 

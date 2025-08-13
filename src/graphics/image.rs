@@ -1,16 +1,11 @@
 use super::{
-    context::GraphicsContext,
-    gpu::{
-        arc::{ArcBindGroup, ArcSampler, ArcTexture, ArcTextureView},
-        bind_group::BindGroupBuilder,
-    },
-    Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
+    context::GraphicsContext, gpu::bind_group::BindGroupBuilder, Canvas, Color, Draw, DrawParam,
+    Drawable, Rect, WgpuContext,
 };
 use crate::{context::Has, Context, GameError, GameResult};
 use image::ImageEncoder;
 use std::{
     collections::BTreeMap,
-    io::Read,
     path::Path,
     sync::{Arc, RwLock},
 };
@@ -26,18 +21,17 @@ pub type ImageEncodingFormat = ::image::ImageFormat;
 /// Handle to an image stored in GPU memory.
 #[derive(Debug, Clone)]
 pub struct Image {
-    pub(crate) texture: ArcTexture,
-    pub(crate) view: ArcTextureView,
+    pub(crate) view: wgpu::TextureView,
     pub(crate) format: ImageFormat,
     pub(crate) width: u32,
     pub(crate) height: u32,
     pub(crate) samples: u32,
-    pub(crate) cache: Arc<RwLock<BTreeMap<u64, ArcBindGroup>>>,
+    pub(crate) cache: Arc<RwLock<BTreeMap<wgpu::Sampler, wgpu::BindGroup>>>,
 }
 
 impl Image {
     /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
-    pub fn new_canvas_image(
+    pub(crate) fn new_canvas_image_raw(
         gfx: &impl Has<GraphicsContext>,
         format: ImageFormat,
         width: u32,
@@ -57,6 +51,28 @@ impl Image {
         )
     }
 
+    /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
+    pub fn new_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::new_canvas_image_raw(gfx, gfx.surface_format(), width, height, samples)
+    }
+
+    /// Creates a new depth image specifically for use with a [Canvas](crate::graphics::Canvas).
+    pub fn new_depth_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::new_canvas_image_raw(gfx, ImageFormat::Depth32Float, width, height, samples)
+    }
+
     /// A little helper function that creates a blank [`Image`] that is of the given width and height and optional color.
     ///
     /// The default color is [`Color::WHITE`].
@@ -65,8 +81,9 @@ impl Image {
         gfx: &impl Has<GraphicsContext>,
         width: u32,
         height: u32,
-        color: Option<Color>,
+        color: impl Into<Option<Color>>,
     ) -> Self {
+        let color = color.into();
         let pixels = (0..(width * height))
             .flat_map(|_| {
                 let (r, g, b, a) = color.unwrap_or(Color::WHITE).to_rgba();
@@ -113,11 +130,11 @@ impl Image {
         );
 
         wgpu.queue.write_texture(
-            image.texture.as_image_copy(),
+            image.view.texture().as_image_copy(),
             pixels,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(format.block_size(None).unwrap() * width), // Unwrap since it only fails with depth formats.
+                bytes_per_row: Some(format.block_copy_size(None).unwrap() * width), // Unwrap since it only fails with depth formats.
                 rows_per_image: None,
             },
             wgpu::Extent3d {
@@ -136,10 +153,7 @@ impl Image {
     pub fn from_path(gfx: &impl Has<GraphicsContext>, path: impl AsRef<Path>) -> GameResult<Self> {
         let gfx = gfx.retrieve();
 
-        let mut encoded = Vec::new();
-        gfx.fs.open(path)?.read_to_end(&mut encoded)?;
-
-        Self::from_bytes(gfx, encoded.as_slice())
+        Self::from_bytes(gfx, &gfx.fs.read(path)?)
     }
 
     /// Creates a new image initialized with pixel data from a given encoded image (e.g. PNG or JPEG)
@@ -170,7 +184,7 @@ impl Image {
         assert!(height > 0);
         assert!(samples > 0);
 
-        let texture = ArcTexture::new(wgpu.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = wgpu.device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
                 width,
@@ -183,22 +197,21 @@ impl Image {
             format,
             usage,
             view_formats: &[],
-        }));
+        });
 
-        let view =
-            ArcTextureView::new(texture.as_ref().create_view(&wgpu::TextureViewDescriptor {
-                label: None,
-                format: Some(format),
-                dimension: Some(wgpu::TextureViewDimension::D2),
-                aspect: wgpu::TextureAspect::All,
-                base_mip_level: 0,
-                mip_level_count: Some(1),
-                base_array_layer: 0,
-                array_layer_count: Some(1),
-            }));
+        let view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: None,
+            format: Some(format),
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: Some(1),
+            base_array_layer: 0,
+            array_layer_count: Some(1),
+            usage: None,
+        });
 
         Image {
-            texture,
             view,
             format,
             width,
@@ -208,10 +221,12 @@ impl Image {
         }
     }
 
-    /// Returns the underlying [`wgpu::Texture`] and [`wgpu::TextureView`] for this [`Image`].
+    /// Returns the underlying [`wgpu::TextureView`] for this [`Image`].
+    ///
+    /// If needed, the [`wgpu::Texture`] can be obtained through its view.
     #[inline]
-    pub fn wgpu(&self) -> (&wgpu::Texture, &wgpu::TextureView) {
-        (&self.texture, &self.view)
+    pub fn wgpu(&self) -> &wgpu::TextureView {
+        &self.view
     }
 
     /// Reads the pixels of this `ImageView` and returns as `Vec<u8>`.
@@ -226,11 +241,17 @@ impl Image {
             )));
         }
 
-        let block_size = u64::from(self.format.block_size(None).unwrap()); // Unwrap since it only fails with depth formats.
+        let block_size = u64::from(self.format.block_copy_size(None).unwrap()); // Unwrap since it only fails with depth formats.
+
+        let bytes_per_pixel = block_size;
+        let unpadded_bytes_per_row = self.width as usize * bytes_per_pixel as usize;
+        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+        let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
+        let padded_bytes_per_row = unpadded_bytes_per_row + padded_bytes_per_row_padding;
 
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: block_size * u64::from(self.width) * u64::from(self.height),
+            size: (padded_bytes_per_row * self.height as usize) as u64,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -241,12 +262,12 @@ impl Image {
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
             encoder.copy_texture_to_buffer(
-                self.texture.as_image_copy(),
-                wgpu::ImageCopyBuffer {
+                self.view.texture().as_image_copy(),
+                wgpu::TexelCopyBufferInfo {
                     buffer: &buffer,
-                    layout: wgpu::ImageDataLayout {
+                    layout: wgpu::TexelCopyBufferLayout {
                         offset: 0,
-                        bytes_per_row: Some(block_size as u32 * self.width),
+                        bytes_per_row: Some(padded_bytes_per_row as u32),
                         rows_per_image: None,
                     },
                 },
@@ -266,13 +287,20 @@ impl Image {
         buffer
             .slice(..)
             .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap()); // Unwrap is fine as this should never fail
-        let _ = gfx.wgpu.device.poll(wgpu::Maintain::Wait);
+        let _ = gfx.wgpu.device.poll(wgpu::PollType::Wait);
         let map_result = rx
             .recv()
             .expect("All senders dropped, this should not be possible.");
         map_result?;
 
-        let out = buffer.slice(..).get_mapped_range().to_vec();
+        let mut out = Vec::new();
+        for chunk in buffer
+            .slice(..)
+            .get_mapped_range()
+            .chunks(padded_bytes_per_row)
+        {
+            out.extend_from_slice(&chunk[..unpadded_bytes_per_row]);
+        }
         Ok(out)
     }
 
@@ -286,9 +314,11 @@ impl Image {
         path: impl AsRef<std::path::Path>,
     ) -> GameResult {
         let color = match self.format {
-            ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => ::image::ColorType::Rgba8,
-            ImageFormat::R8Unorm => ::image::ColorType::L8,
-            ImageFormat::R16Unorm => ::image::ColorType::L16,
+            ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => {
+                ::image::ExtendedColorType::Rgba8
+            }
+            ImageFormat::R8Unorm => ::image::ExtendedColorType::L8,
+            ImageFormat::R16Unorm => ::image::ExtendedColorType::L16,
             format => {
                 return Err(GameError::RenderError(format!(
                     "cannot ImageView::encode for the {format:#?} GPU image format"
@@ -349,25 +379,27 @@ impl Image {
 
     pub(crate) fn fetch_buffer(
         &self,
-        sample_id: u64,
-        sampler: ArcSampler,
+        sampler: wgpu::Sampler,
         device: &wgpu::Device,
-    ) -> ArcBindGroup {
-        if self.cache.read().is_ok_and(|x| x.contains_key(&sample_id)) {
-            self.cache.read().unwrap().get(&sample_id).unwrap().clone() // Should be fine since we already checked if it's ok and contains key
-        } else {
-            let mut cache = self.cache.write().unwrap(); // Should be fine since ggez doesn't do any async stuff atm
-            cache
-                .insert(
-                    sample_id,
-                    BindGroupBuilder::new()
-                        .image(&self.view, wgpu::ShaderStages::FRAGMENT)
-                        .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
-                        .create_uncached(device)
-                        .0,
-                )
-                .unwrap_or(cache.get(&sample_id).unwrap().clone()) // Should be fine since we just inserted the key into the btree
+    ) -> wgpu::BindGroup {
+        // Fast path: already in cache
+        if let Some(buffer) = self.cache.read().unwrap().get(&sampler) {
+            return buffer.clone();
         }
+
+        // Slow path
+        self.cache
+            .write()
+            .unwrap()
+            .entry(sampler)
+            .or_insert_with_key(|sampler| {
+                BindGroupBuilder::new()
+                    .image(&self.view, wgpu::ShaderStages::FRAGMENT)
+                    .sampler(sampler, wgpu::ShaderStages::FRAGMENT)
+                    .create_uncached(device)
+                    .0
+            })
+            .clone()
     }
 }
 
@@ -383,13 +415,13 @@ impl Drawable for Image {
         );
     }
 
-    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        Some(Rect {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Rect {
+        Rect {
             x: 0.,
             y: 0.,
             w: self.width() as _,
             h: self.height() as _,
-        })
+        }
     }
 }
 
@@ -410,7 +442,7 @@ impl ScreenImage {
     /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
     ///
     /// If `format` is `None` then the format will be inferred from the surface format.
-    pub fn new(
+    pub fn new_raw(
         gfx: &impl Has<GraphicsContext>,
         format: impl Into<Option<ImageFormat>>,
         width: f32,
@@ -430,6 +462,26 @@ impl ScreenImage {
             size: (width, height),
             samples,
         }
+    }
+
+    /// Creates a new [`ScreenImage`] with the given parameters.
+    ///
+    /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
+    /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// Format is Rgba8UnormSrgb
+    pub fn new(gfx: &impl Has<GraphicsContext>, width: f32, height: f32, samples: u32) -> Self {
+        Self::new_raw(gfx, ImageFormat::Bgra8UnormSrgb, width, height, samples)
+    }
+
+    /// Creates a new [`ScreenImage`] with the given parameters.
+    ///
+    /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
+    /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// Format is Depth32Float
+    pub fn new_depth(gfx: &impl Has<GraphicsContext>) -> Self {
+        ScreenImage::new_raw(gfx, ImageFormat::Depth32Float, 1., 1., 1)
     }
 
     /// Returns the inner [Image], also recreating it if the framebuffer has been resized.
@@ -455,6 +507,6 @@ impl ScreenImage {
         samples: u32,
     ) -> Image {
         let (width, height) = Self::size(gfx, size);
-        Image::new_canvas_image(gfx, format, width, height, samples)
+        Image::new_canvas_image_raw(gfx, format, width, height, samples)
     }
 }

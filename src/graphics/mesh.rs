@@ -1,6 +1,6 @@
 use super::{
-    context::GraphicsContext, gpu::arc::ArcBuffer, Canvas, Color, Draw, DrawMode, DrawParam,
-    Drawable, LinearColor, Rect, WgpuContext,
+    context::GraphicsContext, Canvas, Color, Draw, DrawMode, DrawParam, Drawable, LinearColor,
+    Rect, WgpuContext,
 };
 use crate::{context::Has, GameError, GameResult};
 use lyon::{math::Point as LPoint, path::Polygon, tessellation as tess};
@@ -49,8 +49,8 @@ impl Vertex {
 /// Mesh data stored on the GPU as a vertex and index buffer. Cheap to clone.
 #[derive(Debug, Clone)]
 pub struct Mesh {
-    pub(crate) verts: ArcBuffer,
-    pub(crate) inds: ArcBuffer,
+    pub(crate) verts: wgpu::Buffer,
+    pub(crate) inds: wgpu::Buffer,
     pub(crate) vertex_count: usize,
     pub(crate) index_count: usize,
     pub(crate) bounds: Rect,
@@ -223,28 +223,22 @@ impl Mesh {
         self.index_count
     }
 
-    #[allow(unsafe_code)]
-    fn create_verts(wgpu: &WgpuContext, vertices: &[Vertex]) -> ArcBuffer {
-        ArcBuffer::new(
-            wgpu.device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: None,
-                    contents: bytemuck::cast_slice(vertices),
-                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                }),
-        )
+    fn create_verts(wgpu: &WgpuContext, vertices: &[Vertex]) -> wgpu::Buffer {
+        wgpu.device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(vertices),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            })
     }
 
-    #[allow(unsafe_code)]
-    fn create_inds(wgpu: &WgpuContext, indices: &[u32]) -> ArcBuffer {
-        ArcBuffer::new(
-            wgpu.device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: None,
-                    contents: bytemuck::cast_slice(indices),
-                    usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
-                }),
-        )
+    fn create_inds(wgpu: &WgpuContext, indices: &[u32]) -> wgpu::Buffer {
+        wgpu.device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(indices),
+                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+            })
     }
 }
 
@@ -260,8 +254,8 @@ impl Drawable for Mesh {
         );
     }
 
-    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        Some(self.bounds)
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Rect {
+        self.bounds
     }
 }
 
@@ -284,8 +278,8 @@ impl Drawable for Quad {
         canvas.default_resources().mesh.clone().draw(canvas, param);
     }
 
-    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        Some(Rect::one())
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Rect {
+        Rect::one()
     }
 }
 
@@ -318,7 +312,7 @@ impl MeshBuilder {
         Self::default()
     }
 
-    /// Create a new mesh for a line of one or more connected segments.
+    /// Extend the mesh with a line of one or more connected segments.
     pub fn line<P>(&mut self, points: &[P], width: f32, color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
@@ -326,7 +320,7 @@ impl MeshBuilder {
         self.polyline(DrawMode::stroke(width), points, color)
     }
 
-    /// Create a new mesh for a circle.
+    /// Extend the mesh with a circle.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.11.0/lyon_geom/#flattening).
     pub fn circle<P>(
@@ -374,7 +368,7 @@ impl MeshBuilder {
         Ok(self)
     }
 
-    /// Create a new mesh for an ellipse.
+    /// Extend the mesh with an ellipse.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.11.0/lyon_geom/#flattening).
     pub fn ellipse<P>(
@@ -429,7 +423,7 @@ impl MeshBuilder {
         Ok(self)
     }
 
-    /// Create a new mesh for a series of connected lines.
+    /// Extend the mesh with a series of connected lines.
     pub fn polyline<P>(
         &mut self,
         mode: DrawMode,
@@ -448,7 +442,7 @@ impl MeshBuilder {
         self.polyline_inner(mode, points, false, color)
     }
 
-    /// Create a new mesh for a closed polygon.
+    /// Extend the mesh with a closed polygon.
     /// The points given must be in clockwise order,
     /// otherwise at best the polygon will not draw.
     pub fn polygon<P>(
@@ -485,7 +479,7 @@ impl MeshBuilder {
         self.polyline_with_vertex_builder(mode, points, is_closed, vb)
     }
 
-    /// Create a new mesh for a given polyline using a custom vertex builder.
+    /// Extend the mesh with a given polyline using a custom vertex builder.
     /// The points given must be in clockwise order.
     pub fn polyline_with_vertex_builder<P, V>(
         &mut self,
@@ -529,7 +523,7 @@ impl MeshBuilder {
         Ok(self)
     }
 
-    /// Create a new mesh for a rectangle.
+    /// Extend the mesh with a rectangle.
     pub fn rectangle(
         &mut self,
         mode: DrawMode,
@@ -561,7 +555,7 @@ impl MeshBuilder {
         Ok(self)
     }
 
-    /// Create a new mesh for a rounded rectangle.
+    /// Extend the mesh with a rounded rectangle.
     pub fn rounded_rectangle(
         &mut self,
         mode: DrawMode,
@@ -608,7 +602,7 @@ impl MeshBuilder {
         P: Into<mint::Point2<f32>> + Clone,
     {
         {
-            if (triangles.len() % 3) != 0 {
+            if !triangles.len().is_multiple_of(3) {
                 return Err(GameError::LyonError(String::from(
                     "Called Mesh::triangles() with points that have a length not a multiple of 3.",
                 )));
@@ -647,7 +641,7 @@ impl MeshBuilder {
     }
 
     /// Takes the accumulated geometry and return it as [`MeshData`].
-    pub fn build(&self) -> MeshData {
+    pub fn build(&'_ self) -> MeshData<'_> {
         MeshData {
             vertices: &self.buffer.vertices,
             indices: &self.buffer.indices,

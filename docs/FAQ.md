@@ -48,9 +48,8 @@ filesystem lookup path by pulling it from the environment variable, see
 the examples for how.  Sorry, there's no especially good way of doing it
 automatically; we've tried.
 
-If that doesn't help, call `Context::print_resource_stats()`.  That
-should print out all the files it can find, and where it is finding
-them.
+If that doesn't help, call `Filesystem::print_all()`.  That should
+print out all the files it can find, and where it is finding them.
 
 If you want to add a non-standard location to the resources lookup
 path, you can use `Filesystem::mount()` or
@@ -92,9 +91,9 @@ will work.
 
 ## Can I do 3D stuff?
 
-Yes; ggez uses `wgpu` for its drawing, and you can access the underlying `wgpu` drawing functions to draw whatever you want without disrupting ggez's drawing state.  See the `cube` example.
+Yes; ggez has a basic 3D api that is good enough for simple games graphics wise. We hope to improve performance and flexibility in the future so you are able to make more advanced 3D for your project.
 
-In general, ggez is designed to focus on 2D graphics.  We want it to be possible for you to create a 3D engine using ggez for everything EXCEPT drawing, but we don't really want to make a full 3D drawing engine.
+However the focus is on simple 3D and we don't want to overcomplicate the codebase. If you don't like 3D you can disable the feature and make your own 3D using `wgpu` directly without disrupting ggez's drawing state. See the `cube` example.
 
 <a name="gfx_gui">
 
@@ -210,11 +209,9 @@ More details can be found [here](https://docs.rs/winit/latest/winit/dpi/index.ht
 
 ## Using AsStd140 requires crevice to be included
 
-If you want to create your own structs to send as uniforms to your shaders, similar as we to in the [shader example](https://github.com/ggez/ggez/blob/master/examples/shader.rs),
-then those structs need to implement `AsStd140`, which can luckily be easily derived using crevice.
+If you want to create your own structs to send as uniforms to your shaders, similar to the [shader example](https://github.com/ggez/ggez/blob/master/examples/shader.rs), those structs need to implement `AsStd140`, which can be easily derived using crevice.
 
-So far, so good. But now I have to tell you that you also need to **depend on the version of crevice that we are using
-yourself, directly**, which at the time of writing (ggez 0.8.1) is `0.11` currently. So add `crevice = "0.11"` to your Cargo.toml .
+So far, so good. But you also need to **depend on the version of crevice used in ggez directly**, which at the time of writing (ggez 0.9.3) is `0.16` currently. So add `crevice = "0.16"` to your Cargo.toml .
 
 There may or may not be ways around this via writing our own wrapper macro using `Span::mixed_site` and re-exporting `crevice`,
 but we lowly mortals haven't yet found a way to actually do this. If you manage to solve this problem, please let us know! :)
@@ -273,7 +270,7 @@ your game such as glam or nalgebra, usually with a "mint" feature.  For
 example. You can add
 
  ```rust
- glam = { version = "0.15.2", features = ["mint"] }
+ glam = { version = "0.30", features = ["mint"] }
  ```
 
  in your Cargo.toml, then when you try to pass

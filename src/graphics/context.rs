@@ -1,10 +1,5 @@
 use super::{
-    draw::DrawUniforms,
     gpu::{
-        arc::{
-            ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcSampler,
-            ArcShaderModule, ArcTextureView,
-        },
         bind_group::{BindGroupCache, BindGroupEntryKey},
         growing::GrowingBufferArena,
         pipeline::PipelineCache,
@@ -20,33 +15,19 @@ use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
     context::Has,
     error::GameResult,
-    filesystem::{Filesystem, InternalClone},
+    filesystem::Filesystem,
     graphics::gpu::{bind_group::BindGroupLayoutBuilder, pipeline::RenderPipelineInfo},
     GameError,
 };
-use ::image as imgcrate;
-use crevice::std140::AsStd140;
 use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
-use typed_arena::Arena as TypedArena;
-use winit::{
-    self,
-    dpi::{self, PhysicalPosition},
-};
+use winit::dpi::{self, PhysicalPosition};
 
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,
     pub present: Image,
-    pub arenas: FrameArenas,
     pub frame: wgpu::SurfaceTexture,
     pub frame_view: wgpu::TextureView,
-}
-
-#[derive(Default)]
-pub(crate) struct FrameArenas {
-    pub buffers: TypedArena<ArcBuffer>,
-    pub render_pipelines: TypedArena<ArcRenderPipeline>,
-    pub bind_groups: TypedArena<ArcBindGroup>,
 }
 
 /// WGPU graphics context objects.
@@ -54,7 +35,7 @@ pub(crate) struct FrameArenas {
 #[allow(missing_docs)]
 pub struct WgpuContext {
     pub instance: wgpu::Instance,
-    pub surface: wgpu::Surface,
+    pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
 }
@@ -64,7 +45,7 @@ pub struct WgpuContext {
 pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
 
-    pub(crate) window: winit::window::Window,
+    pub(crate) window: Arc<winit::window::Window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
     pub(crate) bind_group_cache: BindGroupCache,
@@ -80,25 +61,31 @@ pub struct GraphicsContext {
     pub(crate) fcx: Option<FrameContext>,
     pub(crate) text: TextRenderer,
     pub(crate) fonts: HashMap<String, FontId>,
-    pub(crate) staging_belt: wgpu::util::StagingBelt,
     pub(crate) uniform_arena: GrowingBufferArena,
 
-    pub(crate) draw_shader: ArcShaderModule,
-    pub(crate) instance_shader: ArcShaderModule,
-    pub(crate) instance_unordered_shader: ArcShaderModule,
-    pub(crate) text_shader: ArcShaderModule,
-    pub(crate) copy_shader: ArcShaderModule,
+    pub(crate) draw_shader: wgpu::ShaderModule,
+
+    #[cfg(feature = "3d")]
+    pub(crate) draw_shader_3d: wgpu::ShaderModule,
+    #[cfg(feature = "3d")]
+    pub(crate) instance_shader_3d: wgpu::ShaderModule,
+    #[cfg(feature = "3d")]
+    pub(crate) instance_unordered_shader_3d: wgpu::ShaderModule,
+
+    pub(crate) instance_shader: wgpu::ShaderModule,
+    pub(crate) instance_unordered_shader: wgpu::ShaderModule,
+    pub(crate) text_shader: wgpu::ShaderModule,
+    pub(crate) copy_shader: wgpu::ShaderModule,
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
-    pub(crate) instance_bind_layout: ArcBindGroupLayout,
+    pub(crate) instance_bind_layout: wgpu::BindGroupLayout,
 
     pub(crate) fs: Filesystem,
 
-    bind_group: Option<(Vec<BindGroupEntryKey>, ArcBindGroup)>,
+    bind_group: Option<([BindGroupEntryKey; 2], wgpu::BindGroup)>,
 }
 
 impl GraphicsContext {
-    #[allow(unsafe_code)]
     /// Create a new graphics context
     pub fn new(
         game_id: &str,
@@ -107,9 +94,9 @@ impl GraphicsContext {
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
         let new_instance = |backends| {
-            wgpu::Instance::new(wgpu::InstanceDescriptor {
+            wgpu::Instance::new(&wgpu::InstanceDescriptor {
                 backends,
-                dx12_shader_compiler: Default::default(),
+                ..Default::default()
             })
         };
 
@@ -147,7 +134,6 @@ impl GraphicsContext {
                 Backend::Vulkan => wgpu::Backends::VULKAN,
                 Backend::Metal => wgpu::Backends::METAL,
                 Backend::Dx12 => wgpu::Backends::DX12,
-                Backend::Dx11 => wgpu::Backends::DX11,
                 Backend::Gl => wgpu::Backends::GL,
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
@@ -158,76 +144,46 @@ impl GraphicsContext {
 
     fn bind_group(
         &mut self,
-        view: ArcTextureView,
-        sampler: ArcSampler,
-    ) -> (ArcBindGroup, ArcBindGroupLayout) {
-        let key = vec![
-            BindGroupEntryKey::Image { id: view.id() },
-            BindGroupEntryKey::Sampler { id: sampler.id() },
+        view: wgpu::TextureView,
+        sampler: wgpu::Sampler,
+    ) -> (wgpu::BindGroup, wgpu::BindGroupLayout) {
+        let key = [
+            BindGroupEntryKey::Image(view.clone()),
+            BindGroupEntryKey::Sampler(sampler.clone()),
         ];
-        if let Some(bind_group) = self.bind_group.as_mut() {
-            if key == bind_group.0 {
-                let layout = BindGroupLayoutBuilder::new()
-                    .image(wgpu::ShaderStages::FRAGMENT)
-                    .sampler(wgpu::ShaderStages::FRAGMENT)
-                    .create(&self.wgpu.device, &mut self.bind_group_cache);
-                (bind_group.1.clone(), layout)
-            } else {
-                let layout = BindGroupLayoutBuilder::new()
-                    .image(wgpu::ShaderStages::FRAGMENT)
-                    .sampler(wgpu::ShaderStages::FRAGMENT)
-                    .create(&self.wgpu.device, &mut self.bind_group_cache);
-                *bind_group = (
-                    key,
-                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
-                        &wgpu::BindGroupDescriptor {
-                            label: None,
-                            layout: layout.as_ref(),
-                            entries: &[
-                                wgpu::BindGroupEntry {
-                                    binding: 0,
-                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
-                                },
-                                wgpu::BindGroupEntry {
-                                    binding: 1,
-                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
-                                },
-                            ],
-                        },
-                    )),
-                );
-                (bind_group.1.clone(), layout)
+        let layout = BindGroupLayoutBuilder::new()
+            .image(wgpu::ShaderStages::FRAGMENT)
+            .sampler(wgpu::ShaderStages::FRAGMENT)
+            .create(&self.wgpu.device, &mut self.bind_group_cache);
+
+        let bind_group = match &self.bind_group {
+            Some((old_key, bind_group)) if old_key == &key => bind_group.clone(),
+            _ => {
+                let bind_group = self
+                    .wgpu
+                    .device
+                    .create_bind_group(&wgpu::BindGroupDescriptor {
+                        label: None,
+                        layout: &layout,
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::TextureView(&view),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::Sampler(&sampler),
+                            },
+                        ],
+                    });
+                self.bind_group = Some((key, bind_group.clone()));
+                bind_group
             }
-        } else {
-            let layout = BindGroupLayoutBuilder::new()
-                .image(wgpu::ShaderStages::FRAGMENT)
-                .sampler(wgpu::ShaderStages::FRAGMENT)
-                .create(&self.wgpu.device, &mut self.bind_group_cache);
-            self.bind_group =
-                Some((
-                    key,
-                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
-                        &wgpu::BindGroupDescriptor {
-                            label: None,
-                            layout: layout.as_ref(),
-                            entries: &[
-                                wgpu::BindGroupEntry {
-                                    binding: 0,
-                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
-                                },
-                                wgpu::BindGroupEntry {
-                                    binding: 1,
-                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
-                                },
-                            ],
-                        },
-                    )),
-                ));
-            (self.bind_group.as_ref().unwrap().1.clone(), layout)
-        }
+        };
+
+        (bind_group, layout)
     }
 
-    #[allow(unsafe_code)]
     pub(crate) fn new_from_instance(
         #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
@@ -235,7 +191,7 @@ impl GraphicsContext {
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
-        let mut window_builder = winit::window::WindowBuilder::new()
+        let mut window_builder = winit::window::Window::default_attributes()
             .with_title(conf.window_setup.title.clone())
             .with_inner_size(conf.window_mode.actual_size().unwrap()) // Unwrap since actual_size only fails if one of the window dimensions is less than 1
             .with_resizable(conf.window_mode.resizable)
@@ -251,19 +207,21 @@ impl GraphicsContext {
         ))]
         {
             {
-                use winit::platform::x11::WindowBuilderExtX11;
+                use winit::platform::x11::WindowAttributesExtX11;
                 window_builder = window_builder.with_name(game_id, game_id);
             }
             {
-                use winit::platform::wayland::WindowBuilderExtWayland;
+                use winit::platform::wayland::WindowAttributesExtWayland;
                 window_builder = window_builder.with_name(game_id, game_id);
             }
         }
 
         #[cfg(target_os = "windows")]
         {
-            use winit::platform::windows::WindowBuilderExtWindows;
-            window_builder = window_builder.with_drag_and_drop(false);
+            use winit::platform::windows::WindowAttributesExtWindows;
+            window_builder = window_builder
+                .with_drag_and_drop(false)
+                .with_clip_children(false);
         }
 
         window_builder = if !conf.window_setup.icon.is_empty() {
@@ -273,8 +231,12 @@ impl GraphicsContext {
             window_builder
         };
 
-        let window = window_builder.build(event_loop)?;
-        let surface = unsafe { instance.create_surface(&window) }
+        // TODO remove deprecated create_window usage
+        // In order to do this, we need to switch window creation to a point inside the active event loop instead of before.
+        #[allow(deprecated)]
+        let window = Arc::new(event_loop.create_window(window_builder)?);
+        let surface = instance
+            .create_surface(window.clone())
             .map_err(|_| GameError::GraphicsInitializationError)?;
 
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
@@ -282,17 +244,15 @@ impl GraphicsContext {
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
         }))
-        .ok_or(GameError::GraphicsInitializationError)?;
+        .or(Err(GameError::GraphicsInitializationError))?;
 
         // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
         const MAX_INSTANCES: u32 = 1_000_000;
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
 
-        let (device, queue) = pollster::block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                features: wgpu::Features::default(),
-                limits: wgpu::Limits {
+        let (device, queue) =
+            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+                required_limits: wgpu::Limits {
                     // 1st: DrawParams
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
@@ -305,9 +265,8 @@ impl GraphicsContext {
                     max_texture_dimension_2d: 8192,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
-            },
-            None,
-        ))?;
+                ..wgpu::DeviceDescriptor::default()
+            }))?;
 
         let wgpu = Arc::new(WgpuContext {
             instance,
@@ -329,6 +288,7 @@ impl GraphicsContext {
             } else {
                 wgpu::PresentMode::AutoNoVsync
             },
+            desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
@@ -345,54 +305,39 @@ impl GraphicsContext {
 
         let text = TextRenderer::new(&wgpu.device, image_bind_layout);
 
-        let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
             &wgpu.device,
             u64::from(wgpu.device.limits().min_uniform_buffer_offset_alignment),
             wgpu::BufferDescriptor {
                 label: None,
-                size: 4096 * DrawUniforms::std140_size_static() as u64,
+                size: 4096 * wgpu.device.limits().min_uniform_buffer_offset_alignment as u64, // Set to min buffer alignment so we can upload all uniform data at once
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             },
         );
 
-        let draw_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw.wgsl").into()),
-            },
-        ));
+        let load_shader = |source: &str| {
+            wgpu.device
+                .create_shader_module(wgpu::ShaderModuleDescriptor {
+                    label: None,
+                    source: wgpu::ShaderSource::Wgsl(source.into()),
+                })
+        };
 
-        let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance.wgsl").into()),
-            },
-        ));
+        let draw_shader = load_shader(include_str!("shader/draw.wgsl"));
 
-        let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(
-                    include_str!("shader/instance_unordered.wgsl").into(),
-                ),
-            },
-        ));
+        #[cfg(feature = "3d")]
+        let draw_shader_3d = load_shader(include_str!("shader/draw3d.wgsl"));
+        #[cfg(feature = "3d")]
+        let instance_shader_3d = load_shader(include_str!("shader/instance3d.wgsl"));
+        #[cfg(feature = "3d")]
+        let instance_unordered_shader_3d =
+            load_shader(include_str!("shader/instance_unordered3d.wgsl"));
 
-        let text_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(include_str!("shader/text.wgsl").into()),
-            },
-        ));
-
-        let copy_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(include_str!("shader/copy.wgsl").into()),
-            },
-        ));
+        let instance_shader = load_shader(include_str!("shader/instance.wgsl"));
+        let instance_unordered_shader = load_shader(include_str!("shader/instance_unordered.wgsl"));
+        let text_shader = load_shader(include_str!("shader/text.wgsl"));
+        let copy_shader = load_shader(include_str!("shader/copy.wgsl"));
 
         let rect_mesh = Mesh::from_data_wgpu(
             &wgpu,
@@ -458,9 +403,16 @@ impl GraphicsContext {
             fcx: None,
             text,
             fonts: HashMap::new(),
-            staging_belt,
             uniform_arena,
             draw_shader,
+
+            #[cfg(feature = "3d")]
+            draw_shader_3d,
+            #[cfg(feature = "3d")]
+            instance_shader_3d,
+            #[cfg(feature = "3d")]
+            instance_unordered_shader_3d,
+
             instance_shader,
             instance_unordered_shader,
             text_shader,
@@ -469,17 +421,16 @@ impl GraphicsContext {
             white_image,
             instance_bind_layout,
 
-            fs: InternalClone::clone(filesystem),
+            fs: filesystem.clone(),
 
             bind_group: None,
         };
 
         this.set_window_mode(&conf.window_mode)?;
 
-        this.frame = Some(ScreenImage::new(&this, None, 1., 1., 1));
+        this.frame = Some(ScreenImage::new(&this, 1., 1., 1));
         this.frame_msaa = Some(ScreenImage::new(
             &this,
-            None,
             1.,
             1.,
             u8::from(conf.window_setup.samples).into(),
@@ -517,6 +468,11 @@ impl GraphicsContext {
     pub fn add_font(&mut self, name: &str, font: FontData) {
         let id = self.text.glyph_brush.borrow_mut().add_font(font.font);
         self.fonts.insert(name.to_string(), id);
+    }
+
+    /// Checks if the given font is loaded
+    pub fn has_font(&self, font_name: impl Into<String>) -> bool {
+        self.fonts.contains_key(&font_name.into())
     }
 
     /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).
@@ -563,9 +519,8 @@ impl GraphicsContext {
     pub fn supported_resolutions(&self) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
         self.window
             .current_monitor()
-            .unwrap() // Unwrap is fine current monitor should always exist
-            .video_modes()
-            .map(|vm| vm.size())
+            .into_iter()
+            .flat_map(|monitor| monitor.video_modes().map(|vm| vm.size()))
     }
 
     /// Returns a reference to the Winit window.
@@ -674,7 +629,6 @@ impl GraphicsContext {
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor::default()),
             present: self.frame().clone(),
-            arenas: FrameArenas::default(),
             frame,
             frame_view,
         });
@@ -695,54 +649,52 @@ impl GraphicsContext {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &fcx.frame_view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
             });
 
-            let sampler = &mut self
+            let sampler = self
                 .sampler_cache
                 .get(&self.wgpu.device, Sampler::default());
 
-            let (bind, layout) = self.bind_group(fcx.present.view, sampler.clone());
+            let (bind, layout) = self.bind_group(fcx.present.view, sampler);
 
-            let layout = self.pipeline_cache.layout(&self.wgpu.device, &[layout]);
+            let layout = self.pipeline_cache.layout(&self.wgpu.device, &[&layout]);
             let copy = self.pipeline_cache.render_pipeline(
                 &self.wgpu.device,
-                &layout,
                 RenderPipelineInfo {
+                    layout,
                     vs: self.copy_shader.clone(),
                     fs: self.copy_shader.clone(),
-                    vs_entry: "vs_main".into(),
-                    fs_entry: "fs_main".into(),
+                    vs_entry: "vs_main",
+                    fs_entry: "fs_main",
                     samples: 1,
                     format: self.surface_config.format,
                     blend: None,
-                    depth: false,
+                    depth: None,
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
                     vertex_layout: Vertex::layout(),
+                    cull_mode: None,
                 },
             );
 
-            let copy = fcx.arenas.render_pipelines.alloc(copy);
-            let bind = fcx.arenas.bind_groups.alloc(bind);
-
-            present_pass.set_pipeline(copy);
-            present_pass.set_bind_group(0, bind, &[]);
+            present_pass.set_pipeline(&copy);
+            present_pass.set_bind_group(0, &bind, &[]);
             present_pass.draw(0..3, 0..1);
 
             std::mem::drop(present_pass);
 
-            self.staging_belt.finish();
             let _ = self.wgpu.queue.submit([fcx.cmd.finish()]);
             fcx.frame.present();
-
-            self.staging_belt.recall();
 
             Ok(())
         } else {
@@ -754,7 +706,7 @@ impl GraphicsContext {
 
     pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
         let size = self.window.inner_size();
-        let _ = self.wgpu.device.poll(wgpu::Maintain::Wait);
+        let _ = self.wgpu.device.poll(wgpu::PollType::Wait);
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
         self.wgpu
@@ -809,7 +761,7 @@ impl GraphicsContext {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(mode.actual_size()?);
+                let _ = window.request_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
                 window.set_maximized(mode.maximized);
             }
@@ -836,12 +788,7 @@ impl GraphicsContext {
                 }
             }
             FullscreenType::Desktop => {
-                window.set_fullscreen(None);
-                window.set_decorations(false);
-                if let Some(monitor) = window.current_monitor() {
-                    window.set_inner_size(monitor.size());
-                    window.set_outer_position(monitor.position());
-                }
+                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
             }
         }
 
@@ -866,15 +813,12 @@ pub(crate) fn load_icon(
     icon_file: &Path,
     filesystem: &Filesystem,
 ) -> GameResult<winit::window::Icon> {
-    use std::io::Read;
     use winit::window::Icon;
 
-    let mut buf = Vec::new();
-    let mut reader = filesystem.open(icon_file)?;
-    let _ = reader.read_to_end(&mut buf)?;
-    let i = imgcrate::load_from_memory(&buf)?;
-    let image_data = i.to_rgba8();
-    Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
+    let buf = filesystem.read(icon_file)?;
+    let img = image::load_from_memory(&buf)?.into_rgba8();
+
+    Icon::from_rgba(img.to_vec(), img.width(), img.height()).map_err(|e| {
         let msg = format!("Could not load icon: {e:?}");
         GameError::ResourceLoadError(msg)
     })

@@ -427,7 +427,7 @@ impl From<(u8, u8, u8)> for Color {
 }
 
 impl From<[f32; 4]> for Color {
-    /// Turns an `[R, G, B, A] array of `f32`'s into a `Color` with no format changes.
+    /// Turns an `[R, G, B, A]` array of `f32`'s into a `Color` with no format changes.
     /// All inputs should be in the range `[0.0-1.0]`.
     fn from(val: [f32; 4]) -> Self {
         Color::new(val[0], val[1], val[2], val[3])

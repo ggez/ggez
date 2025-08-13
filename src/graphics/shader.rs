@@ -1,15 +1,10 @@
-use std::io::Read;
 use std::marker::PhantomData;
 
 use crate::{context::Has, Context, GameError, GameResult};
 
 use super::{
     context::GraphicsContext,
-    gpu::{
-        arc::{ArcBindGroup, ArcBindGroupLayout, ArcSampler, ArcShaderModule, ArcTextureView},
-        bind_group::BindGroupBuilder,
-        growing::GrowingBufferArena,
-    },
+    gpu::{bind_group::BindGroupBuilder, growing::GrowingBufferArena},
     image::Image,
     sampler::Sampler,
 };
@@ -93,21 +88,22 @@ impl<'a> ShaderBuilder<'a> {
     pub fn build(self, gfx: &impl Has<GraphicsContext>) -> GameResult<Shader> {
         let gfx = gfx.retrieve();
         let load = |s: &str| {
-            Some(ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
-                wgpu::ShaderModuleDescriptor {
-                    label: None,
-                    source: wgpu::ShaderSource::Wgsl(s.into()),
-                },
-            )))
+            Some(
+                gfx.wgpu
+                    .device
+                    .create_shader_module(wgpu::ShaderModuleDescriptor {
+                        label: None,
+                        source: wgpu::ShaderSource::Wgsl(s.into()),
+                    }),
+            )
         };
-        let load_resource = |path: &str| -> GameResult<Option<ArcShaderModule>> {
-            let mut encoded = Vec::new();
-            _ = gfx.fs.open(path)?.read_to_end(&mut encoded)?;
+        let load_resource = |path: &str| -> GameResult<Option<wgpu::ShaderModule>> {
+            let encoded = gfx.fs.read(path)?;
             Ok(load(
                 &String::from_utf8(encoded).map_err(GameError::ShaderEncodingError)?,
             ))
         };
-        let load_any = |source| -> GameResult<Option<ArcShaderModule>> {
+        let load_any = |source| -> GameResult<Option<wgpu::ShaderModule>> {
             Ok(match source {
                 ShaderSource::Code(source) => load(source),
                 ShaderSource::Path(source) => load_resource(source)?,
@@ -189,8 +185,28 @@ impl Default for ShaderBuilder<'_> {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Shader {
-    pub(crate) vs_module: Option<ArcShaderModule>,
-    pub(crate) fs_module: Option<ArcShaderModule>,
+    pub(crate) vs_module: Option<wgpu::ShaderModule>,
+    pub(crate) fs_module: Option<wgpu::ShaderModule>,
+}
+
+impl Shader {
+    /// Get the underlying vertex shader module for wgpu
+    pub fn vs_module(&self) -> Option<&wgpu::ShaderModule> {
+        if let Some(vs_module) = &self.vs_module {
+            Some(vs_module)
+        } else {
+            None
+        }
+    }
+
+    /// Get the underlying fragment shader module for wgpu
+    pub fn fs_module(&self) -> Option<&wgpu::ShaderModule> {
+        if let Some(fs_module) = &self.fs_module {
+            Some(fs_module)
+        } else {
+            None
+        }
+    }
 }
 
 use crevice::std140::AsStd140;
@@ -224,7 +240,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     /// # Arguments
     ///
     /// * `vs_visible` - If the images should also be visible to the vertex shader, rather
-    ///    than just the fragment shader.
+    ///   than just the fragment shader.
     #[must_use]
     pub fn images(
         self,
@@ -306,11 +322,11 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 pub struct ShaderParams<Uniforms: AsStd140> {
     uniform_arena: GrowingBufferArena,
     // layout and bind_group always Some after construction
-    pub(crate) layout: Option<ArcBindGroupLayout>,
-    pub(crate) bind_group: Option<ArcBindGroup>,
+    pub(crate) layout: Option<wgpu::BindGroupLayout>,
+    pub(crate) bind_group: Option<wgpu::BindGroup>,
     pub(crate) buffer_offset: u32,
-    images: Vec<ArcTextureView>,
-    samplers: Vec<ArcSampler>,
+    images: Vec<wgpu::TextureView>,
+    samplers: Vec<wgpu::Sampler>,
     images_vs_visible: bool,
     last_tick: usize,
     _marker: PhantomData<Uniforms>,

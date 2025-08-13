@@ -46,10 +46,10 @@ impl MainState {
 
         let image = graphics::Image::from_path(ctx, "/dragon1.png")?;
 
-        let mut sound = audio::Source::new(ctx, "/sound.ogg")?;
+        let sound = audio::Source::new(ctx, "/sound.ogg")?;
 
         // "detached" sounds keep playing even after they are dropped
-        let _ = sound.play_detached(ctx);
+        sound.play_detached();
 
         let rng = oorandom::Rand32::new(271828);
 
@@ -64,7 +64,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while ctx.time.check_update_time(DESIRED_FPS) {

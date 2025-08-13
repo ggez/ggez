@@ -21,14 +21,28 @@
 //! [custom shader]:Canvas::set_shader
 //! [blend mode]:Canvas::set_blend_mode
 
+#[cfg(feature = "3d")]
+pub(crate) mod camera3d;
+#[cfg(feature = "3d")]
+pub(crate) mod canvas3d;
+#[cfg(feature = "3d")]
+pub(crate) mod draw3d;
+#[cfg(feature = "3d")]
+pub(crate) mod instance3d;
+#[cfg(feature = "3d")]
+pub(crate) mod internal_canvas3d;
+
 pub(crate) mod canvas;
-pub(crate) mod context;
+/// Module for the graphics context dealing with wgpu
+pub mod context;
 pub(crate) mod draw;
 pub(crate) mod gpu;
 pub(crate) mod image;
 pub(crate) mod instance;
 pub(crate) mod internal_canvas;
 pub(crate) mod mesh;
+#[cfg(feature = "3d")]
+pub(crate) mod mesh3d;
 pub(crate) mod sampler;
 pub(crate) mod shader;
 pub(crate) mod text;
@@ -39,6 +53,9 @@ pub use {
     self::image::*, canvas::*, context::*, draw::*, instance::*, mesh::*, sampler::*, shader::*,
     text::*, types::*,
 };
+
+#[cfg(feature = "3d")]
+pub use {camera3d::*, canvas3d::*, draw3d::*, instance3d::*, mesh3d::*};
 
 /// Applies `DrawParam` to `Rect`.
 #[must_use]
@@ -131,11 +148,11 @@ pub fn queue_text(
     canvas: &mut Canvas,
     text: &Text,
     relative_dest: impl Into<Point2<f32>>,
-    color: Option<Color>,
+    color: impl Into<Option<Color>>,
 ) {
     canvas
         .queued_texts
-        .push((text.clone(), relative_dest.into(), color));
+        .push((text.clone(), relative_dest.into(), color.into()));
 }
 
 /// Draws all of the Texts added via `queue_text`.

@@ -1,8 +1,7 @@
 use super::{
-    context::{FrameArenas, GraphicsContext},
+    context::GraphicsContext,
     draw::{DrawParam, DrawUniforms},
     gpu::{
-        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
         growing::{ArenaAllocation, GrowingBufferArena},
         pipeline::{PipelineCache, RenderPipelineInfo},
@@ -16,13 +15,13 @@ use super::{
 };
 use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
+use glam::{Mat4, Vec2, Vec4};
 use std::{collections::HashMap, hash::Hash};
 
 /// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
 #[allow(missing_debug_implementations)]
 pub struct InternalCanvas<'a> {
     wgpu: &'a WgpuContext,
-    arenas: &'a FrameArenas,
     bind_group_cache: &'a mut BindGroupCache,
     pipeline_cache: &'a mut PipelineCache,
     sampler_cache: &'a mut SamplerCache,
@@ -31,9 +30,9 @@ pub struct InternalCanvas<'a> {
     uniform_arena: &'a mut GrowingBufferArena,
 
     shader: Shader,
-    shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout, u32)>,
+    shader_bind_group: Option<(wgpu::BindGroup, wgpu::BindGroupLayout, u32)>,
     text_shader: Shader,
-    text_shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout, u32)>,
+    text_shader_bind_group: Option<(wgpu::BindGroup, wgpu::BindGroupLayout, u32)>,
 
     shader_ty: Option<ShaderType>,
     dirty_pipeline: bool,
@@ -44,13 +43,13 @@ pub struct InternalCanvas<'a> {
     format: wgpu::TextureFormat,
     text_uniforms: ArenaAllocation,
 
-    draw_sm: ArcShaderModule,
-    instance_sm: ArcShaderModule,
-    instance_unordered_sm: ArcShaderModule,
-    text_sm: ArcShaderModule,
+    draw_sm: &'a wgpu::ShaderModule,
+    instance_sm: &'a wgpu::ShaderModule,
+    instance_unordered_sm: &'a wgpu::ShaderModule,
+    text_sm: &'a wgpu::ShaderModule,
 
     transform: glam::Mat4,
-    curr_image: Option<ArcTextureView>,
+    curr_image: Option<wgpu::TextureView>,
     curr_sampler: Sampler,
     next_sampler: Sampler,
     premul_text: bool,
@@ -70,17 +69,20 @@ impl<'a> InternalCanvas<'a> {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: image.view.as_ref(),
+                    view: &image.view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: match clear.into() {
                             None => wgpu::LoadOp::Load,
                             Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
             })
         })
     }
@@ -113,17 +115,20 @@ impl<'a> InternalCanvas<'a> {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: msaa_image.view.as_ref(),
-                    resolve_target: Some(resolve_image.view.as_ref()),
+                    view: &msaa_image.view,
+                    depth_slice: None,
+                    resolve_target: Some(&resolve_image.view),
                     ops: wgpu::Operations {
                         load: match clear.into() {
                             None => wgpu::LoadOp::Load,
                             Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
             })
         })
     }
@@ -150,13 +155,9 @@ impl<'a> InternalCanvas<'a> {
         let fonts = &gfx.fonts;
         let uniform_arena = &mut gfx.uniform_arena;
 
-        let (arenas, mut pass) = {
+        let mut pass = {
             let fcx = gfx.fcx.as_mut().unwrap(/* see above */);
-
-            let pass = create_pass(&mut fcx.cmd);
-            let arenas = &fcx.arenas;
-
-            (arenas, pass)
+            create_pass(&mut fcx.cmd)
         };
 
         pass.set_blend_constant(wgpu::Color::BLACK);
@@ -185,16 +186,11 @@ impl<'a> InternalCanvas<'a> {
         wgpu.queue.write_buffer(
             &text_uniforms.buffer,
             text_uniforms.offset,
-            (TextUniforms {
-                transform: transform.into(),
-            })
-            .as_std140()
-            .as_bytes(),
+            (TextUniforms { transform }).as_std140().as_bytes(),
         );
 
         Ok(InternalCanvas {
             wgpu,
-            arenas,
             bind_group_cache,
             pipeline_cache,
             sampler_cache,
@@ -216,10 +212,10 @@ impl<'a> InternalCanvas<'a> {
             format,
             text_uniforms,
 
-            draw_sm: gfx.draw_shader.clone(),
-            instance_sm: gfx.instance_shader.clone(),
-            instance_unordered_sm: gfx.instance_unordered_shader.clone(),
-            text_sm: gfx.text_shader.clone(),
+            draw_sm: &gfx.draw_shader,
+            instance_sm: &gfx.instance_shader,
+            instance_unordered_sm: &gfx.instance_unordered_shader,
+            text_sm: &gfx.text_shader,
 
             transform,
             curr_image: None,
@@ -231,13 +227,19 @@ impl<'a> InternalCanvas<'a> {
 
     pub fn set_shader_params(
         &mut self,
-        bind_group: ArcBindGroup,
-        layout: ArcBindGroupLayout,
+        bind_group: wgpu::BindGroup,
+        layout: wgpu::BindGroupLayout,
         offset: u32,
     ) {
         self.flush_text();
         self.dirty_pipeline = true;
-        self.shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout, offset));
+        self.shader_bind_group = Some((bind_group, layout, offset));
+    }
+
+    pub fn reset_shader_params(&mut self) {
+        self.flush_text();
+        self.dirty_pipeline = true;
+        self.shader_bind_group = None;
     }
 
     pub fn set_shader(&mut self, shader: Shader) {
@@ -248,14 +250,19 @@ impl<'a> InternalCanvas<'a> {
 
     pub fn set_text_shader_params(
         &mut self,
-        bind_group: ArcBindGroup,
-        layout: ArcBindGroupLayout,
+        bind_group: wgpu::BindGroup,
+        layout: wgpu::BindGroupLayout,
         offset: u32,
     ) {
         self.flush_text();
         self.dirty_pipeline = true;
-        self.text_shader_bind_group =
-            Some((self.arenas.bind_groups.alloc(bind_group), layout, offset));
+        self.text_shader_bind_group = Some((bind_group, layout, offset));
+    }
+
+    pub fn reset_text_shader_params(&mut self) {
+        self.flush_text();
+        self.dirty_pipeline = true;
+        self.text_shader_bind_group = None;
     }
 
     pub fn set_text_shader(&mut self, shader: Shader) {
@@ -290,7 +297,7 @@ impl<'a> InternalCanvas<'a> {
             &self.text_uniforms.buffer,
             self.text_uniforms.offset,
             (TextUniforms {
-                transform: self.transform.into(),
+                transform: self.transform,
             })
             .as_std140()
             .as_bytes(),
@@ -302,9 +309,13 @@ impl<'a> InternalCanvas<'a> {
         self.pass.set_scissor_rect(x, y, w, h);
     }
 
-    #[allow(unsafe_code)]
     pub fn draw_mesh(&mut self, mesh: &'a Mesh, image: &Image, param: DrawParam, scale: bool) {
         self.flush_text();
+
+        if mesh.index_count == 0 {
+            return;
+        }
+
         self.update_pipeline(ShaderType::Draw);
 
         let alloc_size = DrawUniforms::std140_size_static() as u64;
@@ -331,7 +342,7 @@ impl<'a> InternalCanvas<'a> {
                 None
             },
         );
-        uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
+        uniforms.transform = self.transform * uniforms.transform;
 
         // 1. allocate some uniform buffer memory from GrowingBufferArena.
         // 2. write the uniform data to that memory
@@ -345,7 +356,7 @@ impl<'a> InternalCanvas<'a> {
 
         self.pass.set_bind_group(
             0,
-            self.arenas.bind_groups.alloc(uniform_bind_group),
+            &uniform_bind_group,
             &[uniform_alloc.offset as u32], // <- the dynamic offset
         );
 
@@ -365,7 +376,7 @@ impl<'a> InternalCanvas<'a> {
     ) -> GameResult {
         self.flush_text();
 
-        if instances.len == 0 {
+        if instances.len == 0 || mesh.index_count == 0 {
             return Ok(());
         }
 
@@ -395,18 +406,9 @@ impl<'a> InternalCanvas<'a> {
         self.set_image(instances.image.clone());
 
         let uniforms = InstanceUniforms {
-            transform: (self.transform
-                * glam::Mat4::from(
-                    // image scaling is non-sensical for instance array itself as the image scaling is applied locally (see below)
-                    DrawUniforms::from_param(&param, None).transform,
-                ))
-            .into(),
-            color: mint::Vector4::<f32> {
-                x: param.color.r,
-                y: param.color.g,
-                z: param.color.b,
-                w: param.color.a,
-            },
+            // image scaling is non-sensical for instance array itself as the image scaling is applied locally (see below)
+            transform: self.transform * DrawUniforms::from_param(&param, None).transform,
+            color: Vec4::from_array(param.color.into()),
             // this is the actual image scale that we apply in the vertex shader.
             // we can't apply this when we first convert the instance array drawparams because we don't know the image size at the time the user inserts the drawparams.
             // we also can't apply image scaling in the global instance transform as it *must* be applied in local space.
@@ -417,8 +419,7 @@ impl<'a> InternalCanvas<'a> {
                 )
             } else {
                 glam::Vec2::ZERO
-            }
-            .into(),
+            },
         };
 
         self.wgpu.queue.write_buffer(
@@ -427,11 +428,8 @@ impl<'a> InternalCanvas<'a> {
             uniforms.as_std140().as_bytes(),
         );
 
-        self.pass.set_bind_group(
-            0,
-            self.arenas.bind_groups.alloc(uniform_bind_group),
-            &[uniform_alloc.offset as u32],
-        );
+        self.pass
+            .set_bind_group(0, &uniform_bind_group, &[uniform_alloc.offset as u32]);
         self.pass.set_bind_group(2, &instances.bind_group, &[]);
 
         self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
@@ -470,11 +468,8 @@ impl<'a> InternalCanvas<'a> {
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
-        self.pass.set_bind_group(
-            0,
-            self.arenas.bind_groups.alloc(text_uniforms_bind),
-            &[self.text_uniforms.offset as u32],
-        );
+        self.pass
+            .set_bind_group(0, &text_uniforms_bind, &[self.text_uniforms.offset as u32]);
 
         self.queuing_text = true;
 
@@ -490,12 +485,8 @@ impl<'a> InternalCanvas<'a> {
                 self.set_blend_mode(BlendMode::PREMULTIPLIED);
             }
             self.update_pipeline(ShaderType::Text);
-            self.text_renderer.draw_queued(
-                &self.wgpu.device,
-                &self.wgpu.queue,
-                self.arenas,
-                &mut self.pass,
-            );
+            self.text_renderer
+                .draw_queued(&self.wgpu.device, &self.wgpu.queue, &mut self.pass);
             if premul {
                 self.set_blend_mode(BlendMode::ALPHA);
             }
@@ -545,32 +536,33 @@ impl<'a> InternalCanvas<'a> {
             let (dummy_group, dummy_layout) =
                 BindGroupBuilder::new().create(&self.wgpu.device, self.bind_group_cache);
 
-            let mut groups = vec![uniform_layout, texture_layout];
+            let mut groups = vec![&uniform_layout, &texture_layout];
 
             if let ShaderType::Instance { .. } = ty {
-                groups.push(instance_layout);
+                groups.push(&instance_layout);
             } else {
                 // the dummy group ensures the user's bind group is at index 3
-                groups.push(dummy_layout);
-                self.pass
-                    .set_bind_group(2, self.arenas.bind_groups.alloc(dummy_group), &[]);
+                groups.push(&dummy_layout);
+                self.pass.set_bind_group(2, &dummy_group, &[]);
             }
 
             let shader = match ty {
                 ShaderType::Draw | ShaderType::Instance { .. } => {
-                    if let Some((bind_group, bind_group_layout, offset)) = &self.shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[*offset]);
-                        groups.push(bind_group_layout.clone());
+                    if let Some((ref bind_group, ref bind_group_layout, offset)) =
+                        self.shader_bind_group
+                    {
+                        self.pass.set_bind_group(3, bind_group, &[offset]);
+                        groups.push(bind_group_layout);
                     }
 
                     &self.shader
                 }
                 ShaderType::Text => {
-                    if let Some((bind_group, bind_group_layout, offset)) =
-                        &self.text_shader_bind_group
+                    if let Some((ref bind_group, ref bind_group_layout, offset)) =
+                        self.text_shader_bind_group
                     {
-                        self.pass.set_bind_group(3, bind_group, &[*offset]);
-                        groups.push(bind_group_layout.clone());
+                        self.pass.set_bind_group(3, bind_group, &[offset]);
+                        groups.push(bind_group_layout);
                     }
 
                     &self.text_shader
@@ -578,60 +570,56 @@ impl<'a> InternalCanvas<'a> {
             };
 
             let layout = self.pipeline_cache.layout(&self.wgpu.device, &groups);
-            let pipeline = self
-                .arenas
-                .render_pipelines
-                .alloc(self.pipeline_cache.render_pipeline(
-                    &self.wgpu.device,
-                    layout.as_ref(),
-                    RenderPipelineInfo {
-                        vs: if let Some(vs_module) = &shader.vs_module {
-                            vs_module.clone()
-                        } else {
-                            match ty {
-                                ShaderType::Draw => self.draw_sm.clone(),
-                                ShaderType::Instance { ordered } => {
-                                    if ordered {
-                                        self.instance_sm.clone()
-                                    } else {
-                                        self.instance_unordered_sm.clone()
-                                    }
+            let pipeline = self.pipeline_cache.render_pipeline(
+                &self.wgpu.device,
+                RenderPipelineInfo {
+                    layout,
+                    vs: if let Some(vs_module) = &shader.vs_module {
+                        vs_module.clone()
+                    } else {
+                        match ty {
+                            ShaderType::Draw => self.draw_sm.clone(),
+                            ShaderType::Instance { ordered } => {
+                                if ordered {
+                                    self.instance_sm.clone()
+                                } else {
+                                    self.instance_unordered_sm.clone()
                                 }
-                                ShaderType::Text => self.text_sm.clone(),
                             }
-                        },
-                        fs: if let Some(fs_module) = &shader.fs_module {
-                            fs_module.clone()
-                        } else {
-                            match ty {
-                                ShaderType::Draw | ShaderType::Instance { .. } => {
-                                    self.draw_sm.clone()
-                                }
-                                ShaderType::Text => self.text_sm.clone(),
-                            }
-                        },
-                        vs_entry: "vs_main".into(),
-                        fs_entry: "fs_main".into(),
-                        samples: self.samples,
-                        format: self.format,
-                        blend: Some(wgpu::BlendState {
-                            color: self.blend_mode.color,
-                            alpha: self.blend_mode.alpha,
-                        }),
-                        depth: false,
-                        vertices: true,
-                        topology: match ty {
-                            ShaderType::Text => wgpu::PrimitiveTopology::TriangleStrip,
-                            _ => wgpu::PrimitiveTopology::TriangleList,
-                        },
-                        vertex_layout: match ty {
-                            ShaderType::Text => TextVertex::layout(),
-                            _ => Vertex::layout(),
-                        },
+                            ShaderType::Text => self.text_sm.clone(),
+                        }
                     },
-                ));
+                    fs: if let Some(fs_module) = &shader.fs_module {
+                        fs_module.clone()
+                    } else {
+                        match ty {
+                            ShaderType::Draw | ShaderType::Instance { .. } => self.draw_sm.clone(),
+                            ShaderType::Text => self.text_sm.clone(),
+                        }
+                    },
+                    vs_entry: "vs_main",
+                    fs_entry: "fs_main",
+                    samples: self.samples,
+                    format: self.format,
+                    blend: Some(wgpu::BlendState {
+                        color: self.blend_mode.color,
+                        alpha: self.blend_mode.alpha,
+                    }),
+                    depth: None,
+                    vertices: true,
+                    topology: match ty {
+                        ShaderType::Text => wgpu::PrimitiveTopology::TriangleStrip,
+                        _ => wgpu::PrimitiveTopology::TriangleList,
+                    },
+                    vertex_layout: match ty {
+                        ShaderType::Text => TextVertex::layout(),
+                        _ => Vertex::layout(),
+                    },
+                    cull_mode: None,
+                },
+            );
 
-            self.pass.set_pipeline(pipeline);
+            self.pass.set_pipeline(&pipeline);
         }
     }
 
@@ -640,25 +628,21 @@ impl<'a> InternalCanvas<'a> {
             || self
                 .curr_image
                 .as_ref()
-                .map_or(true, |curr| curr.id() != image.view.id())
+                .is_none_or(|curr| *curr != image.view)
         {
             self.curr_sampler = self.next_sampler;
             let sample = self.sampler_cache.get(&self.wgpu.device, self.curr_sampler);
-            let image_bind = image.fetch_buffer(sample.id(), sample, &self.wgpu.device);
+            let image_bind = image.fetch_buffer(sample, &self.wgpu.device);
 
             self.curr_image = Some(image.view);
 
-            self.pass
-                .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);
+            self.pass.set_bind_group(1, &image_bind, &[]);
         }
     }
 
-    fn set_text_image(&mut self, view: ArcTextureView) {
+    fn set_text_image(&mut self, view: wgpu::TextureView) {
         if self.curr_sampler != self.next_sampler
-            || self
-                .curr_image
-                .as_ref()
-                .map_or(true, |curr| curr.id() != view.id())
+            || self.curr_image.as_ref().is_none_or(|curr| *curr != view)
         {
             self.curr_sampler = self.next_sampler;
 
@@ -672,13 +656,12 @@ impl<'a> InternalCanvas<'a> {
 
             self.curr_image = Some(view);
 
-            self.pass
-                .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);
+            self.pass.set_bind_group(1, &image_bind, &[]);
         }
     }
 }
 
-impl<'a> Drop for InternalCanvas<'a> {
+impl Drop for InternalCanvas<'_> {
     fn drop(&mut self) {
         self.finalize();
     }
@@ -686,9 +669,7 @@ impl<'a> Drop for InternalCanvas<'a> {
 
 #[derive(Debug)]
 pub struct InstanceArrayView {
-    pub buffer: ArcBuffer,
-    pub indices: ArcBuffer,
-    pub bind_group: ArcBindGroup,
+    pub bind_group: wgpu::BindGroup,
     pub image: Image,
     pub len: u32,
     pub ordered: bool,
@@ -697,8 +678,6 @@ pub struct InstanceArrayView {
 impl InstanceArrayView {
     pub fn from_instances(ia: &InstanceArray) -> GameResult<Self> {
         Ok(InstanceArrayView {
-            buffer: ia.buffer.lock().map_err(|_| GameError::LockError)?.clone(),
-            indices: ia.indices.lock().map_err(|_| GameError::LockError)?.clone(),
             bind_group: ia
                 .bind_group
                 .lock()
@@ -720,14 +699,14 @@ enum ShaderType {
 
 #[derive(crevice::std140::AsStd140)]
 struct InstanceUniforms {
-    pub transform: mint::ColumnMatrix4<f32>,
-    pub color: mint::Vector4<f32>,
-    pub scale: mint::Vector2<f32>,
+    pub transform: Mat4,
+    pub color: Vec4,
+    pub scale: Vec2,
 }
 
 #[derive(crevice::std140::AsStd140)]
 struct TextUniforms {
-    transform: mint::ColumnMatrix4<f32>,
+    transform: Mat4,
 }
 
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {

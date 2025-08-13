@@ -129,7 +129,7 @@ impl App {
     }
 }
 
-impl event::EventHandler<ggez::GameError> for App {
+impl event::EventHandler for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while ctx.time.check_update_time(DESIRED_FPS) {}
@@ -157,7 +157,7 @@ impl event::EventHandler<ggez::GameError> for App {
             };
             canvas.draw(text, Vec2::new(x, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + text.dimensions(ctx).unwrap().h
+            height += 20.0 + text.dimensions(ctx).h
         }
 
         // Individual fragments within the `Text` can be replaced;
@@ -176,7 +176,7 @@ impl event::EventHandler<ggez::GameError> for App {
                 TextFragment::new(ch).scale(PxScale::from(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
-        let wobble_rect = wobble.dimensions(ctx).unwrap();
+        let wobble_rect = wobble.dimensions(ctx);
         canvas.draw(
             &wobble,
             graphics::DrawParam::new()

@@ -32,7 +32,7 @@ pub fn main() -> GameResult {
     println!("Resource stats:");
     ctx.fs.print_all();
 
-    let dir_contents: Vec<_> = ctx.fs.read_dir("/")?.collect();
+    let dir_contents: Vec<_> = ctx.fs.read_dir("/")?;
     println!("Directory has {} things in it:", dir_contents.len());
     for itm in dir_contents {
         println!("   {itm:?}");

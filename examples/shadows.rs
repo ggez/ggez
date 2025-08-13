@@ -1,8 +1,9 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
+// You must depend on the same version of `crevice` that ggez uses
 use crevice::std140::AsStd140;
-use ggez::glam::Vec2;
+use ggez::glam::{Vec2, Vec4};
 use ggez::graphics::{
     self, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder, ShaderParamsBuilder,
 };
@@ -13,10 +14,10 @@ use std::path;
 
 #[derive(AsStd140)]
 struct Light {
-    light_color: mint::Vector4<f32>,
-    shadow_color: mint::Vector4<f32>,
-    pos: mint::Vector2<f32>,
-    screen_size: mint::Vector2<f32>,
+    light_color: Vec4,
+    shadow_color: Vec4,
+    pos: Vec2,
+    screen_size: Vec2,
     glow: f32,
     strength: f32,
 }
@@ -90,7 +91,7 @@ impl MainState {
         };
 
         let torch = Light {
-            pos: [0.0, 0.0].into(),
+            pos: Vec2::ZERO,
             light_color: TORCH_COLOR.into(),
             shadow_color: AMBIENT_COLOR.into(),
             screen_size: screen_size.into(),
@@ -114,12 +115,10 @@ impl MainState {
 
         let light_list = vec![(torch, torch_params), (static_light, static_light_params)];
 
-        let color_format = ctx.gfx.surface_format();
-        let foreground = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
-        let occlusions =
-            graphics::Image::new_canvas_image(ctx, color_format, LIGHT_RAY_COUNT.into(), 1, 1);
-        let shadows = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
-        let lights = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
+        let foreground = graphics::ScreenImage::new(ctx, 1., 1., 1);
+        let occlusions = graphics::Image::new_canvas_image(ctx, LIGHT_RAY_COUNT.into(), 1, 1);
+        let shadows = graphics::ScreenImage::new(ctx, 1., 1., 1);
+        let lights = graphics::ScreenImage::new(ctx, 1., 1., 1);
 
         let occlusions_shader = ShaderBuilder::new()
             .fragment_code(OCCLUSIONS_SHADER_SOURCE)
@@ -199,9 +198,9 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if ctx.time.ticks() % 100 == 0 {
+        if ctx.time.ticks().is_multiple_of(100) {
             println!("Average FPS: {}", ctx.time.fps());
         }
 

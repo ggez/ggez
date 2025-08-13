@@ -25,7 +25,7 @@ impl MainState {
 //
 // The `EventHandler` trait also contains callbacks for event handling
 // that you can override if you wish, but the defaults are fine.
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
@@ -47,7 +47,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.finish(ctx)?;
 
         self.frames += 1;
-        if (self.frames % 100) == 0 {
+        if self.frames.is_multiple_of(100) {
             println!("FPS: {}", ctx.time.fps());
         }
 

@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
-use std::{collections::HashMap, io::Read, path::Path};
+use std::{collections::HashMap, path::Path};
 
 /// Font data that can be used to create a new font in [`GraphicsContext`].
 #[derive(Debug)]
@@ -18,10 +18,8 @@ impl FontData {
     pub fn from_path(fs: &impl Has<Filesystem>, path: impl AsRef<Path>) -> GameResult<Self> {
         let fs = fs.retrieve();
 
-        let mut bytes = vec![];
-        fs.open(path)?.read_to_end(&mut bytes)?;
         Ok(FontData {
-            font: ab_glyph::FontArc::try_from_vec(bytes)?,
+            font: ab_glyph::FontArc::try_from_vec(fs.read(path)?)?,
         })
     }
 
@@ -184,6 +182,9 @@ impl Text {
     }
 
     /// Specifies the text's font for fragments that don't specify their own font.
+    ///
+    /// Note: [`Canvas::finish`] will return a [`GameError::FontSelectError`] if the given font is not loaded.
+    /// See [`GraphicsContext::add_font`] and [`GraphicsContext::has_font`]
     pub fn set_font(&mut self, font: impl Into<String>) -> &mut Self {
         self.font = font.into();
         self
@@ -271,7 +272,7 @@ impl Text {
                             .ok_or_else(|| GameError::FontSelectError(font.clone()))?,
                         extra: Extra {
                             color: text.color.unwrap_or(param.color).into(),
-                            transform: param.transform.to_bare_matrix().into(),
+                            transform: param.transform.to_bare_matrix_glam(),
                         },
                     })
                 })
@@ -285,14 +286,14 @@ impl Drawable for Text {
         canvas.push_draw(Draw::BoundedText { text: self.clone() }, param.into());
     }
 
-    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        let bounds = self.measure(gfx).ok()?;
-        Some(Rect {
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Rect {
+        let bounds = self.measure(gfx).unwrap_or(glam::Vec2::splat(1.0).into());
+        Rect {
             x: 0.,
             y: 0.,
             w: bounds.x,
             h: bounds.y,
-        })
+        }
     }
 }
 

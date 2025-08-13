@@ -5,14 +5,13 @@
 //! which specifies hardware setup stuff, mostly video display settings.
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
-//! file and load values from it when the [`Context`](../struct.Context.html) is created.  This file
+//! file and load values from it when the [`Context`](../context/struct.Context.html) is created.  This file
 //! must be complete (ie you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
 //! can be tweaked such as window resolution, multisampling options, etc.
 //! If no file is found, it will create a `Conf` object from the settings
-//! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
+//! passed to the [`ContextBuilder`](../context/struct.ContextBuilder.html).
 
-use std::convert::TryFrom;
 use std::io;
 
 use winit::dpi::PhysicalSize;
@@ -60,47 +59,33 @@ pub enum FullscreenType {
 /// }
 /// # , WindowMode::default());}
 /// ```
-#[derive(
-    Debug, Copy, Clone, smart_default::SmartDefault, serde::Serialize, serde::Deserialize, PartialEq,
-)]
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct WindowMode {
     /// Window width in physical pixels
-    #[default = 800.0]
     pub width: f32,
     /// Window height in physical pixels
-    #[default = 600.0]
     pub height: f32,
     /// Whether or not to maximize the window
-    #[default = false]
     pub maximized: bool,
     /// Fullscreen type
-    #[default(FullscreenType::Windowed)]
     pub fullscreen_type: FullscreenType,
     /// Whether or not to show window decorations
-    #[default = false]
     pub borderless: bool,
     /// Whether or not the window should be transparent
-    #[default = false]
     pub transparent: bool,
     /// Minimum width for resizable windows; 1 is the technical minimum,
     /// as wgpu will panic on a width of 0.
-    #[default = 1.0]
     pub min_width: f32,
     /// Minimum height for resizable windows; 1 is the technical minimum,
     /// as wgpu will panic on a height of 0.
-    #[default = 1.0]
     pub min_height: f32,
     /// Maximum width for resizable windows; 0 means no limit
-    #[default = 0.0]
     pub max_width: f32,
     /// Maximum height for resizable windows; 0 means no limit
-    #[default = 0.0]
     pub max_height: f32,
     /// Whether or not the window is resizable
-    #[default = false]
     pub resizable: bool,
     /// Whether this window should displayed (true) or hidden (false)
-    #[default = true]
     pub visible: bool,
     /// Whether this window should change its size in physical pixels
     /// when its hidpi factor changes, i.e. when [`WindowEvent::ScaleFactorChanged`](https://docs.rs/winit/0.25.0/winit/event/enum.WindowEvent.html#variant.ScaleFactorChanged)
@@ -111,12 +96,31 @@ pub struct WindowMode {
     /// windows of other programs when being dragged from one screen to another, for example.
     ///
     /// For more context on this take a look at [this conversation](https://github.com/ggez/ggez/pull/949#issuecomment-854731226).
-    #[default = false]
     pub resize_on_scale_factor_change: bool,
     // logical_size is serialized as a table, so it must be at the end of the struct for toml
     /// Window height/width but allows LogicalSize for high DPI systems. If Some will be used instead of width/height.
-    #[default(None)]
     pub logical_size: Option<winit::dpi::LogicalSize<f32>>,
+}
+
+impl Default for WindowMode {
+    fn default() -> Self {
+        Self {
+            width: 800.0,
+            height: 600.0,
+            maximized: false,
+            fullscreen_type: FullscreenType::Windowed,
+            borderless: false,
+            transparent: false,
+            min_width: 1.0,
+            min_height: 1.0,
+            max_width: 0.0,
+            max_height: 0.0,
+            resizable: false,
+            visible: true,
+            resize_on_scale_factor_change: false,
+            logical_size: None,
+        }
+    }
 }
 
 impl WindowMode {
@@ -239,35 +243,40 @@ impl WindowMode {
 /// }
 /// # , WindowSetup::default()); }
 /// ```
-#[derive(
-    Debug, Clone, smart_default::SmartDefault, serde::Serialize, serde::Deserialize, PartialEq, Eq,
-)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
     /// The window title.
-    #[default(String::from("An easy, good game"))]
     pub title: String,
     /// Number of samples to use for multisample anti-aliasing.
-    #[default(NumSamples::One)]
     pub samples: NumSamples,
     /// Whether or not to enable vsync.
-    #[default = true]
     pub vsync: bool,
     /// A file path to the window's icon.
     /// It takes a path rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
     /// module for details), and an empty string results in a blank/default icon.
-    #[default(String::new())]
     pub icon: String,
     /// Whether or not to enable sRGB (gamma corrected color)
     /// handling on the display.
-    #[default = true]
     pub srgb: bool,
+}
+
+impl Default for WindowSetup {
+    fn default() -> Self {
+        Self {
+            title: String::from("An easy, good game"),
+            samples: NumSamples::One,
+            vsync: true,
+            icon: String::new(),
+            srgb: true,
+        }
+    }
 }
 
 impl WindowSetup {
     /// Set window title.
     #[must_use]
     pub fn title(mut self, title: &str) -> Self {
-        self.title = title.to_owned();
+        title.clone_into(&mut self.title);
         self
     }
 
@@ -288,7 +297,7 @@ impl WindowSetup {
     /// Set the window's icon.
     #[must_use]
     pub fn icon(mut self, icon: &str) -> Self {
-        self.icon = icon.to_owned();
+        icon.clone_into(&mut self.icon);
         self
     }
 
@@ -302,16 +311,7 @@ impl WindowSetup {
 
 /// Possible graphics backends.
 /// The default is `Primary`.
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    serde::Serialize,
-    serde::Deserialize,
-    PartialEq,
-    Eq,
-    smart_default::SmartDefault,
-)]
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, Default)]
 #[serde(tag = "type")]
 pub enum Backend {
     /// Includes [`Backend::OnlyPrimary`] and also secondary APIs consisting of OpenGL and DX11.
@@ -329,8 +329,6 @@ pub enum Backend {
     Metal,
     /// Use the Microsoft DirectX 12 API.
     Dx12,
-    /// Use the Microsoft DirectX 11 API. This is not a recommended backend.
-    Dx11,
     /// Use the Khronos OpenGL API. This is not a recommended backend.
     Gl,
     /// Use the WebGPU API. Targets the web.
@@ -393,9 +391,7 @@ impl From<NumSamples> for u8 {
 /// }
 /// # , Conf::default()); }
 /// ```
-#[derive(
-    serde::Serialize, serde::Deserialize, Debug, PartialEq, smart_default::SmartDefault, Clone,
-)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Default, Clone)]
 pub struct Conf {
     /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,
@@ -423,8 +419,8 @@ impl Conf {
     /// Saves the `Conf` to the given `Write` object,
     /// formatted as TOML.
     pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult {
-        let s = toml::to_vec(self)?;
-        file.write_all(&s)?;
+        let s = toml::to_string(self)?;
+        file.write_all(s.as_bytes())?;
         Ok(())
     }
 

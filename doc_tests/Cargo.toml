@@ -1,0 +1,16 @@
+[package]
+name = "doc_tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }
+
+
+[dev-dependencies]
+ggez = { path = ".." }
+
+rand = "0.9"
+oorandom = "11"
+skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }

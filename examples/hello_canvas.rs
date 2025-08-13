@@ -23,7 +23,7 @@ impl MainState {
             "LiberationMono",
             graphics::FontData::from_path(ctx, "/LiberationMono-Regular.ttf")?,
         );
-        let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
+        let canvas_image = graphics::ScreenImage::new(ctx, 1., 1., 1);
 
         let s = MainState {
             canvas_image,
@@ -34,7 +34,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
@@ -82,7 +82,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         }
 
         self.frames += 1;
-        if (self.frames % 100) == 0 {
+        if self.frames.is_multiple_of(100) {
             println!("FPS: {}", ctx.time.fps());
         }
 

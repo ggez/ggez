@@ -20,10 +20,12 @@ use oorandom::Rand32;
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::{
+    context::{ContextFields, HasMut},
     event, graphics,
-    input::keyboard::{KeyCode, KeyInput},
+    input::keyboard::KeyInput,
     Context, GameResult,
 };
+use winit::keyboard::{Key, NamedKey};
 
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::VecDeque;
@@ -143,12 +145,12 @@ impl Direction {
     /// `ggez` `Keycode` and the `Direction` that it represents. Of course,
     /// not every keycode represents a direction, so we return `None` if this
     /// is the case.
-    pub fn from_keycode(key: KeyCode) -> Option<Direction> {
+    pub fn from_key(key: &Key) -> Option<Direction> {
         match key {
-            KeyCode::Up => Some(Direction::Up),
-            KeyCode::Down => Some(Direction::Down),
-            KeyCode::Left => Some(Direction::Left),
-            KeyCode::Right => Some(Direction::Right),
+            Key::Named(NamedKey::ArrowUp) => Some(Direction::Up),
+            Key::Named(NamedKey::ArrowDown) => Some(Direction::Down),
+            Key::Named(NamedKey::ArrowLeft) => Some(Direction::Left),
+            Key::Named(NamedKey::ArrowRight) => Some(Direction::Right),
             _ => None,
         }
     }
@@ -361,7 +363,7 @@ impl GameState {
         let snake_pos = (GRID_SIZE.0 / 4, GRID_SIZE.1 / 2).into();
         // And we seed our RNG with the system RNG.
         let mut seed: [u8; 8] = [0; 8];
-        getrandom::getrandom(&mut seed[..]).expect("Could not create RNG seed");
+        getrandom::fill(&mut seed[..]).expect("Could not create RNG seed");
         let mut rng = Rand32::new(u64::from_ne_bytes(seed));
         // Then we choose a random place to put our piece of food using the helper we made
         // earlier.
@@ -378,7 +380,7 @@ impl GameState {
 
 /// Now we implement `EventHandler` for `GameState`. This provides an interface
 /// that ggez will call automatically when different events happen.
-impl event::EventHandler<ggez::GameError> for GameState {
+impl event::EventHandler for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
     fn update(&mut self, ctx: &mut Context) -> GameResult {
@@ -436,10 +438,10 @@ impl event::EventHandler<ggez::GameError> for GameState {
     }
 
     /// `key_down_event` gets fired when a key gets pressed.
-    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
+    fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         // Here we attempt to convert the Keycode into a Direction using the helper
         // we defined earlier.
-        if let Some(dir) = input.keycode.and_then(Direction::from_keycode) {
+        if let Some(dir) = Direction::from_key(&input.event.logical_key) {
             // If it succeeds, we check if a new direction has already been set
             // and make sure the new direction is different then `snake.dir`
             if self.snake.dir != self.snake.last_update_dir && dir.inverse() != self.snake.dir {
@@ -450,6 +452,8 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 // direction the user pressed.
                 self.snake.dir = dir;
             }
+        } else if input.event.logical_key == Key::Named(NamedKey::Escape) {
+            HasMut::<ContextFields>::retrieve_mut(ctx).quit_requested = true;
         }
         Ok(())
     }

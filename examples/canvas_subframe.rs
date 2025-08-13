@@ -24,7 +24,7 @@ impl MainState {
         let image = graphics::Image::from_path(ctx, "/tile.png").unwrap();
         let mut instances = graphics::InstanceArray::new(ctx, image);
         instances.resize(ctx, 150 * 150);
-        let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
+        let canvas_image = graphics::ScreenImage::new(ctx, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);
         MainState {
@@ -79,9 +79,9 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if ctx.time.ticks() % 100 == 0 {
+        if ctx.time.ticks().is_multiple_of(100) {
             println!("Delta frame time: {:?} ", ctx.time.delta());
             println!("Average FPS: {}", ctx.time.fps());
         }

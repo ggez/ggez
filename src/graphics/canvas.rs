@@ -6,12 +6,11 @@ use crate::{
 };
 
 use super::{
-    gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
     internal_canvas::{screen_to_mat, InstanceArrayView, InternalCanvas},
     BlendMode, Color, DrawParam, Drawable, GraphicsContext, Image, InstanceArray, Mesh, Rect,
-    Sampler, ScreenImage, Shader, ShaderParams, Text, WgpuContext, ZIndex,
+    Sampler, ScreenImage, Shader, ShaderParams, Text, WgpuContext,
 };
-use std::{collections::BTreeMap, sync::Arc};
+use std::{cmp::Ordering, sync::Arc};
 
 /// Canvases are the main method of drawing meshes and text to images in ggez.
 ///
@@ -26,11 +25,12 @@ use std::{collections::BTreeMap, sync::Arc};
 #[derive(Debug)]
 pub struct Canvas {
     pub(crate) wgpu: Arc<WgpuContext>,
-    draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
+    draws: Vec<DrawCommand>,
     state: DrawState,
     original_state: DrawState,
     screen: Option<Rect>,
     defaults: DefaultResources,
+    sort_by: fn(&DrawParam, &DrawParam) -> Ordering,
 
     target: Image,
     resolve: Option<Image>,
@@ -142,11 +142,12 @@ impl Canvas {
 
         let mut this = Canvas {
             wgpu: gfx.wgpu.clone(),
-            draws: BTreeMap::new(),
+            draws: vec![],
             state: state.clone(),
             original_state: state,
             screen: Some(screen),
             defaults,
+            sort_by: |a, b| a.z.cmp(&b.z),
 
             target,
             resolve,
@@ -213,15 +214,23 @@ impl Canvas {
     }
 
     /// Resets the active mesh shader to the default.
+    ///
+    /// If any shader parameters were previously set with `set_shader_params`, these will also be
+    /// reset to the default of `None`.
     #[inline]
     pub fn set_default_shader(&mut self) {
         self.state.shader = default_shader();
+        self.state.params = None;
     }
 
     /// Resets the active text shader to the default.
+    ///
+    /// If any text shader parameters were previously set with `set_text_shader_params`, these will
+    /// also be reset to the default of `None`.
     #[inline]
     pub fn set_default_text_shader(&mut self) {
         self.state.text_shader = default_text_shader();
+        self.state.text_params = None;
     }
 
     /// Sets the active sampler used to sample images.
@@ -359,6 +368,16 @@ impl Canvas {
         self.state.scissor_rect = self.original_state.scissor_rect;
     }
 
+    /// Sets the sorting function for the final draw order of the canvas.
+    /// This is used upon the canvas being finalized (i.e., when [`Canvas::finish`] is called).
+    /// As such, it is only necessary to call this once per canvas, and will affect *all* draws in this canvas.
+    ///
+    /// By default, draws will be sorted by the Z index of [`DrawParam`].
+    #[inline]
+    pub fn set_sort_by(&mut self, sort_by: fn(&DrawParam, &DrawParam) -> Ordering) {
+        self.sort_by = sort_by;
+    }
+
     /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
     #[inline]
     pub fn draw(&mut self, drawable: &impl Drawable, param: impl Into<DrawParam>) {
@@ -414,7 +433,7 @@ impl Canvas {
 
     #[inline]
     pub(crate) fn push_draw(&mut self, draw: Draw, param: DrawParam) {
-        self.draws.entry(param.z).or_default().push(DrawCommand {
+        self.draws.push(DrawCommand {
             state: self.state.clone(),
             draw,
             param,
@@ -444,68 +463,74 @@ impl Canvas {
         canvas.set_sampler(state.sampler);
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
+        canvas.set_premultiplied_text(state.premul_text);
 
         if state.scissor_rect.2 > 0 && state.scissor_rect.3 > 0 {
             canvas.set_scissor_rect(state.scissor_rect);
         }
 
-        for draws in self.draws.values() {
-            for draw in draws {
-                // track state and apply to InternalCanvas if changed
+        self.draws
+            .sort_by(|a, b| (self.sort_by)(&a.param, &b.param));
 
-                if draw.state.shader != state.shader {
-                    canvas.set_shader(draw.state.shader.clone());
+        for draw in &self.draws {
+            // track state and apply to InternalCanvas if changed
+
+            if draw.state.shader != state.shader {
+                canvas.set_shader(draw.state.shader.clone());
+            }
+
+            if draw.state.params != state.params {
+                if let Some((bind_group, layout, offset)) = &draw.state.params {
+                    canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
+                } else {
+                    canvas.reset_shader_params();
                 }
+            }
 
-                if draw.state.params != state.params {
-                    if let Some((bind_group, layout, offset)) = &draw.state.params {
-                        canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
-                    }
+            if draw.state.text_shader != state.text_shader {
+                canvas.set_text_shader(draw.state.text_shader.clone());
+            }
+
+            if draw.state.text_params != state.text_params {
+                if let Some((bind_group, layout, offset)) = &draw.state.text_params {
+                    canvas.set_text_shader_params(bind_group.clone(), layout.clone(), *offset);
+                } else {
+                    canvas.reset_text_shader_params();
                 }
+            }
 
-                if draw.state.text_shader != state.text_shader {
-                    canvas.set_text_shader(draw.state.text_shader.clone());
+            if draw.state.sampler != state.sampler {
+                canvas.set_sampler(draw.state.sampler);
+            }
+
+            if draw.state.blend_mode != state.blend_mode {
+                canvas.set_blend_mode(draw.state.blend_mode);
+            }
+
+            if draw.state.premul_text != state.premul_text {
+                canvas.set_premultiplied_text(draw.state.premul_text);
+            }
+
+            if draw.state.projection != state.projection {
+                canvas.set_projection(draw.state.projection);
+            }
+
+            if draw.state.scissor_rect != state.scissor_rect {
+                canvas.set_scissor_rect(draw.state.scissor_rect);
+            }
+
+            state = draw.state.clone();
+
+            match &draw.draw {
+                Draw::Mesh { mesh, image, scale } => {
+                    canvas.draw_mesh(mesh, image, draw.param, *scale)
                 }
-
-                if draw.state.text_params != state.text_params {
-                    if let Some((bind_group, layout, offset)) = &draw.state.text_params {
-                        canvas.set_text_shader_params(bind_group.clone(), layout.clone(), *offset);
-                    }
-                }
-
-                if draw.state.sampler != state.sampler {
-                    canvas.set_sampler(draw.state.sampler);
-                }
-
-                if draw.state.blend_mode != state.blend_mode {
-                    canvas.set_blend_mode(draw.state.blend_mode);
-                }
-
-                if draw.state.premul_text != state.premul_text {
-                    canvas.set_premultiplied_text(draw.state.premul_text);
-                }
-
-                if draw.state.projection != state.projection {
-                    canvas.set_projection(draw.state.projection);
-                }
-
-                if draw.state.scissor_rect != state.scissor_rect {
-                    canvas.set_scissor_rect(draw.state.scissor_rect);
-                }
-
-                state = draw.state.clone();
-
-                match &draw.draw {
-                    Draw::Mesh { mesh, image, scale } => {
-                        canvas.draw_mesh(mesh, image, draw.param, *scale)
-                    }
-                    Draw::MeshInstances {
-                        mesh,
-                        instances,
-                        scale,
-                    } => canvas.draw_mesh_instances(mesh, instances, draw.param, *scale)?,
-                    Draw::BoundedText { text } => canvas.draw_bounded_text(text, draw.param)?,
-                }
+                Draw::MeshInstances {
+                    mesh,
+                    instances,
+                    scale,
+                } => canvas.draw_mesh_instances(mesh, instances, draw.param, *scale)?,
+                Draw::BoundedText { text } => canvas.draw_bounded_text(text, draw.param)?,
             }
         }
 
@@ -518,9 +543,9 @@ impl Canvas {
 #[derive(Debug, Clone)]
 struct DrawState {
     shader: Shader,
-    params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
+    params: Option<(wgpu::BindGroup, wgpu::BindGroupLayout, u32)>,
     text_shader: Shader,
-    text_params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
+    text_params: Option<(wgpu::BindGroup, wgpu::BindGroupLayout, u32)>,
     sampler: Sampler,
     blend_mode: BlendMode,
     premul_text: bool,

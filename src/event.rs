@@ -10,37 +10,32 @@
 //! source code for this module, or the [`eventloop`
 //! example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs).
 
-use winit::{self, dpi};
+use std::marker::PhantomData;
+use winit::{
+    dpi,
+    event::{ElementState, Event, MouseButton, MouseScrollDelta, TouchPhase, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    keyboard::{Key, NamedKey},
+};
 
-/// A mouse button.
-pub use winit::event::{MouseButton, ScanCode};
+use crate::graphics::GraphicsContext;
+use crate::input::{self, keyboard::KeyInput};
+use crate::{
+    context::{ContextFields, HasMut},
+    GameResult,
+};
+use crate::{Context, GameError};
 
-/// An analog axis of some device (gamepad thumbstick, joystick...).
 #[cfg(feature = "gamepad")]
-pub use gilrs::Axis;
-/// A button of some device (gamepad, joystick...).
-#[cfg(feature = "gamepad")]
-pub use gilrs::Button;
-
-/// `winit` events; nested in a module for re-export neatness.
-pub mod winit_event {
-    pub use super::winit::event::{
-        DeviceEvent, ElementState, Event, KeyboardInput, ModifiersState, MouseScrollDelta,
-        TouchPhase, WindowEvent,
-    };
-}
+use crate::input::gamepad::GamepadContext;
 #[cfg(feature = "gamepad")]
 pub use crate::input::gamepad::GamepadId;
-use crate::input::keyboard::{KeyCode, KeyInput, KeyMods};
-use crate::GameError;
-
-use self::winit_event::{
-    ElementState, Event, KeyboardInput, MouseScrollDelta, TouchPhase, WindowEvent,
-};
-/// `winit` event loop.
-pub use winit::event_loop::{ControlFlow, EventLoop};
-
-use crate::context::Context;
+#[cfg(feature = "gamepad")]
+pub use gilrs::{Axis, Button};
+use winit::application::ApplicationHandler;
+use winit::event::{DeviceEvent, DeviceId, StartCause};
+use winit::event_loop::ActiveEventLoop;
+use winit::window::WindowId;
 
 /// Used in [`EventHandler::on_error()`](trait.EventHandler.html#method.on_error)
 /// to specify where an error originated
@@ -56,6 +51,8 @@ pub enum ErrorOrigin {
     MouseButtonUpEvent,
     /// error originated in `mouse_motion_event()`
     MouseMotionEvent,
+    /// error originated in `raw_mouse_motion_event()`
+    RawMouseMotionEvent,
     /// error originated in `mouse_enter_or_leave()`
     MouseEnterOrLeave,
     /// error originated in `mouse_wheel_event()`
@@ -95,24 +92,25 @@ pub enum ErrorOrigin {
 ///
 /// For the error type simply choose the default [`GameError`](../error/enum.GameError.html),
 /// or something more generic, if your situation requires it.
-pub trait EventHandler<E = GameError>
+pub trait EventHandler<C = Context, E = GameError>
 where
     E: std::fmt::Debug,
+    C: HasMut<ContextFields> + HasMut<input::mouse::MouseContext>,
 {
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
-    fn update(&mut self, _ctx: &mut Context) -> Result<(), E>;
+    fn update(&mut self, _ctx: &mut C) -> Result<(), E>;
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
     /// [`Canvas::from_frame`](../graphics/struct.Canvas.html#method.from_frame) and end it
     /// with [`Canvas::finish`](../graphics/struct.Canvas.html#method.finish).
-    fn draw(&mut self, _ctx: &mut Context) -> Result<(), E>;
+    fn draw(&mut self, _ctx: &mut C) -> Result<(), E>;
 
     /// A mouse button was pressed
     fn mouse_button_down_event(
         &mut self,
-        _ctx: &mut Context,
+        _ctx: &mut C,
         _button: MouseButton,
         _x: f32,
         _y: f32,
@@ -123,7 +121,7 @@ where
     /// A mouse button was released
     fn mouse_button_up_event(
         &mut self,
-        _ctx: &mut Context,
+        _ctx: &mut C,
         _button: MouseButton,
         _x: f32,
         _y: f32,
@@ -135,7 +133,7 @@ where
     /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(
         &mut self,
-        _ctx: &mut Context,
+        _ctx: &mut C,
         _x: f32,
         _y: f32,
         _dx: f32,
@@ -144,14 +142,19 @@ where
         Ok(())
     }
 
+    /// Returns the raw mouse emotion from DeviceEvent::MouseMotion. This is just the raw device movement of the mouse
+    fn raw_mouse_motion_event(&mut self, _ctx: &mut C, _dx: f64, _dy: f64) -> Result<(), E> {
+        Ok(())
+    }
+
     /// mouse entered or left window area
-    fn mouse_enter_or_leave(&mut self, _ctx: &mut Context, _entered: bool) -> Result<(), E> {
+    fn mouse_enter_or_leave(&mut self, _ctx: &mut C, _entered: bool) -> Result<(), E> {
         Ok(())
     }
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
     /// or horizontally (x, positive to the right and negative to the left).
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) -> Result<(), E> {
+    fn mouse_wheel_event(&mut self, _ctx: &mut C, _x: f32, _y: f32) -> Result<(), E> {
         Ok(())
     }
 
@@ -160,52 +163,42 @@ where
     /// The default implementation of this will call [`ctx.request_quit()`](crate::Context::request_quit)
     /// when the escape key is pressed. If you override this with your own
     /// event handler you have to re-implement that functionality yourself.
-    fn key_down_event(
-        &mut self,
-        ctx: &mut Context,
-        input: KeyInput,
-        _repeated: bool,
-    ) -> Result<(), E> {
-        if input.keycode == Some(KeyCode::Escape) {
-            ctx.request_quit();
+    fn key_down_event(&mut self, ctx: &mut C, input: KeyInput, _repeated: bool) -> Result<(), E> {
+        if input.event.logical_key == Key::Named(NamedKey::Escape) {
+            HasMut::<ContextFields>::retrieve_mut(ctx).quit_requested = true;
         }
         Ok(())
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self, _ctx: &mut Context, _input: KeyInput) -> Result<(), E> {
+    fn key_up_event(&mut self, _ctx: &mut C, _input: KeyInput) -> Result<(), E> {
         Ok(())
     }
 
     /// A unicode character was received, usually from keyboard input.
     /// This is the intended way of facilitating text input.
-    fn text_input_event(&mut self, _ctx: &mut Context, _character: char) -> Result<(), E> {
+    fn text_input_event(&mut self, _ctx: &mut C, _character: char) -> Result<(), E> {
         Ok(())
     }
 
     /// An event from a touchscreen has been triggered; it provides the x and y location
     /// inside the window as well as the state of the tap (such as Started, Moved, Ended, etc)
     /// By default, touch events will trigger mouse behavior
-    fn touch_event(
-        &mut self,
-        ctx: &mut Context,
-        phase: TouchPhase,
-        x: f64,
-        y: f64,
-    ) -> Result<(), E> {
-        ctx.mouse.handle_move(x as f32, y as f32);
+    fn touch_event(&mut self, ctx: &mut C, phase: TouchPhase, x: f64, y: f64) -> Result<(), E> {
+        let mouse = HasMut::<input::mouse::MouseContext>::retrieve_mut(ctx);
+        mouse.handle_move(x as f32, y as f32);
 
         match phase {
             TouchPhase::Started => {
-                ctx.mouse.set_button(MouseButton::Left, true);
+                mouse.set_button(MouseButton::Left, true);
                 self.mouse_button_down_event(ctx, MouseButton::Left, x as f32, y as f32)?;
             }
             TouchPhase::Moved => {
-                let diff = ctx.mouse.last_delta();
+                let diff = mouse.last_delta();
                 self.mouse_motion_event(ctx, x as f32, y as f32, diff.x, diff.y)?;
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
-                ctx.mouse.set_button(MouseButton::Left, false);
+                mouse.set_button(MouseButton::Left, false);
                 self.mouse_button_up_event(ctx, MouseButton::Left, x as f32, y as f32)?;
             }
         }
@@ -217,7 +210,7 @@ where
     #[cfg(feature = "gamepad")]
     fn gamepad_button_down_event(
         &mut self,
-        _ctx: &mut Context,
+        _ctx: &mut C,
         _btn: gilrs::Button,
         _id: GamepadId,
     ) -> Result<(), E> {
@@ -228,7 +221,7 @@ where
     #[cfg(feature = "gamepad")]
     fn gamepad_button_up_event(
         &mut self,
-        _ctx: &mut Context,
+        _ctx: &mut C,
         _btn: gilrs::Button,
         _id: GamepadId,
     ) -> Result<(), E> {
@@ -239,7 +232,7 @@ where
     #[cfg(feature = "gamepad")]
     fn gamepad_axis_event(
         &mut self,
-        _ctx: &mut Context,
+        _ctx: &mut C,
         _axis: gilrs::Axis,
         _value: f32,
         _id: GamepadId,
@@ -248,26 +241,26 @@ where
     }
 
     /// Called when the window is shown or hidden.
-    fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) -> Result<(), E> {
+    fn focus_event(&mut self, _ctx: &mut C, _gained: bool) -> Result<(), E> {
         Ok(())
     }
 
     /// Called upon a quit event.  If it returns true,
     /// the game does not exit (the quit event is cancelled).
-    fn quit_event(&mut self, _ctx: &mut Context) -> Result<bool, E> {
+    fn quit_event(&mut self, _ctx: &mut C) -> Result<bool, E> {
         debug!("quit_event() callback called, quitting...");
         Ok(false)
     }
 
     /// Called when the user resizes the window, or when it is resized
     /// via [`GraphicsContext::set_mode()`](../graphics/struct.GraphicsContext.html#method.set_mode).
-    fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) -> Result<(), E> {
+    fn resize_event(&mut self, _ctx: &mut C, _width: f32, _height: f32) -> Result<(), E> {
         Ok(())
     }
 
     /// Something went wrong, causing a `GameError` (or some other kind of error, depending on what you specified).
     /// If this returns true, the error was fatal, so the event loop ends, aborting the game.
-    fn on_error(&mut self, _ctx: &mut Context, _origin: ErrorOrigin, _e: E) -> bool {
+    fn on_error(&mut self, _ctx: &mut C, _origin: ErrorOrigin, _e: E) -> bool {
         true
     }
 }
@@ -277,322 +270,431 @@ where
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
-#[allow(clippy::needless_return)] // necessary as the returns used here are actually necessary to break early from the event loop
-pub fn run<S: 'static, E>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
+pub fn run<S, C, E>(ctx: C, event_loop: EventLoop<()>, state: S) -> GameResult
 where
-    S: EventHandler<E>,
+    S: EventHandler<C, E> + 'static,
     E: std::fmt::Debug,
+    C: 'static
+        + HasMut<ContextFields>
+        + HasMut<GraphicsContext>
+        + HasMut<input::keyboard::KeyboardContext>
+        + HasMut<input::mouse::MouseContext>
+        + HasMut<GamepadContext>
+        + HasMut<crate::timer::TimeContext>,
 {
-    event_loop.run(move |mut event, _, control_flow| {
-        let ctx = &mut ctx;
-        let state = &mut state;
+    let mut app = GgezApplicationHandler {
+        ctx,
+        state,
+        _p: PhantomData,
+    };
 
-        if ctx.quit_requested {
-            let res = state.quit_event(ctx);
-            ctx.quit_requested = false;
+    event_loop
+        .run_app(&mut app)
+        .map_err(GameError::EventLoopError)
+}
+
+struct GgezApplicationHandler<S, C, E>
+where
+    S: EventHandler<C, E> + 'static,
+    E: std::fmt::Debug,
+    C: 'static
+        + HasMut<ContextFields>
+        + HasMut<GraphicsContext>
+        + HasMut<input::keyboard::KeyboardContext>
+        + HasMut<input::mouse::MouseContext>
+        + HasMut<GamepadContext>
+        + HasMut<crate::timer::TimeContext>,
+{
+    ctx: C,
+    state: S,
+    _p: PhantomData<E>,
+}
+
+impl<S, C, E> ApplicationHandler<()> for GgezApplicationHandler<S, C, E>
+where
+    S: EventHandler<C, E> + 'static,
+    E: std::fmt::Debug,
+    C: 'static
+        + HasMut<ContextFields>
+        + HasMut<GraphicsContext>
+        + HasMut<input::keyboard::KeyboardContext>
+        + HasMut<input::mouse::MouseContext>
+        + HasMut<GamepadContext>
+        + HasMut<crate::timer::TimeContext>,
+{
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, _: StartCause) {
+        if HasMut::<ContextFields>::retrieve_mut(&mut self.ctx).quit_requested {
+            let res = self.state.quit_event(&mut self.ctx);
+            HasMut::<ContextFields>::retrieve_mut(&mut self.ctx).quit_requested = false;
             if let Ok(false) = res {
-                ctx.continuing = false;
-            } else if catch_error(ctx, res, state, control_flow, ErrorOrigin::QuitEvent) {
-                return;
+                HasMut::<ContextFields>::retrieve_mut(&mut self.ctx).continuing = false;
+            } else if catch_error(
+                &mut self.ctx,
+                res,
+                &mut self.state,
+                event_loop,
+                ErrorOrigin::QuitEvent,
+            ) {
+                event_loop.exit();
             }
         }
-        if !ctx.continuing {
-            *control_flow = ControlFlow::Exit;
+        if !HasMut::<ContextFields>::retrieve_mut(&mut self.ctx).continuing {
+            event_loop.exit();
             return;
         }
 
-        *control_flow = ControlFlow::Poll;
+        event_loop.set_control_flow(ControlFlow::Poll);
+    }
 
-        process_event(ctx, &mut event);
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
+        // TODO create window
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        mut window_id: WindowId,
+        mut event: WindowEvent,
+    ) {
+        // If you are writing your own event loop, make sure to include
+        // a call to `event::process_window_event()`.  This updates
+        // ggez's internal state however necessary.
+        process_window_event(&mut self.ctx, &mut window_id, &mut event);
+
         match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::Resized(logical_size) => {
-                    // let actual_size = logical_size;
-                    let res = state.resize_event(
-                        ctx,
-                        logical_size.width as f32,
-                        logical_size.height as f32,
-                    );
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::ResizeEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::CloseRequested => {
-                    let res = state.quit_event(ctx);
-                    if let Ok(false) = res {
-                        ctx.continuing = false;
-                    } else if catch_error(ctx, res, state, control_flow, ErrorOrigin::QuitEvent) {
-                        return;
-                    }
-                }
-                WindowEvent::Focused(gained) => {
-                    let res = state.focus_event(ctx, gained);
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::FocusEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::ReceivedCharacter(ch) => {
-                    let res = state.text_input_event(ctx, ch);
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::TextInputEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::ModifiersChanged(mods) => {
-                    ctx.keyboard.set_modifiers(KeyMods::from(mods))
-                }
-                WindowEvent::KeyboardInput {
-                    input:
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: keycode,
-                            scancode,
-                            ..
-                        },
-                    ..
-                } => {
-                    let repeat = ctx.keyboard.is_key_repeated();
-                    let res = state.key_down_event(
-                        ctx,
-                        KeyInput {
-                            scancode,
-                            keycode,
-                            mods: ctx.keyboard.active_mods(),
-                        },
-                        repeat,
-                    );
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::KeyboardInput {
-                    input:
-                        KeyboardInput {
-                            state: ElementState::Released,
-                            virtual_keycode: keycode,
-                            scancode,
-                            ..
-                        },
-                    ..
-                } => {
-                    let res = state.key_up_event(
-                        ctx,
-                        KeyInput {
-                            scancode,
-                            keycode,
-                            mods: ctx.keyboard.active_mods(),
-                        },
-                    );
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::MouseWheel { delta, .. } => {
-                    let (x, y) = match delta {
-                        MouseScrollDelta::LineDelta(x, y) => (x, y),
-                        MouseScrollDelta::PixelDelta(pos) => {
-                            let scale_factor = ctx.gfx.window.scale_factor();
-                            let dpi::LogicalPosition { x, y } = pos.to_logical::<f32>(scale_factor);
-                            (x, y)
-                        }
-                    };
-                    let res = state.mouse_wheel_event(ctx, x, y);
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::MouseWheelEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::MouseInput {
-                    state: element_state,
-                    button,
-                    ..
-                } => {
-                    let position = ctx.mouse.position();
-                    match element_state {
-                        ElementState::Pressed => {
-                            let res =
-                                state.mouse_button_down_event(ctx, button, position.x, position.y);
-                            if catch_error(
-                                ctx,
-                                res,
-                                state,
-                                control_flow,
-                                ErrorOrigin::MouseButtonDownEvent,
-                            ) {
-                                return;
-                            };
-                        }
-                        ElementState::Released => {
-                            let res =
-                                state.mouse_button_up_event(ctx, button, position.x, position.y);
-                            if catch_error(
-                                ctx,
-                                res,
-                                state,
-                                control_flow,
-                                ErrorOrigin::MouseButtonUpEvent,
-                            ) {
-                                return;
-                            };
-                        }
-                    }
-                }
-                WindowEvent::CursorMoved { .. } => {
-                    let position = ctx.mouse.position();
-                    let delta = ctx.mouse.last_delta();
-                    let res =
-                        state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::MouseMotionEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::Touch(touch) => {
-                    let res =
-                        state.touch_event(ctx, touch.phase, touch.location.x, touch.location.y);
-                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::TouchEvent) {
-                        return;
-                    };
-                }
-                WindowEvent::CursorEntered { device_id: _ } => {
-                    let res = state.mouse_enter_or_leave(ctx, true);
-                    if catch_error(
-                        ctx,
-                        res,
-                        state,
-                        control_flow,
-                        ErrorOrigin::MouseEnterOrLeave,
-                    ) {
-                        return;
-                    }
-                }
-                WindowEvent::CursorLeft { device_id: _ } => {
-                    let res = state.mouse_enter_or_leave(ctx, false);
-                    if catch_error(
-                        ctx,
-                        res,
-                        state,
-                        control_flow,
-                        ErrorOrigin::MouseEnterOrLeave,
-                    ) {
-                        return;
-                    }
-                }
-                _x => {
-                    // trace!("ignoring window event {:?}", x);
-                }
-            },
-            Event::DeviceEvent { .. } => (),
-            Event::Resumed => (),
-            Event::Suspended => (),
-            Event::NewEvents(_) => (),
-            Event::UserEvent(_) => (),
-            Event::MainEventsCleared => {
-                // If you are writing your own event loop, make sure
-                // you include `timer_context.tick()` and
-                // `ctx.process_event()` calls.  These update ggez's
-                // internal state however necessary.
-                ctx.time.tick();
-
-                // Handle gamepad events if necessary.
-                #[cfg(feature = "gamepad")]
-                while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad.next_event() {
-                    match event {
-                        gilrs::EventType::ButtonPressed(button, _) => {
-                            let res = state.gamepad_button_down_event(ctx, button, GamepadId(id));
-                            if catch_error(
-                                ctx,
-                                res,
-                                state,
-                                control_flow,
-                                ErrorOrigin::GamepadButtonDownEvent,
-                            ) {
-                                return;
-                            };
-                        }
-                        gilrs::EventType::ButtonReleased(button, _) => {
-                            let res = state.gamepad_button_up_event(ctx, button, GamepadId(id));
-                            if catch_error(
-                                ctx,
-                                res,
-                                state,
-                                control_flow,
-                                ErrorOrigin::GamepadButtonUpEvent,
-                            ) {
-                                return;
-                            };
-                        }
-                        gilrs::EventType::AxisChanged(axis, value, _) => {
-                            let res = state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
-                            if catch_error(
-                                ctx,
-                                res,
-                                state,
-                                control_flow,
-                                ErrorOrigin::GamepadAxisEvent,
-                            ) {
-                                return;
-                            };
-                        }
-                        _ => {}
-                    }
-                }
-
-                let res = state.update(ctx);
-                if catch_error(ctx, res, state, control_flow, ErrorOrigin::Update) {
-                    return;
-                };
-
-                if let Err(e) = ctx.gfx.begin_frame() {
-                    error!("Error on GraphicsContext::begin_frame(): {e:?}");
-                    eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-                    *control_flow = ControlFlow::Exit;
-                }
-
-                if let Err(e) = state.draw(ctx) {
-                    error!("Error on EventHandler::draw(): {e:?}");
-                    eprintln!("Error on EventHandler::draw(): {e:?}");
-                    if state.on_error(ctx, ErrorOrigin::Draw, e) {
-                        *control_flow = ControlFlow::Exit;
-                        return;
-                    }
-                }
-
-                if let Err(e) = ctx.gfx.end_frame() {
-                    error!("Error on GraphicsContext::end_frame(): {e:?}");
-                    eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
-                    *control_flow = ControlFlow::Exit;
-                }
-
-                // reset the mouse delta for the next frame
-                // necessary because it's calculated cumulatively each cycle
-                ctx.mouse.reset_delta();
-
-                // Copy the state of the keyboard into the KeyboardContext
-                // and the mouse into the MouseContext
-                ctx.keyboard.save_keyboard_state();
-                ctx.mouse.save_mouse_state();
+            WindowEvent::Resized(logical_size) => {
+                let res = self.state.resize_event(
+                    &mut self.ctx,
+                    logical_size.width as f32,
+                    logical_size.height as f32,
+                );
+                if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::ResizeEvent,
+                ) {}
             }
-            Event::RedrawRequested(_) => (),
-            Event::RedrawEventsCleared => (),
-            Event::LoopDestroyed => (),
+            WindowEvent::CloseRequested => {
+                let res = self.state.quit_event(&mut self.ctx);
+                if let Ok(false) = res {
+                    HasMut::<ContextFields>::retrieve_mut(&mut self.ctx).continuing = false;
+                } else if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::QuitEvent,
+                ) {
+                }
+            }
+            WindowEvent::Focused(gained) => {
+                let res = self.state.focus_event(&mut self.ctx, gained);
+                if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::FocusEvent,
+                ) {}
+            }
+            WindowEvent::ModifiersChanged(modifiers) => {
+                HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(&mut self.ctx)
+                    .active_modifiers = modifiers.state()
+            }
+            WindowEvent::KeyboardInput { event, .. } => {
+                let mods = HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(&mut self.ctx)
+                    .active_modifiers;
+
+                let repeat =
+                    HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(&mut self.ctx)
+                        .is_key_repeated();
+                let key_state = event.state;
+                let input = KeyInput { event, mods };
+                let (res, origin) = match key_state {
+                    ElementState::Pressed => (
+                        self.state.key_down_event(&mut self.ctx, input, repeat),
+                        ErrorOrigin::KeyDownEvent,
+                    ),
+                    ElementState::Released => (
+                        self.state.key_up_event(&mut self.ctx, input),
+                        ErrorOrigin::KeyUpEvent,
+                    ),
+                };
+                if catch_error(&mut self.ctx, res, &mut self.state, event_loop, origin) {}
+            }
+            WindowEvent::MouseWheel { delta, .. } => {
+                let gfx = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx);
+                let (x, y) = match delta {
+                    MouseScrollDelta::LineDelta(x, y) => (x, y),
+                    MouseScrollDelta::PixelDelta(pos) => {
+                        let scale_factor = gfx.window.scale_factor();
+                        let dpi::LogicalPosition { x, y } = pos.to_logical::<f32>(scale_factor);
+                        (x, y)
+                    }
+                };
+                let res = self.state.mouse_wheel_event(&mut self.ctx, x, y);
+                if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::MouseWheelEvent,
+                ) {}
+            }
+            WindowEvent::MouseInput {
+                state: element_state,
+                button,
+                ..
+            } => {
+                let position =
+                    HasMut::<input::mouse::MouseContext>::retrieve_mut(&mut self.ctx).position();
+                match element_state {
+                    ElementState::Pressed => {
+                        let res = self.state.mouse_button_down_event(
+                            &mut self.ctx,
+                            button,
+                            position.x,
+                            position.y,
+                        );
+                        if catch_error(
+                            &mut self.ctx,
+                            res,
+                            &mut self.state,
+                            event_loop,
+                            ErrorOrigin::MouseButtonDownEvent,
+                        ) {}
+                    }
+                    ElementState::Released => {
+                        let res = self.state.mouse_button_up_event(
+                            &mut self.ctx,
+                            button,
+                            position.x,
+                            position.y,
+                        );
+                        if catch_error(
+                            &mut self.ctx,
+                            res,
+                            &mut self.state,
+                            event_loop,
+                            ErrorOrigin::MouseButtonUpEvent,
+                        ) {}
+                    }
+                }
+            }
+            WindowEvent::CursorMoved { .. } => {
+                let position =
+                    HasMut::<input::mouse::MouseContext>::retrieve_mut(&mut self.ctx).position();
+                let delta =
+                    HasMut::<input::mouse::MouseContext>::retrieve_mut(&mut self.ctx).last_delta();
+                let res = self.state.mouse_motion_event(
+                    &mut self.ctx,
+                    position.x,
+                    position.y,
+                    delta.x,
+                    delta.y,
+                );
+                if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::MouseMotionEvent,
+                ) {}
+            }
+            WindowEvent::Touch(touch) => {
+                let res = self.state.touch_event(
+                    &mut self.ctx,
+                    touch.phase,
+                    touch.location.x,
+                    touch.location.y,
+                );
+                if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::TouchEvent,
+                ) {}
+            }
+            WindowEvent::CursorEntered { device_id: _ } => {
+                let res = self.state.mouse_enter_or_leave(&mut self.ctx, true);
+                if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::MouseEnterOrLeave,
+                ) {}
+            }
+            WindowEvent::CursorLeft { device_id: _ } => {
+                let res = self.state.mouse_enter_or_leave(&mut self.ctx, false);
+                if catch_error(
+                    &mut self.ctx,
+                    res,
+                    &mut self.state,
+                    event_loop,
+                    ErrorOrigin::MouseEnterOrLeave,
+                ) {}
+            }
+            _x => {
+                // trace!("ignoring window event {:?}", x);
+            }
         }
-    })
+    }
+
+    fn device_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        mut device_id: DeviceId,
+        mut event: DeviceEvent,
+    ) {
+        // If you are writing your own event loop, make sure to include
+        // a call to `event::process_device_event()`.  This updates
+        // ggez's internal state however necessary.
+        process_device_event(&mut self.ctx, &mut device_id, &mut event);
+
+        if let DeviceEvent::MouseMotion { delta } = event {
+            let res = self
+                .state
+                .raw_mouse_motion_event(&mut self.ctx, delta.0, delta.1);
+            if catch_error(
+                &mut self.ctx,
+                res,
+                &mut self.state,
+                event_loop,
+                ErrorOrigin::RawMouseMotionEvent,
+            ) {}
+        }
+    }
+
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        // If you are writing your own event loop, make sure you include calls
+        // to `TimeContext::tick()`, `KeyboardContext::save_keyboard_state()`,
+        // `MouseContext::reset_delta()`, and `MouseContext::save_mouse_state()`.
+        //
+        // These update ggez's internal state however necessary.
+        //
+        // Make sure to include calls to `GraphicsContext::begin_frame()` and
+        // `GraphicsContext::end_frame()` before/after the drawing routine in
+        // your custom event loop.
+        let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
+        time.tick();
+
+        // Handle gamepad events if necessary.
+        #[cfg(feature = "gamepad")]
+        while let Some(gilrs::Event { id, event, .. }) =
+            HasMut::<input::gamepad::GamepadContext>::retrieve_mut(&mut self.ctx).next_event()
+        {
+            match event {
+                gilrs::EventType::ButtonPressed(button, _) => {
+                    let res =
+                        self.state
+                            .gamepad_button_down_event(&mut self.ctx, button, GamepadId(id));
+                    if catch_error(
+                        &mut self.ctx,
+                        res,
+                        &mut self.state,
+                        event_loop,
+                        ErrorOrigin::GamepadButtonDownEvent,
+                    ) {
+                        return;
+                    };
+                }
+                gilrs::EventType::ButtonReleased(button, _) => {
+                    let res =
+                        self.state
+                            .gamepad_button_up_event(&mut self.ctx, button, GamepadId(id));
+                    if catch_error(
+                        &mut self.ctx,
+                        res,
+                        &mut self.state,
+                        event_loop,
+                        ErrorOrigin::GamepadButtonUpEvent,
+                    ) {
+                        return;
+                    };
+                }
+                gilrs::EventType::AxisChanged(axis, value, _) => {
+                    let res =
+                        self.state
+                            .gamepad_axis_event(&mut self.ctx, axis, value, GamepadId(id));
+                    if catch_error(
+                        &mut self.ctx,
+                        res,
+                        &mut self.state,
+                        event_loop,
+                        ErrorOrigin::GamepadAxisEvent,
+                    ) {
+                        return;
+                    };
+                }
+                _ => {}
+            }
+        }
+
+        let res = self.state.update(&mut self.ctx);
+        if catch_error(
+            &mut self.ctx,
+            res,
+            &mut self.state,
+            event_loop,
+            ErrorOrigin::Update,
+        ) {
+            return;
+        };
+
+        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
+            error!("Error on GraphicsContext::begin_frame(): {e:?}");
+            eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
+            event_loop.exit();
+        }
+
+        if let Err(e) = self.state.draw(&mut self.ctx) {
+            error!("Error on EventHandler::draw(): {e:?}");
+            eprintln!("Error on EventHandler::draw(): {e:?}");
+            if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+                event_loop.exit();
+                return;
+            }
+        }
+
+        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
+            error!("Error on GraphicsContext::end_frame(): {e:?}");
+            eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
+            event_loop.exit();
+        }
+
+        // reset the mouse delta for the next frame
+        // necessary because it's calculated cumulatively each cycle
+        HasMut::<input::mouse::MouseContext>::retrieve_mut(&mut self.ctx).reset_delta();
+
+        // Copy the state of the keyboard into the KeyboardContext
+        // and the mouse into the MouseContext
+        HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(&mut self.ctx)
+            .save_keyboard_state();
+        HasMut::<input::mouse::MouseContext>::retrieve_mut(&mut self.ctx).save_mouse_state();
+    }
 }
 
-fn catch_error<T, E, S: 'static>(
-    ctx: &mut Context,
+fn catch_error<T, C, E, S>(
+    ctx: &mut C,
     event_result: Result<T, E>,
     state: &mut S,
-    control_flow: &mut ControlFlow,
+    event_loop: &ActiveEventLoop,
     origin: ErrorOrigin,
 ) -> bool
 where
-    S: EventHandler<E>,
+    S: EventHandler<C, E> + 'static,
     E: std::fmt::Debug,
+    C: HasMut<ContextFields> + HasMut<input::mouse::MouseContext>,
 {
     if let Err(e) = event_result {
         error!("Error on EventHandler {origin:?}: {e:?}");
         eprintln!("Error on EventHandler {origin:?}: {e:?}");
         if state.on_error(ctx, origin, e) {
-            *control_flow = ControlFlow::Exit;
+            event_loop.exit();
             return true;
         }
     }
@@ -603,59 +705,97 @@ where
 /// state it needs to, such as detecting window resizes.  If you are
 /// rolling your own event loop, you should call this on the events
 /// you receive before processing them yourself.
-pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
-    if let winit_event::Event::WindowEvent { event, .. } = event {
-        match event {
-            winit_event::WindowEvent::Resized(physical_size) => {
-                ctx.gfx.resize(*physical_size);
-            }
-            winit_event::WindowEvent::CursorMoved {
-                position: physical_position,
-                ..
-            } => {
-                ctx.mouse
-                    .handle_move(physical_position.x as f32, physical_position.y as f32);
-            }
-            winit_event::WindowEvent::MouseInput { button, state, .. } => {
-                let pressed = match state {
-                    winit_event::ElementState::Pressed => true,
-                    winit_event::ElementState::Released => false,
-                };
-                ctx.mouse.set_button(*button, pressed);
-            }
-            winit_event::WindowEvent::ModifiersChanged(mods) => {
-                ctx.keyboard.set_modifiers(KeyMods::from(*mods))
-            }
-            winit_event::WindowEvent::KeyboardInput {
-                input:
-                    winit::event::KeyboardInput {
-                        state,
-                        scancode,
-                        virtual_keycode: keycode,
-                        ..
-                    },
-                ..
-            } => {
-                let pressed = match state {
-                    winit_event::ElementState::Pressed => true,
-                    winit_event::ElementState::Released => false,
-                };
-                ctx.keyboard.set_scancode(*scancode, pressed);
-                if let Some(key) = keycode {
-                    ctx.keyboard.set_key(*key, pressed);
-                }
-            }
-            winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                if !ctx.conf.window_mode.resize_on_scale_factor_change {
-                    // actively set the new_inner_size to be the desired size
-                    // to stop winit from resizing our window
-                    **new_inner_size = winit::dpi::PhysicalSize::<u32>::from([
-                        ctx.conf.window_mode.width,
-                        ctx.conf.window_mode.height,
-                    ]);
-                }
-            }
-            _ => (),
+#[deprecated(
+    since = "0.10.0",
+    note = "Use `event::process_device_event` and `event::process_window_event` with a `winit::application::ApplicationHandler` instead."
+)]
+pub fn process_event<C>(ctx: &mut C, event: &mut Event<()>)
+where
+    C: HasMut<ContextFields>
+        + HasMut<GraphicsContext>
+        + HasMut<input::keyboard::KeyboardContext>
+        + HasMut<input::mouse::MouseContext>,
+{
+    match event {
+        Event::DeviceEvent { device_id, event } => {
+            process_device_event(ctx, device_id, event);
         }
-    };
+        Event::WindowEvent { window_id, event } => {
+            process_window_event(ctx, window_id, event);
+        }
+        _ => (),
+    }
+}
+
+/// Feeds a `DeviceEvent` into the `Context` so it can update any internal
+/// state it needs to, such as detecting mouse movements.  If you are
+/// rolling your own event loop, you should call this on the events you
+/// receive before processing them yourself.
+pub fn process_device_event<C>(ctx: &mut C, _: &mut DeviceId, event: &mut DeviceEvent)
+where
+    C: HasMut<input::mouse::MouseContext>,
+{
+    if let DeviceEvent::MouseMotion { delta } = event {
+        let mouse = HasMut::<input::mouse::MouseContext>::retrieve_mut(ctx);
+        mouse.handle_motion(delta.0, delta.1);
+    }
+}
+
+/// Feeds a `WindowEvent` into the `Context` so it can update any internal
+/// state it needs to, such as detecting window resizes.  If you are
+/// rolling your own event loop, you should call this on the events you
+/// receive before processing them yourself.
+pub fn process_window_event<C>(ctx: &mut C, _: &mut WindowId, event: &mut WindowEvent)
+where
+    C: HasMut<ContextFields>
+        + HasMut<GraphicsContext>
+        + HasMut<input::keyboard::KeyboardContext>
+        + HasMut<input::mouse::MouseContext>,
+{
+    match event {
+        WindowEvent::Resized(physical_size) => {
+            let gfx = HasMut::<GraphicsContext>::retrieve_mut(ctx);
+            gfx.resize(*physical_size);
+        }
+        WindowEvent::CursorMoved {
+            position: physical_position,
+            ..
+        } => {
+            let mouse = HasMut::<input::mouse::MouseContext>::retrieve_mut(ctx);
+            mouse.handle_move(physical_position.x as f32, physical_position.y as f32);
+        }
+        WindowEvent::MouseInput { button, state, .. } => {
+            let mouse = HasMut::<input::mouse::MouseContext>::retrieve_mut(ctx);
+            let pressed = match state {
+                ElementState::Pressed => true,
+                ElementState::Released => false,
+            };
+            mouse.set_button(*button, pressed);
+        }
+        WindowEvent::ModifiersChanged(mods) => {
+            let keyboard = HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(ctx);
+            keyboard.active_modifiers = mods.state();
+        }
+        WindowEvent::KeyboardInput { event, .. } => {
+            let keyboard = HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(ctx);
+            let pressed = event.state == ElementState::Pressed;
+            keyboard.set_logical_key(&event.logical_key, pressed);
+            keyboard.set_physical_key(&event.physical_key, pressed);
+        }
+        WindowEvent::ScaleFactorChanged {
+            inner_size_writer, ..
+        } => {
+            let fields = HasMut::<ContextFields>::retrieve_mut(ctx);
+            if !fields.conf.window_mode.resize_on_scale_factor_change {
+                // actively set the new_inner_size to be the desired size
+                // to stop winit from resizing our window
+                let _ =
+                    inner_size_writer.request_inner_size(winit::dpi::PhysicalSize::<u32>::from([
+                        fields.conf.window_mode.width,
+                        fields.conf.window_mode.height,
+                    ]));
+            }
+        }
+        _ => (),
+    }
 }

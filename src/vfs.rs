@@ -9,12 +9,12 @@
 //! as a trait object, and its path abstraction is not the most
 //! convenient.
 
-use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::fmt::{self, Debug};
 use std::fs;
 use std::io::{self, Read, Seek, Write};
 use std::path::{self, Path, PathBuf};
+use std::sync::Mutex;
 
 use crate::error::{GameError, GameResult};
 
@@ -94,7 +94,7 @@ impl OpenOptions {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-pub trait VFS: Debug {
+pub trait VFS: Debug + Send + Sync {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>>;
     /// Open the file at this path for reading
@@ -109,6 +109,7 @@ pub trait VFS: Debug {
         )
     }
     /// Open the file at this path for appending, creating it if necessary
+    #[allow(dead_code)]
     fn append(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(
             path,
@@ -131,7 +132,7 @@ pub trait VFS: Debug {
     fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>>;
 
     /// Retrieve all file and directory entries in the given directory.
-    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>>;
+    fn read_dir(&self, path: &Path, dst: &mut Vec<PathBuf>) -> GameResult<()>;
 
     /// Retrieve the actual location of the VFS root, if available.
     fn to_path_buf(&self) -> Option<PathBuf>;
@@ -146,6 +147,7 @@ pub trait VMetadata {
     fn is_file(&self) -> bool;
     /// Returns the length of the thing.  If it is a directory,
     /// the result of this is undefined/platform dependent.
+    #[allow(dead_code)]
     fn len(&self) -> u64;
 }
 
@@ -194,7 +196,7 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
         _ => return None,
     }
 
-    fn is_normal_component(comp: path::Component) -> Option<&str> {
+    fn is_normal_component(comp: path::Component<'_>) -> Option<&str> {
         match comp {
             path::Component::Normal(s) => s.to_str(),
             _ => None,
@@ -224,7 +226,7 @@ fn sanitize_path_for_zip(path: &path::Path) -> Option<String> {
         _ => return None,
     }
 
-    fn is_normal_component(comp: path::Component) -> Option<&str> {
+    fn is_normal_component(comp: path::Component<'_>) -> Option<&str> {
         match comp {
             path::Component::Normal(s) => s.to_str(),
             _ => None,
@@ -387,7 +389,7 @@ impl VFS for PhysicalFS {
     }
 
     /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
+    fn read_dir(&self, path: &Path, dst: &mut Vec<PathBuf>) -> GameResult<()> {
         let p = self.to_absolute(path)?;
         // This is inconvenient because path() returns the full absolute
         // path of the bloody file, which is NOT what we want!
@@ -396,20 +398,17 @@ impl VFS for PhysicalFS {
         // So that we can do read_dir("/foobar/"), and for each file, open it and query
         // it and such by name.
         // So we build the paths ourself.
-        let direntry_to_path = |entry: &fs::DirEntry| -> GameResult<PathBuf> {
-            let fname = entry
-                .file_name()
-                .into_string()
-                .expect("Non-unicode char in file path?  Should never happen, I hope!");
+        let direntry_to_path = |entry: fs::DirEntry| -> PathBuf {
             let mut pathbuf = PathBuf::from(path);
-            pathbuf.push(fname);
-            Ok(pathbuf)
+            pathbuf.push(entry.file_name());
+            pathbuf
         };
-        let itr = fs::read_dir(p)?
-            .map(|entry| direntry_to_path(&entry?))
-            .collect::<Vec<_>>()
-            .into_iter();
-        Ok(Box::new(itr))
+
+        for entry in fs::read_dir(p)? {
+            dst.push(direntry_to_path(entry?));
+        }
+
+        Ok(())
     }
 
     /// Retrieve the actual location of the VFS root, if available.
@@ -535,16 +534,11 @@ impl VFS for OverlayFS {
     }
 
     /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
-        // This is tricky 'cause we have to actually merge iterators together...
-        // Doing it the simple and stupid way works though.
-        let mut v = Vec::new();
+    fn read_dir(&self, path: &Path, dst: &mut Vec<PathBuf>) -> GameResult<()> {
         for fs in &self.roots {
-            if let Ok(rddir) = fs.read_dir(path) {
-                v.extend(rddir);
-            }
+            let _ = fs.read_dir(path, dst);
         }
-        Ok(Box::new(v.into_iter()))
+        Ok(())
     }
 
     /// Retrieve the actual location of the VFS root, if available.
@@ -553,33 +547,15 @@ impl VFS for OverlayFS {
     }
 }
 
-trait ZipArchiveAccess {
-    fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
-    fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
-    fn len(&self) -> usize;
-}
+pub trait ReadSeek: Read + Seek + Send {}
 
-impl<T: Read + Seek> ZipArchiveAccess for zip::ZipArchive<T> {
-    fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile> {
-        let filename =
-            sanitize_path_for_zip(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
-        self.by_name(&filename)
-    }
+impl<T: Read + Seek + Send> ReadSeek for T {}
 
-    fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile> {
-        self.by_index(file_number)
-    }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
-}
-
-impl Debug for dyn ZipArchiveAccess {
+impl Debug for dyn ReadSeek {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // Hide the contents; for an io::Cursor, this would print what is
         // likely to be megabytes of data.
-        write!(f, "<ZipArchiveAccess>")
+        write!(f, "<reader>")
     }
 }
 
@@ -596,7 +572,7 @@ pub struct ZipFS {
     // HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
     // ALL CONTENTS OUT OF IT AAAAA.
     source: Option<PathBuf>,
-    archive: RefCell<Box<dyn ZipArchiveAccess>>,
+    archive: Mutex<zip::ZipArchive<Box<dyn ReadSeek>>>,
     // We keep an index of what files are in the zip file
     // because trying to read it lazily is a pain in the butt.
     index: Vec<String>,
@@ -605,35 +581,30 @@ pub struct ZipFS {
 impl ZipFS {
     pub fn new(filename: &Path) -> GameResult<Self> {
         let f = fs::File::open(filename)?;
-        let archive = Box::new(zip::ZipArchive::new(f)?);
-        Ok(ZipFS::from_boxed_archive(archive, Some(filename.into())))
+        Self::from_reader(Box::new(f), Some(filename.into()))
     }
 
     /// Creates a `ZipFS` from any `Read+Seek` object, most useful with an
     /// in-memory `std::io::Cursor`.
     pub fn from_read<R>(reader: R) -> GameResult<Self>
     where
-        R: Read + Seek + 'static,
+        R: Read + Seek + Send + 'static,
     {
-        let archive = Box::new(zip::ZipArchive::new(reader)?);
-        Ok(ZipFS::from_boxed_archive(archive, None))
+        Self::from_reader(Box::new(reader), None)
     }
 
-    fn from_boxed_archive(mut archive: Box<dyn ZipArchiveAccess>, source: Option<PathBuf>) -> Self {
-        let idx = (0..archive.len())
-            .map(|i| {
-                archive
-                    .by_index(i)
-                    .expect("Should never happen!")
-                    .name()
-                    .to_string()
-            })
+    fn from_reader(reader: Box<dyn ReadSeek>, source: Option<PathBuf>) -> GameResult<Self> {
+        let mut archive = zip::ZipArchive::new(reader)?;
+
+        let index = (0..archive.len())
+            .map(|i| archive.by_index(i).unwrap().name().to_string())
             .collect();
-        Self {
+
+        Ok(Self {
             source,
-            archive: RefCell::new(archive),
-            index: idx,
-        }
+            archive: Mutex::new(archive),
+            index,
+        })
     }
 }
 
@@ -652,7 +623,7 @@ pub struct ZipFileWrapper {
 }
 
 impl ZipFileWrapper {
-    fn new(z: &mut zip::read::ZipFile) -> GameResult<Self> {
+    fn new(z: &mut zip::read::ZipFile<Box<dyn ReadSeek>>) -> GameResult<Self> {
         let mut b = Vec::new();
         let _ = z.read_to_end(&mut b)?;
         Ok(Self {
@@ -665,11 +636,26 @@ impl io::Read for ZipFileWrapper {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.buffer.read(buf)
     }
+
+    fn read_exact(&mut self, buf: &mut [u8]) -> io::Result<()> {
+        self.buffer.read_exact(buf)
+    }
+
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        self.buffer.read_to_end(buf)
+    }
+
+    fn read_to_string(&mut self, buf: &mut String) -> io::Result<usize> {
+        self.buffer.read_to_string(buf)
+    }
 }
 
 impl io::Write for ZipFileWrapper {
     fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
-        panic!("Cannot write to a zip file!")
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "cannot write to a zip file!",
+        ))
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -680,6 +666,10 @@ impl io::Write for ZipFileWrapper {
 impl io::Seek for ZipFileWrapper {
     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
         self.buffer.seek(pos)
+    }
+
+    fn stream_position(&mut self) -> io::Result<u64> {
+        self.buffer.stream_position()
     }
 }
 
@@ -703,8 +693,8 @@ impl ZipMetadata {
     /// this way without basically just faking it.
     ///
     /// This does make listing a directory rather screwy.
-    fn new(name: &str, archive: &mut dyn ZipArchiveAccess) -> Option<Self> {
-        match archive.by_name(name) {
+    fn new(name: &str, archive: &mut zip::ZipArchive<Box<dyn ReadSeek>>) -> Option<Self> {
+        match archive_get_by_name(archive, name) {
             Err(_) => None,
             Ok(zipfile) => {
                 let len = zipfile.size();
@@ -730,6 +720,15 @@ impl VMetadata for ZipMetadata {
     }
 }
 
+fn archive_get_by_name<'a>(
+    archive: &'a mut zip::ZipArchive<Box<dyn ReadSeek>>,
+    name: &str,
+) -> zip::result::ZipResult<zip::read::ZipFile<'a, Box<dyn ReadSeek>>> {
+    let filename =
+        sanitize_path_for_zip(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
+    archive.by_name(&filename)
+}
+
 impl VFS for ZipFS {
     fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>> {
         // Zip is readonly
@@ -740,10 +739,8 @@ impl VFS for ZipFS {
                 format!("Cannot alter file {path:?} in zipfile {self:?}, filesystem read-only");
             return Err(GameError::FilesystemError(msg));
         }
-        let mut stupid_archive_borrow = self.archive
-            .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen! Report a bug at https://github.com/ggez/ggez/");
-        let mut f = stupid_archive_borrow.by_name(path)?;
+        let mut archive = self.archive.lock().unwrap();
+        let mut f = archive_get_by_name(&mut archive, path)?;
         let zipfile = ZipFileWrapper::new(&mut f)?;
         Ok(Box::new(zipfile) as Box<dyn VFile>)
     }
@@ -764,11 +761,9 @@ impl VFS for ZipFS {
     }
 
     fn exists(&self, path: &Path) -> bool {
-        let mut stupid_archive_borrow = self.archive
-            .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+        let mut archive = self.archive.lock().unwrap();
         if let Ok(path) = convenient_path_to_str(path) {
-            stupid_archive_borrow.by_name(path).is_ok()
+            archive_get_by_name(&mut archive, path).is_ok()
         } else {
             false
         }
@@ -776,10 +771,8 @@ impl VFS for ZipFS {
 
     fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
         let path = convenient_path_to_str(path)?;
-        let mut stupid_archive_borrow = self.archive
-            .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! Report a bug at https://github.com/ggez/ggez/");
-        match ZipMetadata::new(path, &mut **stupid_archive_borrow) {
+        let mut archive = self.archive.lock().unwrap();
+        match ZipMetadata::new(path, &mut archive) {
             None => Err(GameError::FilesystemError(format!(
                 "Metadata not found in zip file for {path}"
             ))),
@@ -790,18 +783,20 @@ impl VFS for ZipFS {
     #[allow(clippy::needless_collect)]
     /// Zip files don't have real directories, so we (incorrectly) hack it by
     /// just looking for a path prefix for now.
-    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
+    fn read_dir(&self, path: &Path, dst: &mut Vec<PathBuf>) -> GameResult<()> {
         let path = sanitize_path_for_zip(path).ok_or_else(|| {
             let errmessage = format!("Invalid path format for resource: {path:?}");
             GameError::FilesystemError(errmessage)
         })? + "/";
-        let itr = self
-            .index
-            .iter()
-            .filter(|&s| s.starts_with(&path) && s != &path)
-            .map(|s| Ok(PathBuf::from("/").join(s)))
-            .collect::<Vec<_>>();
-        Ok(Box::new(itr.into_iter()))
+
+        dst.extend(
+            self.index
+                .iter()
+                .filter(|&s| s.starts_with(&path) && s != &path)
+                .map(|s| PathBuf::from("/").join(s)),
+        );
+
+        Ok(())
     }
 
     fn to_path_buf(&self) -> Option<PathBuf> {
@@ -812,7 +807,7 @@ impl VFS for ZipFS {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{self, BufRead};
+    use std::io::BufRead;
 
     #[test]
     fn headless_test_path_filtering() {
@@ -931,12 +926,14 @@ mod tests {
         }
 
         {
+            let mut r = Vec::new();
             // Test read_dir()
-            let r = fs.read_dir(testdir).unwrap();
-            assert_eq!(r.count(), 1);
-            let r = fs.read_dir(testdir).unwrap();
-            for f in r {
-                let fname = f.unwrap();
+            fs.read_dir(testdir, &mut r).unwrap();
+            assert_eq!(r.len(), 1);
+
+            r.clear();
+            fs.read_dir(testdir, &mut r).unwrap();
+            for fname in r {
                 assert!(fs.exists(&fname));
             }
         }
@@ -958,7 +955,7 @@ mod tests {
             let mut zip_archive = zip::ZipWriter::new(zip_bytes);
 
             zip_archive
-                .start_file("fake_file_name.txt", zip::write::FileOptions::default())
+                .start_file::<_, ()>("fake_file_name.txt", zip::write::FileOptions::default())
                 .unwrap();
             let _bytes = zip_archive.write(b"Zip contents!").unwrap();
             zip_archive.finish().unwrap()

@@ -1,5 +1,6 @@
 //! A very simple shader example.
 
+// You must depend on the same version of `crevice` that ggez uses
 use crevice::std140::AsStd140;
 use ggez::event;
 use ggez::glam::Vec2;
@@ -34,7 +35,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         self.dim.rate = 0.5 + (((ctx.time.ticks() as f32) / 100.0).cos() / 2.0);
         Ok(())

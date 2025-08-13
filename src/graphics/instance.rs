@@ -3,13 +3,12 @@ use crate::{context::Has, graphics::gpu::bind_group::BindGroupBuilder, GameError
 use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
-    gpu::arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer},
     internal_canvas::InstanceArrayView,
     transform_rect, Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
 };
 use crevice::std140::AsStd140;
 use std::{
-    collections::BTreeMap,
+    cmp::Ordering,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering::SeqCst},
         Mutex,
@@ -23,16 +22,17 @@ const DEFAULT_CAPACITY: usize = 16;
 /// Traditionally known as a "batch".
 #[derive(Debug)]
 pub struct InstanceArray {
-    pub(crate) buffer: Mutex<ArcBuffer>,
-    pub(crate) indices: Mutex<ArcBuffer>,
-    pub(crate) bind_group: Mutex<ArcBindGroup>,
-    pub(crate) bind_layout: ArcBindGroupLayout,
+    pub(crate) buffer: Mutex<wgpu::Buffer>,
+    pub(crate) indices: Mutex<wgpu::Buffer>,
+    pub(crate) bind_group: Mutex<wgpu::BindGroup>,
+    pub(crate) bind_layout: wgpu::BindGroupLayout,
     pub(crate) image: Image,
     pub(crate) ordered: bool,
     dirty: AtomicBool,
     capacity: AtomicUsize,
     uniforms: Vec<Std140DrawUniforms>,
     params: Vec<DrawParam>,
+    sort_by: fn(&DrawParam, &DrawParam) -> Ordering,
 }
 
 impl InstanceArray {
@@ -69,23 +69,23 @@ impl InstanceArray {
 
     fn new_wgpu(
         wgpu: &WgpuContext,
-        bind_layout: ArcBindGroupLayout,
+        bind_layout: wgpu::BindGroupLayout,
         image: Image,
         capacity: usize,
         ordered: bool,
     ) -> Self {
         assert!(capacity > 0);
 
-        let buffer = ArcBuffer::new(wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+        let buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
             usage: wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
-        }));
+        });
 
-        let indices = ArcBuffer::new(wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+        let indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: if ordered {
                 std::mem::size_of::<u32>() as u64 * capacity as u64
@@ -96,7 +96,7 @@ impl InstanceArray {
                 | wgpu::BufferUsages::COPY_SRC
                 | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
-        }));
+        });
 
         let bind_group = BindGroupBuilder::new()
             .buffer(
@@ -115,12 +115,11 @@ impl InstanceArray {
                 false,
                 None,
             );
-        let bind_group =
-            ArcBindGroup::new(wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &bind_layout,
-                entries: bind_group.entries(),
-            }));
+        let bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &bind_layout,
+            entries: bind_group.entries(),
+        });
 
         let uniforms = Vec::with_capacity(capacity);
         let params = Vec::with_capacity(capacity);
@@ -136,6 +135,7 @@ impl InstanceArray {
             capacity: AtomicUsize::new(capacity),
             uniforms,
             params,
+            sort_by: |a, b| a.z.cmp(&b.z),
         }
     }
 
@@ -224,11 +224,9 @@ impl InstanceArray {
         );
 
         if self.ordered {
-            let mut layers = BTreeMap::<_, Vec<_>>::new();
-            for (i, param) in self.params.iter().enumerate() {
-                layers.entry(param.z).or_default().push(i as u32);
-            }
-            let indices = layers.into_values().flatten().collect::<Vec<_>>();
+            let mut sorted: Vec<_> = self.params.iter().enumerate().collect();
+            sorted.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
+            let indices: Vec<_> = sorted.iter().map(|(i, _)| *i as u32).collect();
             wgpu.queue.write_buffer(
                 &self.indices.lock().unwrap(),
                 0,
@@ -282,25 +280,28 @@ impl InstanceArray {
         self.capacity.load(SeqCst)
     }
 
+    /// Sets the sorting function for the final draw order of the instance array.
+    /// This is used upon the instance array being drawn to a canvas.
+    ///
+    /// By default, draws will be sorted by the Z index of [`DrawParam`].
+    #[inline]
+    pub fn set_sort_by(&mut self, sort_by: fn(&DrawParam, &DrawParam) -> Ordering) {
+        self.sort_by = sort_by;
+    }
+
     /// This is equivalent to `<InstanceArray as Drawable>::dimensions()` (see [`Drawable::dimensions()`]), but with a mesh taken into account.
     ///
     /// Essentially, consider `<InstanceArray as Drawable>::dimensions()` to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw()`,
     /// and consider [`InstanceArray::dimensions_meshed()`] to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw_instanced_mesh()`.
-    pub fn dimensions_meshed(&self, gfx: &impl Has<GraphicsContext>, mesh: &Mesh) -> Option<Rect> {
+    pub fn dimensions_meshed(&self, gfx: &impl Has<GraphicsContext>, mesh: &Mesh) -> Rect {
         if self.params.is_empty() {
-            return None;
+            return Rect::new(0.0, 0.0, 1.0, 1.0);
         }
-        let dimensions = mesh.dimensions(gfx)?;
+        let dimensions = mesh.dimensions(gfx);
         self.params
             .iter()
             .map(|&param| transform_rect(dimensions, param))
-            .fold(None, |acc: Option<Rect>, rect| {
-                Some(if let Some(acc) = acc {
-                    acc.combine_with(rect)
-                } else {
-                    rect
-                })
-            })
+            .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
     }
 }
 
@@ -322,21 +323,15 @@ impl Drawable for InstanceArray {
         );
     }
 
-    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Rect {
         let gfx = gfx.retrieve();
         if self.params.is_empty() {
-            return None;
+            return Rect::new(0.0, 0.0, 1.0, 1.0);
         }
-        let dimensions = self.image.dimensions(gfx)?;
+        let dimensions = self.image.dimensions(gfx);
         self.params
             .iter()
             .map(|&param| transform_rect(dimensions, param))
-            .fold(None, |acc: Option<Rect>, rect| {
-                Some(if let Some(acc) = acc {
-                    acc.combine_with(rect)
-                } else {
-                    rect
-                })
-            })
+            .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
     }
 }
