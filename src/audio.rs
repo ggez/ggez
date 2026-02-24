@@ -24,13 +24,13 @@ use crate::filesystem::Filesystem;
 /// of your `Context` object.
 pub struct AudioContext {
     fs: Filesystem,
-    stream: rodio::OutputStream,
+    stream: rodio::MixerDeviceSink,
 }
 
 impl AudioContext {
     /// Create new `AudioContext`.
     pub fn new(fs: &Filesystem) -> GameResult<Self> {
-        let stream = rodio::OutputStreamBuilder::open_default_stream().map_err(|_e| {
+        let stream = rodio::DeviceSinkBuilder::open_default_sink().map_err(|_e| {
             GameError::AudioError(String::from(
                 "Could not initialize sound system using default output device (for some reason)",
             ))
@@ -45,7 +45,7 @@ impl AudioContext {
 impl AudioContext {
     /// Returns the audio device.
     #[inline]
-    pub fn device(&self) -> &rodio::OutputStream {
+    pub fn device(&self) -> &rodio::MixerDeviceSink {
         &self.stream
     }
 }
@@ -271,7 +271,7 @@ impl SourceState {
 // Eventually it might read from a streaming decoder of some kind,
 // but for now it is just an in-memory SoundData structure.
 pub struct Source {
-    sink: rodio::Sink,
+    sink: rodio::Player,
     state: SourceState,
 }
 
@@ -286,7 +286,7 @@ impl Source {
     /// Creates a new `Source` using the given `SoundData` object.
     pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
         let state = SourceState::new(data);
-        let sink = rodio::Sink::connect_new(audio.retrieve().stream.mixer());
+        let sink = rodio::Player::connect_new(audio.retrieve().stream.mixer());
         Ok(Source { sink, state })
     }
 }
@@ -366,7 +366,7 @@ impl fmt::Debug for Source {
 /// A source of audio data located in space relative to a listener's ears.
 /// Will stop playing when dropped.
 pub struct SpatialSource {
-    sink: rodio::SpatialSink,
+    sink: rodio::SpatialPlayer,
     state: SourceState,
 }
 
@@ -383,7 +383,7 @@ impl SpatialSource {
         let audio = audio.retrieve();
 
         let state = SourceState::new(data);
-        let sink = rodio::SpatialSink::connect_new(
+        let sink = rodio::SpatialPlayer::connect_new(
             audio.stream.mixer(),
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],

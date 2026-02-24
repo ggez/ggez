@@ -287,7 +287,7 @@ impl Image {
         buffer
             .slice(..)
             .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap()); // Unwrap is fine as this should never fail
-        let _ = gfx.wgpu.device.poll(wgpu::PollType::Wait);
+        let _ = gfx.wgpu.device.poll(wgpu::PollType::wait_indefinitely());
         let map_result = rx
             .recv()
             .expect("All senders dropped, this should not be possible.");

@@ -83,6 +83,7 @@ impl<'a> InternalCanvas<'a> {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
+                multiview_mask: None,
             })
         })
     }
@@ -129,6 +130,7 @@ impl<'a> InternalCanvas<'a> {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
+                multiview_mask: None,
             })
         })
     }
@@ -536,13 +538,13 @@ impl<'a> InternalCanvas<'a> {
             let (dummy_group, dummy_layout) =
                 BindGroupBuilder::new().create(&self.wgpu.device, self.bind_group_cache);
 
-            let mut groups = vec![&uniform_layout, &texture_layout];
+            let mut groups = vec![Some(&uniform_layout), Some(&texture_layout)];
 
             if let ShaderType::Instance { .. } = ty {
-                groups.push(&instance_layout);
+                groups.push(Some(&instance_layout));
             } else {
                 // the dummy group ensures the user's bind group is at index 3
-                groups.push(&dummy_layout);
+                groups.push(Some(&dummy_layout));
                 self.pass.set_bind_group(2, &dummy_group, &[]);
             }
 
@@ -552,7 +554,7 @@ impl<'a> InternalCanvas<'a> {
                         self.shader_bind_group
                     {
                         self.pass.set_bind_group(3, bind_group, &[offset]);
-                        groups.push(bind_group_layout);
+                        groups.push(Some(bind_group_layout));
                     }
 
                     &self.shader
@@ -562,7 +564,7 @@ impl<'a> InternalCanvas<'a> {
                         self.text_shader_bind_group
                     {
                         self.pass.set_bind_group(3, bind_group, &[offset]);
-                        groups.push(bind_group_layout);
+                        groups.push(Some(bind_group_layout));
                     }
 
                     &self.text_shader
