@@ -177,8 +177,8 @@ impl MainState {
                     },
                     depth_stencil: Some(wgpu::DepthStencilState {
                         format: wgpu::TextureFormat::Depth32Float,
-                        depth_write_enabled: true,
-                        depth_compare: wgpu::CompareFunction::Greater,
+                        depth_write_enabled: Some(true),
+                        depth_compare: Some(wgpu::CompareFunction::Greater),
                         stencil: wgpu::StencilState::default(),
                         bias: wgpu::DepthBiasState::default(),
                     }),
@@ -197,7 +197,7 @@ impl MainState {
                             write_mask: wgpu::ColorWrites::ALL,
                         })],
                     }),
-                    multiview: None,
+                    multiview_mask: None,
                     cache: None,
                 });
 
@@ -315,6 +315,7 @@ impl event::EventHandler for MainState {
                 }),
                 occlusion_query_set: None,
                 timestamp_writes: None,
+                multiview_mask: None,
             });
 
             pass.set_pipeline(&self.pipeline);

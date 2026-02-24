@@ -753,9 +753,9 @@ where
         + HasMut<input::mouse::MouseContext>,
 {
     match event {
-        WindowEvent::Resized(physical_size) => {
+        WindowEvent::Resized(_) => {
             let gfx = HasMut::<GraphicsContext>::retrieve_mut(ctx);
-            gfx.resize(*physical_size);
+            gfx.on_resize();
         }
         WindowEvent::CursorMoved {
             position: physical_position,

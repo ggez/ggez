@@ -54,7 +54,7 @@ impl From<Sampler> for wgpu::SamplerDescriptor<'_> {
             address_mode_w: sampler.clamp_w.into(),
             mag_filter: sampler.mag.into(),
             min_filter: sampler.min.into(),
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             lod_min_clamp: 0.0,
             lod_max_clamp: 1.0,
             compare: None,

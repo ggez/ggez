@@ -35,7 +35,6 @@ pub(crate) struct FrameContext {
 #[allow(missing_docs)]
 pub struct WgpuContext {
     pub instance: wgpu::Instance,
-    pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
 }
@@ -45,6 +44,7 @@ pub struct WgpuContext {
 pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
 
+    pub(crate) surface: wgpu::Surface<'static>,
     pub(crate) window: Arc<winit::window::Window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
@@ -94,9 +94,9 @@ impl GraphicsContext {
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
         let new_instance = |backends| {
-            wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            wgpu::Instance::new(wgpu::InstanceDescriptor {
                 backends,
-                ..Default::default()
+                ..wgpu::InstanceDescriptor::new_without_display_handle()
             })
         };
 
@@ -247,8 +247,8 @@ impl GraphicsContext {
         .or(Err(GameError::GraphicsInitializationError))?;
 
         // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
-        const MAX_INSTANCES: u32 = 1_000_000;
-        const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
+        const MAX_INSTANCES: u64 = 1_000_000;
+        const INSTANCE_BUFFER_SIZE: u64 = 96 * MAX_INSTANCES;
 
         let (device, queue) =
             pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
@@ -270,12 +270,11 @@ impl GraphicsContext {
 
         let wgpu = Arc::new(WgpuContext {
             instance,
-            surface,
             device,
             queue,
         });
 
-        let capabilities = wgpu.surface.get_capabilities(&adapter);
+        let capabilities = surface.get_capabilities(&adapter);
 
         let size = window.inner_size();
         let surface_config = wgpu::SurfaceConfiguration {
@@ -293,7 +292,7 @@ impl GraphicsContext {
             view_formats: vec![],
         };
 
-        wgpu.surface.configure(&wgpu.device, &surface_config);
+        surface.configure(&wgpu.device, &surface_config);
 
         let mut bind_group_cache = BindGroupCache::new();
         let pipeline_cache = PipelineCache::new();
@@ -387,6 +386,7 @@ impl GraphicsContext {
         let mut this = GraphicsContext {
             wgpu,
 
+            surface,
             window,
             surface_config,
 
@@ -435,7 +435,7 @@ impl GraphicsContext {
             1.,
             u8::from(conf.window_setup.samples).into(),
         ));
-        this.update_frame_image();
+        this.on_resize();
 
         this.add_font(
             "LiberationMono-Regular",
@@ -604,20 +604,29 @@ impl GraphicsContext {
             )));
         }
 
-        let size = self.window.inner_size();
-        let frame = match self.wgpu.surface.get_current_texture() {
-            Ok(frame) => Ok(frame),
-            Err(_) => {
-                self.surface_config.width = size.width.max(1);
-                self.surface_config.height = size.height.max(1);
-                self.wgpu
-                    .surface
-                    .configure(&self.wgpu.device, &self.surface_config);
-                self.wgpu.surface.get_current_texture().map_err(|_| {
-                    GameError::RenderError(String::from("failed to get next swapchain image"))
-                })
+        let frame = loop {
+            match self.surface.get_current_texture() {
+                wgpu::CurrentSurfaceTexture::Success(frame) => break frame,
+                wgpu::CurrentSurfaceTexture::Suboptimal(_)
+                | wgpu::CurrentSurfaceTexture::Outdated => self.reconfigure_surface(),
+                wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
+                    // TODO: Add proper way to skip frame
+                    continue;
+                }
+                wgpu::CurrentSurfaceTexture::Lost => {
+                    self.surface = self
+                        .wgpu
+                        .instance
+                        .create_surface(self.window.clone())
+                        .map_err(|_| GameError::GraphicsInitializationError)?;
+                    self.reconfigure_surface();
+                }
+
+                wgpu::CurrentSurfaceTexture::Validation => {
+                    return Err(GameError::RenderError(String::from("validation error")));
+                }
             }
-        }?;
+        };
 
         let frame_view = frame
             .texture
@@ -659,6 +668,7 @@ impl GraphicsContext {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
+                multiview_mask: None,
             });
 
             let sampler = self
@@ -667,7 +677,9 @@ impl GraphicsContext {
 
             let (bind, layout) = self.bind_group(fcx.present.view, sampler);
 
-            let layout = self.pipeline_cache.layout(&self.wgpu.device, &[&layout]);
+            let layout = self
+                .pipeline_cache
+                .layout(&self.wgpu.device, &[Some(&layout)]);
             let copy = self.pipeline_cache.render_pipeline(
                 &self.wgpu.device,
                 RenderPipelineInfo {
@@ -704,18 +716,19 @@ impl GraphicsContext {
         }
     }
 
-    pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
+    fn reconfigure_surface(&mut self) {
+        let _ = self.wgpu.device.poll(wgpu::PollType::wait_indefinitely());
+
         let size = self.window.inner_size();
-        let _ = self.wgpu.device.poll(wgpu::PollType::Wait);
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
-        self.wgpu
-            .surface
+        self.surface
             .configure(&self.wgpu.device, &self.surface_config);
-        self.update_frame_image();
     }
 
-    pub(crate) fn update_frame_image(&mut self) {
+    pub(crate) fn on_resize(&mut self) {
+        self.reconfigure_surface();
+
         // Internally, GraphicsContext stores an intermediate image that is rendered to. Then, that frame image is rendered to the actual swapchain image.
         // Moreover, one frame image is non-MSAA, whilst the other is MSAA.
         // Since they're stored as ScreenImage, all this function does is store the corresponding Image returned by `ScreenImage::image()`.
@@ -797,8 +810,7 @@ impl GraphicsContext {
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
 
-        self.wgpu
-            .surface
+        self.surface
             .configure(&self.wgpu.device, &self.surface_config);
 
         Ok(())

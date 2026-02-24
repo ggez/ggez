@@ -63,8 +63,8 @@ impl PipelineCache {
                     },
                     depth_stencil: info.depth.map(|depth_compare| wgpu::DepthStencilState {
                         format: wgpu::TextureFormat::Depth32Float,
-                        depth_write_enabled: true,
-                        depth_compare,
+                        depth_write_enabled: Some(true),
+                        depth_compare: Some(depth_compare),
                         stencil: Default::default(),
                         bias: Default::default(),
                     }),
@@ -83,7 +83,7 @@ impl PipelineCache {
                             write_mask: wgpu::ColorWrites::ALL,
                         })],
                     }),
-                    multiview: None,
+                    multiview_mask: None,
                     cache: None,
                 })
             })
@@ -93,7 +93,7 @@ impl PipelineCache {
     pub fn layout(
         &mut self,
         device: &wgpu::Device,
-        bind_group_layouts: &[&wgpu::BindGroupLayout],
+        bind_group_layouts: &[Option<&wgpu::BindGroupLayout>],
     ) -> wgpu::PipelineLayout {
         let key = {
             use std::hash::{Hash, Hasher};
@@ -109,7 +109,7 @@ impl PipelineCache {
                 device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: None,
                     bind_group_layouts,
-                    push_constant_ranges: &[],
+                    immediate_size: 0,
                 })
             })
             .clone()
