@@ -16,11 +16,13 @@ use crate::input;
 use crate::timer;
 
 #[cfg(feature = "gamepad")]
-use crate::input::gamepad::GamepadContext;
+pub use crate::input::gamepad::GamepadContext;
 
 #[cfg(not(feature = "gamepad"))]
+#[allow(missing_copy_implementations)]
 /// Dummy gamepad context
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct GamepadContext;
 
 #[cfg(not(feature = "gamepad"))]

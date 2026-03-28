@@ -26,8 +26,7 @@ use crate::{
 };
 use crate::{Context, GameError};
 
-#[cfg(feature = "gamepad")]
-use crate::input::gamepad::GamepadContext;
+use crate::context::GamepadContext;
 #[cfg(feature = "gamepad")]
 pub use crate::input::gamepad::GamepadId;
 #[cfg(feature = "gamepad")]
