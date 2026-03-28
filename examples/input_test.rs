@@ -138,11 +138,6 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn text_input_event(&mut self, _ctx: &mut Context, ch: char) -> GameResult {
-        println!("Text input: {ch}");
-        Ok(())
-    }
-
     fn gamepad_button_down_event(
         &mut self,
         _ctx: &mut Context,

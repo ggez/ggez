@@ -60,8 +60,6 @@ pub enum ErrorOrigin {
     KeyDownEvent,
     /// error originated in `key_up_event()`
     KeyUpEvent,
-    /// error originated in `text_input_event()`
-    TextInputEvent,
     /// error originated in `touch_event()`
     TouchEvent,
     /// error originated in `gamepad_button_down_event()`
@@ -171,12 +169,6 @@ where
 
     /// A keyboard button was released.
     fn key_up_event(&mut self, _ctx: &mut C, _input: KeyInput) -> Result<(), E> {
-        Ok(())
-    }
-
-    /// A unicode character was received, usually from keyboard input.
-    /// This is the intended way of facilitating text input.
-    fn text_input_event(&mut self, _ctx: &mut C, _character: char) -> Result<(), E> {
         Ok(())
     }
 
@@ -406,9 +398,7 @@ where
                 let mods = HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(&mut self.ctx)
                     .active_modifiers;
 
-                let repeat =
-                    HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(&mut self.ctx)
-                        .is_key_repeated();
+                let repeat = event.repeat;
                 let key_state = event.state;
                 let input = KeyInput { event, mods };
                 let (res, origin) = match key_state {
