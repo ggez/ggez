@@ -19,15 +19,14 @@ name = "ggez"
 path = "src/lib.rs"
 
 [features]
-default = ["c_dependencies", "audio", "gamepad", "3d", "gltf", "obj"]
-zip-compression = ["zip/bzip2", "zip/zstd"]
-multithread-image-decoding = ["image/hdr", "image/rayon"]
-c_dependencies = ["zip-compression"]
-audio = ["rodio"]
+default = ["audio", "gamepad"]
+zip-zstd = ["zip/zstd"]
+rayon = ["image/rayon"]
+audio = ["dep:rodio"]
 gamepad = ["gilrs"]
 3d = []
-gltf = ["dep:gltf", "base64", "percent-encoding", "3d"]
-obj = ["obj-rs", "3d"]
+gltf = ["dep:gltf", "dep:base64", "dep:percent-encoding", "3d"]
+obj = ["dep:obj-rs", "3d"]
 
 [dependencies]
 bitflags = "2.1"
@@ -36,7 +35,7 @@ directories = "6"
 wgpu = "29"
 glyph_brush = "0.7"
 winit = { version = "0.30", features = ["serde"] }
-image = { version = "0.25", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "jpeg"] }
+image = { version = "0.25", default-features = false, features = ["png", "webp", "bmp", "jpeg"] }
 rodio = { version = "0.22", optional = true, default-features = false, features = ["playback", "flac", "mp3", "vorbis", "wav"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "1.0"
@@ -73,3 +72,19 @@ getrandom = "0.4"
 
 [workspace]
 members = ["doc_tests"]
+
+[[example]]
+name = "3d"
+required-features = ["3d"]
+
+[[example]]
+name = "3dinstance"
+required-features = ["3d"]
+
+[[example]]
+name = "3dshapes"
+required-features = ["3d"]
+
+[[example]]
+name = "3dtexture"
+required-features = ["3d"]
