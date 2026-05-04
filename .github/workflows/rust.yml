@@ -27,13 +27,9 @@ jobs:
       with:
         toolchain: ${{ matrix.toolchain }}
 
-    - name: Install alsa
+    - name: Install Linux dependencies
       if: ${{ runner.os == 'Linux' }}
-      run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
-
-    - name: Install udev
-      if: ${{ runner.os == 'Linux' }}
-      run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+      run: sudo apt-get update; sudo apt-get install -y --no-install-recommends libasound2-dev libudev-dev
 
     - name: Run cargo check --all-targets w/ -D warnings
       run: cargo check --all-targets
@@ -77,11 +73,8 @@ jobs:
       with:
         components: clippy
 
-    - name: Install alsa
-      run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
-
-    - name: Install udev
-      run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+    - name: Install Linux dependencies
+      run: sudo apt-get update; sudo apt-get install -y --no-install-recommends libasound2-dev libudev-dev
 
     - name: Run cargo clippy --all-targets --package ggez -- -D warnings
       run: cargo clippy --all-targets --package ggez -- -D warnings

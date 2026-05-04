@@ -568,14 +568,12 @@ impl EventHandler for MainState {
             Key::Named(NamedKey::Space) => {
                 self.input.fire = true;
             }
-            Key::Character(c) => {
-                if c == "p" {
-                    self.screen.image(ctx).encode(
-                        ctx,
-                        graphics::ImageEncodingFormat::Png,
-                        "/screenshot.png",
-                    )?;
-                }
+            Key::Character(c) if c == "p" => {
+                self.screen.image(ctx).encode(
+                    ctx,
+                    graphics::ImageEncodingFormat::Png,
+                    "/screenshot.png",
+                )?;
             }
             Key::Named(NamedKey::Escape) => ctx.request_quit(),
             _ => (), // Do nothing

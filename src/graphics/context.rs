@@ -608,9 +608,8 @@ impl GraphicsContext {
             match self.surface.get_current_texture() {
                 wgpu::CurrentSurfaceTexture::Success(frame) => break frame,
                 wgpu::CurrentSurfaceTexture::Suboptimal(tex) => {
-                    // Drop the SurfaceTexture before reconfiguring the surface,
-                    // otherwise wgpu panics with "SurfaceOutput must be dropped
-                    // before a new Surface is made" (issue ggez/ggez#1273).
+                    // Drop the SurfaceTexture before reconfiguring the surface, otherwise wgpu panics
+                    // with "SurfaceOutput must be dropped before a new Surface is made"
                     drop(tex);
                     self.reconfigure_surface();
                 }
