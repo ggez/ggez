@@ -581,12 +581,9 @@ impl<'a> InternalCanvas<'a> {
                     } else {
                         match ty {
                             ShaderType::Draw => self.draw_sm.clone(),
-                            ShaderType::Instance { ordered } => {
-                                if ordered {
-                                    self.instance_sm.clone()
-                                } else {
-                                    self.instance_unordered_sm.clone()
-                                }
+                            ShaderType::Instance { ordered: true } => self.instance_sm.clone(),
+                            ShaderType::Instance { ordered: false } => {
+                                self.instance_unordered_sm.clone()
                             }
                             ShaderType::Text => self.text_sm.clone(),
                         }

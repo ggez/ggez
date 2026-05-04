@@ -456,12 +456,9 @@ impl<'a> InternalCanvas3d<'a> {
                     } else {
                         match ty {
                             ShaderType3d::Draw => self.draw_sm.clone(),
-                            ShaderType3d::Instance { ordered } => {
-                                if ordered {
-                                    self.instance_sm.clone()
-                                } else {
-                                    self.instance_unordered_sm.clone()
-                                }
+                            ShaderType3d::Instance { ordered: true } => self.instance_sm.clone(),
+                            ShaderType3d::Instance { ordered: false } => {
+                                self.instance_unordered_sm.clone()
                             }
                         }
                     },

@@ -149,11 +149,9 @@ impl event::EventHandler for MainState {
 
     fn key_up_event(&mut self, ctx: &mut Context, input: KeyInput) -> GameResult {
         match input.event.logical_key {
-            Key::Character(c) => {
-                if c == "f" {
-                    self.window_settings.toggle_fullscreen = true;
-                    self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
-                }
+            Key::Character(c) if c == "f" => {
+                self.window_settings.toggle_fullscreen = true;
+                self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
             }
             Key::Named(NamedKey::ArrowUp) => {
                 self.zoom += 0.1;

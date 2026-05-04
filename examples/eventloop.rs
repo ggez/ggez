@@ -54,10 +54,10 @@ impl ApplicationHandler<()> for CustomApplicationHandler {
             WindowEvent::CloseRequested => {
                 self.ctx.request_quit();
             }
-            WindowEvent::KeyboardInput { event, .. } => {
-                if Key::Named(NamedKey::Escape) == event.logical_key {
-                    self.ctx.request_quit();
-                }
+            WindowEvent::KeyboardInput { event, .. }
+                if Key::Named(NamedKey::Escape) == event.logical_key =>
+            {
+                self.ctx.request_quit();
             }
             // `CloseRequested` and `KeyboardInput` events won't appear here.
             x => println!("Other window event fired: {x:?}"),
