@@ -344,11 +344,7 @@ impl event::EventHandler for MainState {
             // duration change
             Key::Character(c) => match &*c {
                 "c" | "C" => self.duration += DELTA,
-                "s" | "S" => {
-                    if self.duration - DELTA > 0.1 {
-                        self.duration -= DELTA;
-                    }
-                }
+                "s" | "S" if self.duration - DELTA > 0.1 => self.duration -= DELTA,
                 _ => {}
             },
             _ => {}
