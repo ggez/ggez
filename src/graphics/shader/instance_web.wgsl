@@ -16,12 +16,14 @@ struct DrawParam {
     transform: mat4x4<f32>,
 }
 
+// size must match MAX_INSTANCES_WEB in src/graphics/instance.rs
 struct InstanceArray {
-    instances: array<DrawParam>,
+    instances: array<DrawParam, 170>,
 }
 
+// size must match MAX_INSTANCES_WEB in src/graphics/instance.rs
 struct InstanceArrayIndices {
-    indices: array<u32>,
+    indices: array<vec4<u32>, 170>,
 }
 
 @group(0) @binding(0)
@@ -34,10 +36,10 @@ var t: texture_2d<f32>;
 var s: sampler;
 
 @group(2) @binding(0)
-var<storage, read> instances: InstanceArray;
+var<uniform> instances: InstanceArray;
 
 @group(2) @binding(1)
-var<storage, read> indices: InstanceArrayIndices;
+var<uniform> indices: InstanceArrayIndices;
 
 @vertex
 fn vs_main(
@@ -46,7 +48,7 @@ fn vs_main(
     @location(1) uv: vec2<f32>,
     @location(2) color: vec4<f32>,
 ) -> VertexOutput {
-    var index = indices.indices[in_instance_index];
+    var index = indices.indices[in_instance_index].x;
     var instance = instances.instances[index];
 
     var scale_x = select(1.0, uniforms.scale.x * (instance.src_rect.z - instance.src_rect.x), uniforms.scale.x > 0.0);

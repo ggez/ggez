@@ -85,6 +85,11 @@ num-derive = "0.4"
 skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }
 getrandom = "0.4"
 
+# `rand` (a dev-dependency) depends on `getrandom 0.4`, which on `wasm32-unknown-unknown`
+# needs the `wasm_js` feature to compile
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+
 [workspace]
 members = ["doc_tests"]
 

@@ -105,12 +105,25 @@ impl InstanceArray {
             mapped_at_creation: false,
         });
 
+        // On wasm the index buffer is a uniform binding, so array elements need 16-byte stride.
+        #[cfg(target_arch = "wasm32")]
+        let ordered_index_size = 16 * capacity as u64;
+        #[cfg(not(target_arch = "wasm32"))]
+        let ordered_index_size = std::mem::size_of::<u32>() as u64 * capacity as u64;
+
         let indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: if ordered {
-                std::mem::size_of::<u32>() as u64 * capacity as u64
+                ordered_index_size
             } else {
-                4 // min for layout
+                #[cfg(target_arch = "wasm32")]
+                {
+                    16
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    4 // min for layout
+                }
             },
             usage: usage | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
@@ -249,7 +262,12 @@ impl InstanceArray {
         if self.ordered {
             let mut sorted: Vec<_> = self.params.iter().enumerate().collect();
             sorted.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
-            let indices: Vec<_> = sorted.iter().map(|(i, _)| *i as u32).collect();
+            // On wasm the index buffer is bound as a uniform; uniform-array stride is
+            // 16 bytes, so each index is padded to a vec4<u32> with only lane 0 used.
+            #[cfg(target_arch = "wasm32")]
+            let indices: Vec<[u32; 4]> = sorted.iter().map(|(i, _)| [*i as u32, 0, 0, 0]).collect();
+            #[cfg(not(target_arch = "wasm32"))]
+            let indices: Vec<u32> = sorted.iter().map(|(i, _)| *i as u32).collect();
             wgpu.queue.write_buffer(
                 &self.indices.lock().unwrap(),
                 0,
@@ -356,5 +374,68 @@ impl Drawable for InstanceArray {
             .iter()
             .map(|&param| transform_rect(dimensions, param))
             .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MAX_INSTANCES_WEB;
+    use wgpu::naga::{front, valid};
+
+    /// Parse + validate every WGSL shader naga sees to avoid layout regressions
+    #[test]
+    fn headless_validate_instance_shaders() {
+        let shaders: &[(&str, &str)] = &[
+            ("instance.wgsl", include_str!("shader/instance.wgsl")),
+            (
+                "instance_unordered.wgsl",
+                include_str!("shader/instance_unordered.wgsl"),
+            ),
+            (
+                "instance_web.wgsl",
+                include_str!("shader/instance_web.wgsl"),
+            ),
+            (
+                "instance_unordered_web.wgsl",
+                include_str!("shader/instance_unordered_web.wgsl"),
+            ),
+        ];
+        for (name, src) in shaders {
+            let module = front::wgsl::parse_str(src)
+                .unwrap_or_else(|e| panic!("WGSL parse error in {name}: {e}"));
+            let mut validator =
+                valid::Validator::new(valid::ValidationFlags::all(), valid::Capabilities::all());
+            let _ = validator
+                .validate(&module)
+                .unwrap_or_else(|e| panic!("WGSL validation error in {name}: {e}"));
+        }
+    }
+
+    /// wasm shaders hard-code array lengths because they can't use runtime-sized arrays
+    /// under uniform bindings; this test ensures the constant matches `MAX_INSTANCES_WEB`
+    #[test]
+    fn headless_web_shader_array_length_matches_constant() {
+        let needle = format!("array<DrawParam, {MAX_INSTANCES_WEB}>");
+        for (name, src) in [
+            (
+                "instance_web.wgsl",
+                include_str!("shader/instance_web.wgsl"),
+            ),
+            (
+                "instance_unordered_web.wgsl",
+                include_str!("shader/instance_unordered_web.wgsl"),
+            ),
+        ] {
+            assert!(
+                src.contains(&needle),
+                "{name} does not declare {needle}; keep it in sync with MAX_INSTANCES_WEB"
+            );
+        }
+        let idx_needle = format!("array<vec4<u32>, {MAX_INSTANCES_WEB}>");
+        let ordered = include_str!("shader/instance_web.wgsl");
+        assert!(
+            ordered.contains(&idx_needle),
+            "instance_web.wgsl ordered index array must be {idx_needle}"
+        );
     }
 }

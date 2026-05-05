@@ -23,8 +23,9 @@ struct DrawParam {
     camera_transform: mat4x4<f32>,
 }
 
+// size must match MAX_INSTANCES3D_WEB in src/graphics/instance3d.rs
 struct InstanceArray {
-    instances: array<DrawParam, 17>,
+    instances: array<DrawParam, 113>,
 }
 
 @group(0) @binding(0)

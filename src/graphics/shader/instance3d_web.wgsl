@@ -23,12 +23,14 @@ struct DrawParam {
     camera_transform: mat4x4<f32>,
 }
 
+// size must match MAX_INSTANCES3D_WEB in src/graphics/instance3d.rs
 struct InstanceArray {
-    instances: array<DrawParam>,
+    instances: array<DrawParam, 113>,
 }
 
+// size must match MAX_INSTANCES3D_WEB in src/graphics/instance3d.rs.
 struct InstanceArrayIndices {
-    indices: array<u32>,
+    indices: array<vec4<u32>, 113>,
 }
 
 @group(0) @binding(0)
@@ -41,17 +43,17 @@ var t: texture_2d<f32>;
 var s: sampler;
 
 @group(2) @binding(0)
-var<storage, read> instances: InstanceArray;
+var<uniform> instances: InstanceArray;
 
 @group(2) @binding(1)
-var<storage, read> indices: InstanceArrayIndices;
+var<uniform> indices: InstanceArrayIndices;
 
 @vertex
 fn vs_main(
     @builtin(instance_index) in_instance_index: u32,
     model: VertexInput
 ) -> VertexOutput {
-    var index = indices.indices[in_instance_index];
+    var index = indices.indices[in_instance_index].x;
     var instance = instances.instances[index];
 
     var out: VertexOutput;

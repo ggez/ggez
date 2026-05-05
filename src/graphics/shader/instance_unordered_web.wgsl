@@ -16,6 +16,7 @@ struct DrawParam {
     transform: mat4x4<f32>,
 }
 
+// size must match MAX_INSTANCES_WEB in src/graphics/instance.rs
 struct InstanceArray {
     instances: array<DrawParam, 170>,
 }
