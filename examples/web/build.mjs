@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Build ggez examples for wasm32-unknown-unknown and stage them under
-// examples/web/public/ so vite (or any static server) can serve them.
+// Build ggez examples for wasm32-unknown-unknown and serve them using Vite from
+// examples/web/public/
 //
 // Usage:
 //   node build.mjs                      # build every example
@@ -26,7 +26,7 @@ const targets = argv.filter(a => !a.startsWith('--'));
 const release = flags.has('--release');
 const skipInstall = flags.has('--no-bindgen-install');
 
-// -- 1. Discover examples from Cargo.toml --------------------------------------
+// Discover examples from Cargo.toml
 
 const cargoToml = readFileSync(join(REPO, 'Cargo.toml'), 'utf8');
 // Examples that need a feature flag are declared as `[[example]]` blocks.
@@ -45,7 +45,7 @@ for (const name of wanted) {
   }
 }
 
-// -- 2. Make sure wasm-bindgen-cli matches the locked wasm-bindgen version -----
+// Make sure wasm-bindgen-cli matches the locked wasm-bindgen version
 
 const lock = readFileSync(join(REPO, 'Cargo.lock'), 'utf8');
 const lockMatch = lock.match(/name = "wasm-bindgen"\nversion = "([^"]+)"/);
@@ -79,7 +79,7 @@ if (installedBindgen !== requiredBindgen) {
   run('cargo', ['install', '--locked', '--version', requiredBindgen, 'wasm-bindgen-cli']);
 }
 
-// -- 3. Group examples by feature set so each cargo invocation builds many -----
+// Group examples by feature set so each cargo invocation builds many
 
 const groups = new Map(); // featureKey -> { features: string[], names: string[] }
 for (const name of wanted) {
@@ -102,7 +102,7 @@ for (const { features, names } of groups.values()) {
   run('cargo', args);
 }
 
-// -- 4. Run wasm-bindgen on each produced .wasm --------------------------------
+// Run wasm-bindgen on each produced .wasm
 
 for (const name of wanted) {
   const wasmIn = join(REPO, 'target', 'wasm32-unknown-unknown', profileDir, 'examples', `${name}.wasm`);
@@ -123,12 +123,27 @@ for (const name of wanted) {
   ]);
 }
 
-// -- 5. Copy /resources into public/ so fetch('resources/foo') works -----------
+// Copy /resources into public/ so fetch('resources/foo') works
 
 rmSync(RESOURCES_OUT, { recursive: true, force: true });
 cpSync(join(REPO, 'resources'), RESOURCES_OUT, { recursive: true });
 
-// -- 6. Write a manifest the gallery can read ---------------------------------
+// Write a manifest the gallery can read
+
+function extractDescription(name) {
+  const file = join(REPO, 'examples', `${name}.rs`);
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const docs = [];
+  for (const line of lines) {
+    const m = line.match(/^\/\/!\s?(.*)$/);
+    if (!m) {
+      if (docs.length) break; // contiguous block only
+      continue;
+    }
+    docs.push(m[1].trim());
+  }
+  return docs.join(' ').trim();
+}
 
 const manifest = {
   generatedAt: new Date().toISOString(),
@@ -136,6 +151,7 @@ const manifest = {
   examples: wanted.map(name => ({
     name,
     features: requiredFeatures.get(name) ?? [],
+    description: extractDescription(name),
   })),
 };
 writeFileSync(join(PUBLIC, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

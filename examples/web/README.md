@@ -1,7 +1,7 @@
 # Running ggez examples in a browser
 
-Compiles every example in `../` to `wasm32-unknown-unknown`, runs `wasm-bindgen`,
-and serves them through a small Vite-backed gallery.
+Use build.mjs to compile every example to `wasm32-unknown-unknown`, run `wasm-bindgen`,
+and serve them in a simple gallery.
 
 ## One-time setup
 

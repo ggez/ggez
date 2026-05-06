@@ -613,6 +613,12 @@ impl EventHandler for MainState {
         }
         Ok(())
     }
+
+    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> GameResult {
+        self.screen_width = width;
+        self.screen_height = height;
+        Ok(())
+    }
 }
 
 // **********************************************************************

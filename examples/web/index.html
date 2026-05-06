@@ -8,16 +8,33 @@
   </head>
   <body>
     <header>
-      <h1>ggez examples</h1>
-      <p class="subtitle">Pick an example. They run in the iframe on the right.</p>
+      <div class="brand">
+        <h1>ggez</h1>
+        <span class="tag">examples</span>
+      </div>
+      <a class="repo" href="https://github.com/ggez/ggez" target="_blank" rel="noopener">github</a>
     </header>
     <main>
       <nav id="examples-nav" aria-label="Examples">
+        <input id="filter" type="search" placeholder="Filter…" autocomplete="off" />
         <p class="loading">Loading manifest…</p>
       </nav>
       <section id="viewer">
-        <p id="placeholder">← pick an example to run.</p>
-        <iframe id="example-frame" title="ggez example" hidden></iframe>
+        <div id="placeholder">
+          <h2>Pick an example</h2>
+          <p>Each runs as a wasm32 build of a stock <code>examples/&lt;name&gt;.rs</code>, embedded below.</p>
+          <p class="hint">Tip: append <code>?example=NAME</code> to deep-link.</p>
+        </div>
+        <div id="frame-wrap" hidden>
+          <div id="frame-bar">
+            <span id="frame-title"></span>
+            <span id="frame-features"></span>
+            <a id="frame-source" href="#" target="_blank" rel="noopener">source</a>
+            <button id="frame-reload" type="button" title="Reload">↻</button>
+            <button id="frame-popout" type="button" title="Open standalone">⇱</button>
+          </div>
+          <iframe id="example-frame" title="ggez example"></iframe>
+        </div>
       </section>
     </main>
     <script type="module" src="/src/gallery.js"></script>

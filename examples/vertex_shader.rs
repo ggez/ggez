@@ -26,8 +26,10 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
+        // Use `vertex_code` with `include_str!` so the build is fully synchronous.
+        // vertex_path().build reads via VFS, which fails on web
         let shader = graphics::ShaderBuilder::new()
-            .vertex_path("/vertex.wgsl")
+            .vertex_code(include_str!("../resources/vertex.wgsl"))
             .build(ctx)?;
         let shader_params = graphics::ShaderParamsBuilder::new(&ShaderUniforms {
             rotation: Mat4::IDENTITY,
