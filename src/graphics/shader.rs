@@ -75,7 +75,7 @@ impl ShaderBuilder {
     #[must_use]
     pub fn vertex_code(self, source: impl ToString) -> Self {
         ShaderBuilder {
-            fs: self.vs,
+            fs: self.fs,
             vs: ShaderSource::Code(source.to_string()),
         }
     }
@@ -84,7 +84,7 @@ impl ShaderBuilder {
     #[must_use]
     pub fn vertex_path(self, path: impl ToString) -> Self {
         ShaderBuilder {
-            fs: self.vs,
+            fs: self.fs,
             vs: ShaderSource::Path(path.to_string()),
         }
     }

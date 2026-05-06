@@ -381,7 +381,14 @@ impl SoundSource for Source {
 
     fn stop(&self) {
         self.state.play_time.store(0, Ordering::SeqCst);
-        self.sink.clear();
+        // `rodio::Player::clear()` blocks the calling thread until the audio
+        // thread drains the queue. On wasm that thread is also driving the
+        // audio callback, so the wait deadlocks the tab. Skip each queued
+        // source instead — the audio thread acts on it within ~5ms.
+        for _ in 0..self.sink.len() {
+            self.sink.skip_one();
+        }
+        self.sink.pause();
     }
 
     fn stopped(&self) -> bool {
@@ -496,6 +503,8 @@ impl SoundSource for SpatialSource {
 
     fn stop(&self) {
         self.state.play_time.store(0, Ordering::SeqCst);
+        // FIXME: same wasm deadlock as `Source::stop`, but `rodio::SpatialPlayer`
+        // doesn't expose a non-blocking `skip_one` we can use to work around it.
         self.sink.clear();
     }
 

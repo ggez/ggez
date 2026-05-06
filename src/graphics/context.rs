@@ -852,7 +852,10 @@ impl GraphicsContext {
 
         match mode.fullscreen_type {
             FullscreenType::Windowed => {
-                window.set_fullscreen(None);
+                // Avoid calling set_fullscreen(None) when already windowed (avoids web crash)
+                if window.fullscreen().is_some() {
+                    window.set_fullscreen(None);
+                }
                 window.set_decorations(!mode.borderless);
                 let _ = window.request_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
