@@ -101,9 +101,19 @@ impl GraphicsContext {
         };
 
         if conf.backend == Backend::All {
+            // On the web we always use WebGL (`Backends::GL`). WebGPU request_adapter`
+            // returns a `JsFuture` that can only be driven by JS, but ggez uses
+            // `pollster::block_on`, which calls `Condvar::wait` on `Pending` and traps on
+            // `wasm32-unknown-unknown`. WebGL goes through `wgpu-core`, whose adapter/device
+            // requests resolve synchronously, so blocking on them is fine.
+            #[cfg(target_arch = "wasm32")]
+            let primary = wgpu::Backends::GL;
+            #[cfg(not(target_arch = "wasm32"))]
+            let primary = wgpu::Backends::PRIMARY;
+
             match Self::new_from_instance(
                 game_id,
-                new_instance(wgpu::Backends::PRIMARY),
+                new_instance(primary),
                 event_loop,
                 conf,
                 filesystem,
@@ -241,6 +251,7 @@ impl GraphicsContext {
             use winit::platform::web::WindowExtWebSys;
 
             if let Some(canvas) = window.canvas() {
+                let parent_id = conf.window_setup.web_canvas_parent_id.as_deref();
                 web_sys::window()
                     .and_then(|win| win.document())
                     .and_then(|doc| {
@@ -248,7 +259,10 @@ impl GraphicsContext {
                             element.remove();
                         }
 
-                        let dst = doc.body()?;
+                        let dst: web_sys::Node = match parent_id {
+                            Some(id) => doc.get_element_by_id(id)?.into(),
+                            None => doc.body()?.into(),
+                        };
                         let canvas = web_sys::Element::from(canvas);
                         canvas.set_id("ggez-body");
                         let _ = dst.append_child(&canvas).ok()?;
@@ -292,12 +306,25 @@ impl GraphicsContext {
 
         let capabilities = surface.get_capabilities(&adapter);
 
+        // On web, `window.inner_size()` comes from a ResizeObserver that hasn't fired at
+        // this point, and reports `(0, 0)`. Configure the surface against the window mode instead,
+        // once the observer fires, `on_resize` updates the surface to the actual canvas size.
         let size = window.inner_size();
+        let (width, height) = if size.width == 0 || size.height == 0 {
+            let physical = conf
+                .window_mode
+                .actual_size()
+                .map(|s| s.to_physical::<u32>(window.scale_factor()))
+                .unwrap_or_else(|_| winit::dpi::PhysicalSize::new(800, 600));
+            (physical.width.max(1), physical.height.max(1))
+        } else {
+            (size.width, size.height)
+        };
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: capabilities.formats[0],
-            width: size.width,
-            height: size.height,
+            width,
+            height,
             present_mode: if conf.window_setup.vsync {
                 wgpu::PresentMode::AutoVsync
             } else {
@@ -859,9 +886,19 @@ impl GraphicsContext {
         }
 
         let size = window.inner_size();
-        assert!(size.width > 0 && size.height > 0);
-        self.surface_config.width = size.width.max(1);
-        self.surface_config.height = size.height.max(1);
+        let (width, height) = if size.width == 0 || size.height == 0 {
+            // On web, canvas `ResizeObserver` may not have fired, so `inner_size` is `(0, 0)`.
+            // Fall back to the configured size and let the resize event handler reconfigure.
+            let physical = mode
+                .actual_size()
+                .map(|s| s.to_physical::<u32>(window.scale_factor()))
+                .unwrap_or_else(|_| winit::dpi::PhysicalSize::new(800, 600));
+            (physical.width.max(1), physical.height.max(1))
+        } else {
+            (size.width, size.height)
+        };
+        self.surface_config.width = width;
+        self.surface_config.height = height;
 
         self.surface
             .configure(&self.wgpu.device, &self.surface_config);

@@ -264,7 +264,7 @@ where
 pub fn run<S, C, E>(ctx: C, event_loop: EventLoop<()>, state: S) -> GameResult
 where
     S: EventHandler<C, E> + 'static,
-    E: std::fmt::Debug,
+    E: std::fmt::Debug + 'static,
     C: 'static
         + HasMut<ContextFields>
         + HasMut<GraphicsContext>
@@ -273,15 +273,28 @@ where
         + HasMut<GamepadContext>
         + HasMut<crate::timer::TimeContext>,
 {
-    let mut app = GgezApplicationHandler {
+    let app = GgezApplicationHandler {
         ctx,
         state,
         _p: PhantomData,
     };
 
-    event_loop
-        .run_app(&mut app)
-        .map_err(GameError::EventLoopError)
+    #[cfg(target_arch = "wasm32")]
+    {
+        // `run_app` on web throws a JS exception that causes wasm-bindgen `init()` promise
+        // to reject and looks like a load error to the page.
+        // `spawn_app` returns normally and lets the browser drive the event loop.
+        use winit::platform::web::EventLoopExtWebSys;
+        event_loop.spawn_app(app);
+        Ok(())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let mut app = app;
+        event_loop
+            .run_app(&mut app)
+            .map_err(GameError::EventLoopError)
+    }
 }
 
 struct GgezApplicationHandler<S, C, E>
