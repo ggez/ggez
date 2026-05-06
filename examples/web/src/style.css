@@ -1,0 +1,143 @@
+:root {
+  color-scheme: light dark;
+  --fg: #1a1a1a;
+  --bg: #f6f3ee;
+  --bg-alt: #ebe6dd;
+  --accent: #800020;
+  --muted: #666;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e7e3da;
+    --bg: #1a1814;
+    --bg-alt: #24211b;
+    --muted: #a59f93;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+header {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--bg-alt);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+main {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  height: calc(100% - 64px);
+}
+
+nav {
+  border-right: 1px solid var(--bg-alt);
+  overflow-y: auto;
+  background: var(--bg-alt);
+  padding: 0.5rem 0;
+}
+
+nav .loading {
+  margin: 0.75rem 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+nav button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0.4rem 1rem;
+  font: inherit;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+nav button:hover {
+  background: rgba(128, 0, 32, 0.08);
+}
+
+nav button[aria-current='true'] {
+  background: var(--accent);
+  color: white;
+}
+
+#viewer {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+#placeholder {
+  margin: auto;
+  color: var(--muted);
+}
+
+#example-frame {
+  border: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+}
+
+/* runner page */
+body.runner {
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#ggez-body {
+  display: block;
+  margin: auto;
+}
+
+#status {
+  position: fixed;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+#status:empty {
+  display: none;
+}

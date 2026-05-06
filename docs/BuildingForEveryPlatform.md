@@ -103,21 +103,75 @@ Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 
 You might be able to use [`good-web-game`] though to run your `ggez` app on Android.
 
-# Web/wasm/emscripten
+# Web (wasm32)
 
-Should just build as long as you have the 'wasm32-unknown-unknown' target installed.
+ggez targets `wasm32-unknown-unknown` via `wasm-bindgen`. Audio uses the WebAudio backend of
+`rodio`, assets via `fetch`, and the a canvas is appended to `<body>` (or a DOM element you choose).
 
-If using rustup try: `rustup target install wasm32-unknown-unknown`
-
-For testing we personally use [`wasm-server-runner`]: https://github.com/jakobhellermann/wasm-server-runner
-
-## Distributing
-
-You can use `wasm-bindgen` to generate the files you need to host on a site.
-
-```
-cargo build --release --target wasm32-unknown-unknown
-wasm-bindgen --out-dir ./out/ --target web ./target/
+```sh
+rustup target add wasm32-unknown-unknown
+cargo build --target wasm32-unknown-unknown --release
 ```
 
-There is some higher level tools like `wasm-pack`
+Once built, run `wasm-bindgen` against the output to get an ES module + `.wasm`
+pair you can load from a static page. The CLI version **must match** the
+`wasm-bindgen` version pinned in `Cargo.lock` (currently 0.2.x):
+
+```sh
+cargo install --locked --version <X.Y.Z> wasm-bindgen-cli
+wasm-bindgen --target web --out-dir ./out target/wasm32-unknown-unknown/release/your_game.wasm
+```
+
+Then load it from any static host:
+
+```html
+<script type="module">
+  import init from './out/your_game.js';
+  await init();
+</script>
+```
+
+## Trying the bundled examples
+
+A small Vite project is included in `examples/web/` that compiles every example to wasm and
+serves them in a gallery. One-time setup:
+
+```sh
+rustup target add wasm32-unknown-unknown
+cd examples/web
+npm install
+```
+
+Then:
+
+```sh
+npm run dev                   # build everything + serve at http://localhost:5173
+npm run build -- 04_snake     # rebuild a single example
+npm run build -- --release    # release-mode wasm (much smoother)
+npm run serve                 # serve a previously built tree
+```
+
+`build.mjs` will `cargo install` a matching `wasm-bindgen-cli` automatically on first run;
+pass `--no-bindgen-install` to opt out. See [`examples/web/README.md`](../examples/web/README.md) for the full layout.
+
+## Embedding the canvas inside an existing page
+
+By default ggez appends its `<canvas>` to `<body>`. To attach it to a specific element:
+
+```rust
+let cb = ggez::ContextBuilder::new("my_game", "me")
+    .window_setup(
+        ggez::conf::WindowSetup::default().web_canvas_parent_id("my-element"),
+    );
+```
+
+This is a no-op on other targets, so you can leave it on a single build configuration.
+
+## Asset loading
+
+Asset reads on the web go through `fetch` against `<resources_dir>/<path>`, where `<resources_dir>`
+is the value passed to `ContextBuilder::resources_dir_name` (default `resources`). The URL is
+**relative to the loaded page**, so serve the page from a path where `resources/foo.png` resolves
+to the right file. For example, host the page at the site root and place assets under `/resources/`.
+
+`add_resource_path` and `resources.zip` lookups are no-ops on the web target.

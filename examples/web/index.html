@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ggez examples</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>ggez examples</h1>
+      <p class="subtitle">Pick an example. They run in the iframe on the right.</p>
+    </header>
+    <main>
+      <nav id="examples-nav" aria-label="Examples">
+        <p class="loading">Loading manifest…</p>
+      </nav>
+      <section id="viewer">
+        <p id="placeholder">← pick an example to run.</p>
+        <iframe id="example-frame" title="ggez example" hidden></iframe>
+      </section>
+    </main>
+    <script type="module" src="/src/gallery.js"></script>
+  </body>
+</html>
