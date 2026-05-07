@@ -18,7 +18,6 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let mut rng = Rand32::new(12345);
         let mesh = graphics::Mesh::from_data(
             ctx,
             graphics::MeshBuilder::new()
@@ -37,14 +36,22 @@ impl MainState {
                 .build(),
         );
 
-        // Generate enough instances to fill the entire screen
-        let size = ctx.gfx.drawable_size();
-        let items_x = (size.0 / 64.0) as usize;
-        let items_y = (size.1 / 64.0) as usize;
-        let mut mesh_batch = graphics::InstanceArray::new(ctx, None);
-        mesh_batch.resize(ctx, items_x * items_y);
+        let mesh_batch = graphics::InstanceArray::new(ctx, None);
+        let mut s = MainState { mesh_batch, mesh };
+        let (w, h) = ctx.gfx.drawable_size();
+        s.populate(ctx, w, h);
+        Ok(s)
+    }
 
-        mesh_batch.set((0..items_x).flat_map(|x| {
+    fn populate(&mut self, ctx: &mut Context, width: f32, height: f32) {
+        // On web `drawable_size` can report (0, 0) until the canvas `ResizeObserver` fires.
+        // Clamp to at least 1×1 so `resize` doesn't trip capacity assert.
+        let items_x = ((width / 64.0) as usize).max(1);
+        let items_y = ((height / 64.0) as usize).max(1);
+        self.mesh_batch.resize(ctx, items_x * items_y);
+
+        let mut rng = Rand32::new(12345);
+        self.mesh_batch.set((0..items_x).flat_map(|x| {
             (0..items_y).map(move |y| {
                 let x = x as f32;
                 let y = y as f32;
@@ -54,13 +61,15 @@ impl MainState {
                     .rotation(rng.rand_float() * TWO_PI)
             })
         }));
-
-        let s = MainState { mesh_batch, mesh };
-        Ok(s)
     }
 }
 
 impl event::EventHandler for MainState {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
+        self.populate(ctx, width, height);
+        Ok(())
+    }
+
     #[allow(clippy::needless_range_loop)]
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if ctx.time.ticks().is_multiple_of(100) {
@@ -68,18 +77,19 @@ impl event::EventHandler for MainState {
             println!("Average FPS: {}", ctx.time.fps());
         }
 
-        // Update first 50 instances in the mesh batch
+        // Update up to the first 50 instances in the mesh batch.
         let delta_time = ctx.time.delta().as_secs_f32() * 1000.0;
         let instances = self.mesh_batch.instances();
+        let count = instances.len().min(50);
 
         let mut updated_params = Vec::new();
-        for i in 0..50 {
-            let mut p = instances[i as usize];
+        for i in 0..count {
+            let mut p = instances[i];
             if let graphics::Transform::Values {
                 ref mut rotation, ..
             } = p.transform
             {
-                if (i % 2) == 0 {
+                if i.is_multiple_of(2) {
                     *rotation += 0.001 * TWO_PI * delta_time;
                     if *rotation > TWO_PI {
                         *rotation -= TWO_PI;
@@ -93,10 +103,10 @@ impl event::EventHandler for MainState {
             }
             updated_params.push(p);
         }
-        for i in 0..50 {
+        for i in 0..count {
             // TODO: this is pretty inefficient and also a bit ridiculous
             //       a way to update parts of an InstanceArray would be good to have
-            self.mesh_batch.update(i, updated_params[i as usize]);
+            self.mesh_batch.update(i as u32, updated_params[i]);
         }
 
         Ok(())
