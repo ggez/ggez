@@ -11,6 +11,15 @@ use std::env;
 use std::f32::consts::TAU;
 use std::path;
 
+#[cfg(target_arch = "wasm32")]
+const GRID: u32 = 13;
+#[cfg(target_arch = "wasm32")]
+const SPACING: f32 = 115.0;
+#[cfg(not(target_arch = "wasm32"))]
+const GRID: u32 = 150;
+#[cfg(not(target_arch = "wasm32"))]
+const SPACING: f32 = 10.0;
+
 struct MainState {
     instances: graphics::InstanceArray,
 }
@@ -19,7 +28,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let image = graphics::Image::from_path(ctx, "/tile.png")?;
         let mut instances = graphics::InstanceArray::new(ctx, image);
-        instances.resize(ctx, 150 * 150);
+        instances.resize(ctx, (GRID * GRID) as usize);
         Ok(MainState { instances })
     }
 }
@@ -38,12 +47,12 @@ impl event::EventHandler for MainState {
 
         let time = (ctx.time.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
-        self.instances.set((0..150).flat_map(|x| {
-            (0..150).map(move |y| {
+        self.instances.set((0..GRID).flat_map(|x| {
+            (0..GRID).map(move |y| {
                 let x = x as f32;
                 let y = y as f32;
                 graphics::DrawParam::new()
-                    .dest(Vec2::new(x * 10.0, y * 10.0))
+                    .dest(Vec2::new(x * SPACING, y * SPACING))
                     .scale(Vec2::new(
                         ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
                         ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
@@ -52,6 +61,7 @@ impl event::EventHandler for MainState {
             })
         }));
 
+        let half_grid = GRID as f32 * SPACING * 0.5;
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(
                 ((time % cycle) as f32 / cycle as f32 * TAU).cos() * 50.0 + 100.0,
@@ -62,7 +72,7 @@ impl event::EventHandler for MainState {
                 ((time % cycle) as f32 / cycle as f32 * TAU).sin().abs() * 2.0 + 1.0,
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * TAU)
-            .offset(Vec2::new(750.0, 750.0))
+            .offset(Vec2::new(half_grid, half_grid))
             // src has no influence when applied globally to a spritebatch
             .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
         canvas.draw(&self.instances, param);

@@ -17,7 +17,23 @@ if (!name) {
 document.title = `ggez · ${name}`;
 setStatus(`loading ${name}…`);
 
+// Pre-fetch bundled resources zip and expose it on `window` for `Filesystem::new_web`.
+// Examples that use `Image::from_path` etc. need this.
+async function preloadResourcesZip() {
+  try {
+    const resp = await fetch('/resources.zip');
+    if (!resp.ok) {
+      console.warn(`resources.zip not available (HTTP ${resp.status}); sync VFS lookups will fail`);
+      return;
+    }
+    window.__GGEZ_RESOURCES_ZIP__ = new Uint8Array(await resp.arrayBuffer());
+  } catch (err) {
+    console.warn('failed to preload resources.zip:', err);
+  }
+}
+
 try {
+  await preloadResourcesZip();
   const mod = await import(/* @vite-ignore */ `/examples/${name}/${name}.js`);
   // wasm-bindgen --target web exports init() as the default export. Calling it
   // instantiates the wasm and runs the example's `main()`.

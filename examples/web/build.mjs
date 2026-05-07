@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildStoredZip } from './src/zip.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
@@ -123,10 +124,27 @@ for (const name of wanted) {
   ]);
 }
 
-// Copy /resources into public/ so fetch('resources/foo') works
+// Copy /resources into public/ so fetch('resources/foo') works for the async path,
+// and bundle the same files into resources.zip so the runner can pre-populate the
+// VFS for the synchronous Filesystem::open path.
 
 rmSync(RESOURCES_OUT, { recursive: true, force: true });
 cpSync(join(REPO, 'resources'), RESOURCES_OUT, { recursive: true });
+
+function walkFiles(root, prefix = '') {
+  const out = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const sub = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const abs = join(root, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...walkFiles(abs, sub));
+    } else if (entry.isFile()) {
+      out.push({ path: sub, data: readFileSync(abs) });
+    }
+  }
+  return out;
+}
+writeFileSync(join(PUBLIC, 'resources.zip'), buildStoredZip(walkFiles(join(REPO, 'resources'))));
 
 // Write a manifest the gallery can read
 
