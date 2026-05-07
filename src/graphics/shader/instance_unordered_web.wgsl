@@ -10,17 +10,6 @@ struct Uniforms {
     scale: vec2<f32>,
 }
 
-struct DrawParam {
-    color: vec4<f32>,
-    src_rect: vec4<f32>,
-    transform: mat4x4<f32>,
-}
-
-// size must match MAX_INSTANCES_WEB in src/graphics/instance.rs
-struct InstanceArray {
-    instances: array<DrawParam, 170>,
-}
-
 @group(0) @binding(0)
 var<uniform> uniforms: Uniforms;
 
@@ -30,21 +19,25 @@ var t: texture_2d<f32>;
 @group(1) @binding(1)
 var s: sampler;
 
-@group(2) @binding(0)
-var<uniform> instances: InstanceArray;
-
+// Per-instance DrawParam comes through the vertex stage as six vec4 attributes
+// (color, src_rect, then four columns of the 4x4 transform). Layout
+// matches `Std140DrawUniforms` in draw.rs, see the test in instance.rs.
 @vertex
 fn vs_main(
-    @builtin(instance_index) in_instance_index: u32,
     @location(0) position: vec2<f32>,
     @location(1) uv: vec2<f32>,
     @location(2) color: vec4<f32>,
+    @location(3) inst_color: vec4<f32>,
+    @location(4) inst_src_rect: vec4<f32>,
+    @location(5) inst_t0: vec4<f32>,
+    @location(6) inst_t1: vec4<f32>,
+    @location(7) inst_t2: vec4<f32>,
+    @location(8) inst_t3: vec4<f32>,
 ) -> VertexOutput {
-    var index = in_instance_index;
-    var instance = instances.instances[index];
+    var inst_transform = mat4x4<f32>(inst_t0, inst_t1, inst_t2, inst_t3);
 
-    var scale_x = select(1.0, uniforms.scale.x * (instance.src_rect.z - instance.src_rect.x), uniforms.scale.x > 0.0);
-    var scale_y = select(1.0, uniforms.scale.y * (instance.src_rect.w - instance.src_rect.y), uniforms.scale.x > 0.0);
+    var scale_x = select(1.0, uniforms.scale.x * (inst_src_rect.z - inst_src_rect.x), uniforms.scale.x > 0.0);
+    var scale_y = select(1.0, uniforms.scale.y * (inst_src_rect.w - inst_src_rect.y), uniforms.scale.x > 0.0);
     var scale_mat = mat4x4<f32>(
         scale_x,
         0.0,
@@ -65,9 +58,9 @@ fn vs_main(
     );
 
     var out: VertexOutput;
-    out.position = uniforms.transform * instance.transform * scale_mat * vec4<f32>(position, 0.0, 1.0);
-    out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
-    out.color = uniforms.color * instance.color * color;
+    out.position = uniforms.transform * inst_transform * scale_mat * vec4<f32>(position, 0.0, 1.0);
+    out.uv = mix(inst_src_rect.xy, inst_src_rect.zw, uv);
+    out.color = uniforms.color * inst_color * color;
     return out;
 }
 

@@ -11,13 +11,7 @@ use std::env;
 use std::f32::consts::TAU;
 use std::path;
 
-#[cfg(target_arch = "wasm32")]
-const GRID: u32 = 13;
-#[cfg(target_arch = "wasm32")]
-const SPACING: f32 = 115.0;
-#[cfg(not(target_arch = "wasm32"))]
 const GRID: u32 = 150;
-#[cfg(not(target_arch = "wasm32"))]
 const SPACING: f32 = 10.0;
 
 struct MainState {

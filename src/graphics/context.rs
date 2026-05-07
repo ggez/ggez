@@ -78,6 +78,9 @@ pub struct GraphicsContext {
     pub(crate) copy_shader: wgpu::ShaderModule,
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
+    // Used by native InstanceArray and by 3D InstanceArray3d on web.
+    // The 2D web path feeds instances through a vertex buffer instead of a bind group.
+    #[cfg(any(not(target_arch = "wasm32"), feature = "3d"))]
     pub(crate) instance_bind_layout: wgpu::BindGroupLayout,
 
     pub(crate) fs: Filesystem,
@@ -426,7 +429,7 @@ impl GraphicsContext {
             },
         );
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(all(target_arch = "wasm32", feature = "3d"))]
         let instance_bind_layout = BindGroupLayoutBuilder::new()
             .buffer(
                 wgpu::ShaderStages::VERTEX,
@@ -493,6 +496,7 @@ impl GraphicsContext {
             copy_shader,
             rect_mesh,
             white_image,
+            #[cfg(any(not(target_arch = "wasm32"), feature = "3d"))]
             instance_bind_layout,
 
             fs: filesystem.clone(),
@@ -774,7 +778,7 @@ impl GraphicsContext {
                     depth: None,
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
-                    vertex_layout: Vertex::layout(),
+                    vertex_layouts: vec![Vertex::layout()],
                     cull_mode: None,
                 },
             );
