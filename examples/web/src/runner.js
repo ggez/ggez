@@ -9,34 +9,6 @@ function setStatus(msg) {
   status.textContent = msg;
 }
 
-// AudioContext is suspended until a user gesture occurs. rodio/cpal opens in ggez init,
-// so it stays suspended and no audio plays.
-// Track every created context and resume on first click/keydown/touch in the page.
-(function unlockAudio() {
-  const created = new Set();
-  const Ctx = window.AudioContext || window.webkitAudioContext;
-  if (!Ctx) return;
-  const Wrapped = new Proxy(Ctx, {
-    construct(target, args) {
-      const ctx = new target(...args);
-      created.add(ctx);
-      return ctx;
-    },
-  });
-  window.AudioContext = Wrapped;
-  if (window.webkitAudioContext) window.webkitAudioContext = Wrapped;
-
-  const tryResume = () => {
-    for (const ctx of created) {
-      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    }
-  };
-  const opts = { capture: true, passive: true };
-  for (const ev of ['pointerdown', 'keydown', 'touchstart', 'mousedown']) {
-    window.addEventListener(ev, tryResume, opts);
-  }
-})();
-
 if (!name) {
   setStatus('no ?example= in URL');
   throw new Error('missing ?example=NAME');

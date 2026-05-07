@@ -36,6 +36,9 @@ pub struct AudioContext {
 impl AudioContext {
     /// Create new `AudioContext` if there is a usable output device.
     pub fn new(fs: &Filesystem) -> GameResult<Self> {
+        #[cfg(target_arch = "wasm32")]
+        install_web_audio_unlock();
+
         let stream = match rodio::DeviceSinkBuilder::open_default_sink() {
             Ok(stream) => Some(stream),
             Err(e) => {
@@ -49,6 +52,36 @@ impl AudioContext {
             fs: fs.clone(),
             stream,
         })
+    }
+}
+
+// Browser autoplay policy keeps an `AudioContext` suspended until a user gesture occurs.
+// rodio creates the context before that during ggez init so we extend `AudioContext` with a
+// subclass that attaches a resume() listener to each instance. The first gesture event
+// resumes the context and removes the listeners.
+#[cfg(target_arch = "wasm32")]
+fn install_web_audio_unlock() {
+    const JS: &str = r#"
+        if (window.__ggezAudioUnlockInstalled) return;
+        window.__ggezAudioUnlockInstalled = true;
+        const Original = window.AudioContext || window.webkitAudioContext;
+        if (!Original) return;
+        class GgezUnlockingAudioContext extends Original {
+          constructor() {
+            super(...arguments);
+            if (this.state !== 'suspended') return;
+            const unlock = () => { this.resume().catch(() => {}); };
+            const opts = { capture: true, passive: true, once: true };
+            for (const ev of ['pointerdown', 'keydown', 'touchstart', 'mousedown']) {
+              addEventListener(ev, unlock, opts);
+            }
+          }
+        }
+        window.AudioContext = GgezUnlockingAudioContext;
+        if (window.webkitAudioContext) window.webkitAudioContext = GgezUnlockingAudioContext;
+    "#;
+    if let Err(e) = js_sys::Function::new_no_args(JS).call0(&wasm_bindgen::JsValue::NULL) {
+        log::warn!("Could not install web audio unlock hook: {e:?}");
     }
 }
 
@@ -381,10 +414,9 @@ impl SoundSource for Source {
 
     fn stop(&self) {
         self.state.play_time.store(0, Ordering::SeqCst);
-        // `rodio::Player::clear()` blocks the calling thread until the audio
-        // thread drains the queue. On wasm that thread is also driving the
-        // audio callback, so the wait deadlocks the tab. Skip each queued
-        // source instead — the audio thread acts on it within ~5ms.
+        // rodio clear() blocks the calling thread until the audio thread drains the queue.
+        // On wasm that thread is driving the audio callback, so the it deadlocks the tab.
+        // Skip each queued source instead — the audio thread acts on it within ~5ms.
         for _ in 0..self.sink.len() {
             self.sink.skip_one();
         }
