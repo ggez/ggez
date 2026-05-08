@@ -16,14 +16,24 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let og_image =
             graphics::Image::from_bytes(ctx, include_bytes!("../resources/wabbit_alpha.png"))?;
-        let cpu_image = og_image.to_pixels(ctx)?;
-        let image = Image::from_pixels(
-            ctx,
-            cpu_image.as_slice(),
-            og_image.format(),
-            og_image.width(),
-            og_image.height(),
-        );
+
+        // `Image::to_pixels` waits for `map_async`, which blocks the callback thread on web
+        // Skip on web and just display the original image.
+        #[cfg(target_arch = "wasm32")]
+        let image = og_image;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let image = {
+            let cpu_image = og_image.to_pixels(ctx)?;
+            Image::from_pixels(
+                ctx,
+                cpu_image.as_slice(),
+                og_image.format(),
+                og_image.width(),
+                og_image.height(),
+            )
+        };
+
         Ok(MainState { image })
     }
 }

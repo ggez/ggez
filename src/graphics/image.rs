@@ -309,14 +309,28 @@ impl Image {
         let _ = gfx.wgpu.queue.submit([cmd]);
 
         // wait...
+        // `map_async` fires the callback when the buffer is mapped. Normally we ask the device
+        // to wait, on web `Poll::wait_indefinitely` blocks the callback thread so we poll once
+        // (WebGL2 readback is sync and the callback fires from the poll)
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         buffer
             .slice(..)
             .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap()); // Unwrap is fine as this should never fail
-        let _ = gfx.wgpu.device.poll(wgpu::PollType::wait_indefinitely());
-        let map_result = rx
-            .recv()
-            .expect("All senders dropped, this should not be possible.");
+        #[cfg(not(target_arch = "wasm32"))]
+        let map_result = {
+            let _ = gfx.wgpu.device.poll(wgpu::PollType::wait_indefinitely());
+            rx.recv()
+                .expect("All senders dropped, this should not be possible.")
+        };
+        #[cfg(target_arch = "wasm32")]
+        let map_result = {
+            let _ = gfx.wgpu.device.poll(wgpu::PollType::Poll);
+            rx.try_recv().map_err(|_| {
+                GameError::RenderError(String::from(
+                    "Image::to_pixels: buffer mapping did not complete synchronously on web",
+                ))
+            })?
+        };
         map_result?;
 
         let mut out = Vec::new();

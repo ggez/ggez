@@ -426,6 +426,10 @@ impl ContextBuilder {
             + HasMut<input::mouse::MouseContext>
             + HasMut<GamepadContext>,
     {
+        #[cfg(target_arch = "wasm32")]
+        let fs = Filesystem::new_web(&self.resources_dir_name);
+
+        #[cfg(not(target_arch = "wasm32"))]
         let fs = Filesystem::new(
             self.game_id.as_ref(),
             self.author.as_ref(),

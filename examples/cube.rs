@@ -192,7 +192,7 @@ impl MainState {
                         entry_point: Some("fs_main"),
                         compilation_options: Default::default(),
                         targets: &[Some(wgpu::ColorTargetState {
-                            format: ctx.gfx.surface_format(),
+                            format: ctx.gfx.frame().format(),
                             blend: None,
                             write_mask: wgpu::ColorWrites::ALL,
                         })],
