@@ -8,7 +8,6 @@ const filter = document.getElementById('filter');
 const frame = document.getElementById('example-frame');
 const frameWrap = document.getElementById('frame-wrap');
 const frameTitle = document.getElementById('frame-title');
-const frameFeatures = document.getElementById('frame-features');
 const frameSource = document.getElementById('frame-source');
 const frameReload = document.getElementById('frame-reload');
 const framePopout = document.getElementById('frame-popout');
@@ -40,11 +39,7 @@ if (!manifest || !manifest.examples?.length) {
   filter.addEventListener('input', () => {
     const q = filter.value.trim().toLowerCase();
     const filtered = q
-      ? entries.filter(
-          e =>
-            e.name.toLowerCase().includes(q) ||
-            (e.description ?? '').toLowerCase().includes(q),
-        )
+      ? entries.filter(e => e.name.toLowerCase().includes(q))
       : entries;
     renderList(filtered);
   });
@@ -76,18 +71,7 @@ function renderList(items) {
     name.className = 'ex-name';
     name.textContent = prettify(ex.name);
 
-    const desc = document.createElement('span');
-    desc.className = 'ex-desc';
-    desc.textContent = ex.description || '';
-
     btn.appendChild(name);
-    if (desc.textContent) btn.appendChild(desc);
-    if (ex.features?.length) {
-      const feat = document.createElement('span');
-      feat.className = 'ex-feat';
-      feat.textContent = ex.features.join(' · ');
-      btn.appendChild(feat);
-    }
 
     btn.addEventListener('click', () => select(ex.name));
     li.appendChild(btn);
@@ -113,9 +97,6 @@ function select(name) {
   placeholder.hidden = true;
   frameWrap.hidden = false;
   frameTitle.textContent = prettify(name);
-  frameFeatures.textContent = ex?.features?.length
-    ? `--features ${ex.features.join(',')}`
-    : '';
   frameSource.href = SOURCE_URL(name);
   // Force a reload even when re-selecting the same example.
   loadFrame(name);

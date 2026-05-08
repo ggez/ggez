@@ -13,6 +13,7 @@ export default defineConfig({
     allowedHosts: true
   },
   build: {
+    target: 'esnext',
     rollupOptions: {
       input: {
         index: 'index.html',

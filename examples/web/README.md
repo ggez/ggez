@@ -1,7 +1,7 @@
 # Running ggez examples in a browser
 
-Use build.mjs to compile every example to `wasm32-unknown-unknown`, run `wasm-bindgen`,
-and serve them in a simple gallery.
+Use build.mjs to compile examples to `wasm32-unknown-unknown`, run `wasm-bindgen`, and
+serve them in a gallery.
 
 ## One-time setup
 
@@ -11,34 +11,31 @@ cd examples/web
 npm install
 ```
 
-`build.mjs` will install a matching `wasm-bindgen-cli` via `cargo install` on the
-first run if your version doesn't match `Cargo.lock`. Pass `--no-bindgen-install`
-to opt out.
+`build.mjs` installs a matching `wasm-bindgen-cli` via `cargo install` on the first run
+if your version doesn't match `Cargo.lock`. Pass `--no-bindgen-install` to opt out.
 
-## Day-to-day
+## Scripts
 
 ```sh
 npm run dev                   # build every example, then `vite`
 npm run build                 # just rebuild
 npm run build -- 04_snake     # only the 04_snake example
-npm run build -- --release    # release-mode wasm (much smoother in the browser)
-npm run serve                 # serve a previously built tree without rebuilding
+npm run build -- --release    # release-mode wasm (smoother in the browser)
+npm run serve                 # serve without rebuilding
+npm run build:static          # release wasm + `vite build` → dist/
 ```
 
-Vite opens <http://localhost:5173>; the index page lists every example that's
-been built and runs the selected one in an iframe pointed at
-`run.html?example=NAME`.
+Vite opens <http://localhost:5173>; the index page lists every built example and
+runs the selected one in an iframe pointed at `run.html?example=NAME`.
 
 ## Layout
 
 - `build.mjs` — invokes `cargo build --target wasm32-unknown-unknown --example NAME`
-  for each example (grouped by required features), then `wasm-bindgen --target web`,
-  and copies `../../resources` into `public/resources`.
+  for each example (grouped by features), then `wasm-bindgen --target web`, and copies
+  `../../resources` to `public/resources`.
 - `index.html` / `src/gallery.js` — the gallery (sidebar + iframe).
-- `run.html` / `src/runner.js` — the single-example host. The canvas is appended
-  to `#ggez-canvas-host` (configured via `WindowSetup::web_canvas_parent_id`).
-- `public/` (gitignored) — output: `examples/<name>/<name>.js`, `<name>_bg.wasm`,
-  plus `resources/`.
+- `run.html` / `src/runner.js` — example host, a canvas is appended to `#ggez-canvas-host`.
+- `public/` gitignored output: `examples/<name>/<name>.js`, `<name>_bg.wasm`, `resources/`.
 
 ## Embedding ggez in your own page
 

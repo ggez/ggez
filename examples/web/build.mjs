@@ -148,28 +148,12 @@ writeFileSync(join(PUBLIC, 'resources.zip'), buildStoredZip(walkFiles(join(REPO,
 
 // Write a manifest the gallery can read
 
-function extractDescription(name) {
-  const file = join(REPO, 'examples', `${name}.rs`);
-  const lines = readFileSync(file, 'utf8').split('\n');
-  const docs = [];
-  for (const line of lines) {
-    const m = line.match(/^\/\/!\s?(.*)$/);
-    if (!m) {
-      if (docs.length) break; // contiguous block only
-      continue;
-    }
-    docs.push(m[1].trim());
-  }
-  return docs.join(' ').trim();
-}
-
 const manifest = {
   generatedAt: new Date().toISOString(),
   profile: profileDir,
   examples: wanted.map(name => ({
     name,
     features: requiredFeatures.get(name) ?? [],
-    description: extractDescription(name),
   })),
 };
 writeFileSync(join(PUBLIC, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

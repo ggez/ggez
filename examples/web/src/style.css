@@ -170,7 +170,6 @@ nav button[aria-current='true'] {
   color: #fff;
   border-color: var(--accent);
 }
-nav button[aria-current='true'] .ex-desc,
 nav button[aria-current='true'] .ex-feat {
   color: rgba(255, 255, 255, 0.85);
 }
@@ -178,15 +177,6 @@ nav button[aria-current='true'] .ex-feat {
 .ex-name {
   font-weight: 600;
   font-size: 0.92rem;
-}
-.ex-desc {
-  font-size: 0.78rem;
-  color: var(--fg-soft);
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 .ex-feat {
   font-size: 0.7rem;
@@ -255,11 +245,6 @@ nav button[aria-current='true'] .ex-feat {
 #frame-title {
   font-weight: 600;
   color: var(--fg);
-}
-#frame-features {
-  font-family: ui-monospace, Menlo, monospace;
-  color: var(--muted);
-  font-size: 0.78rem;
 }
 #frame-bar a,
 #frame-bar button {
