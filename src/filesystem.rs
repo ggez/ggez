@@ -32,31 +32,23 @@
 //! directory isolation is intended for convenience, not security, so
 //! don't assume it will be secure.
 
-#[cfg(not(target_arch = "wasm32"))]
-use crate::coroutine::yield_now;
 use crate::{
     conf,
-    context::Has,
     vfs::{self, OverlayFS, VFS},
-    Coroutine, GameError, GameResult,
+    GameError, GameResult,
 };
 use directories::ProjectDirs;
 use std::{
     env,
     io::{self, Read},
-    path::{self, PathBuf},
+    path,
     sync::{Arc, RwLock},
 };
-
-#[cfg(not(target_arch = "wasm32"))]
-use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(target_arch = "wasm32")]
 use {
     js_sys::{Reflect, Uint8Array},
     wasm_bindgen::{JsCast, JsValue},
-    wasm_bindgen_futures::JsFuture,
-    web_sys::Response,
 };
 
 pub use crate::vfs::OpenOptions;
@@ -312,59 +304,6 @@ impl Filesystem {
         let mut buf = Vec::new();
         let _ = file.read_to_end(&mut buf)?;
         Ok(buf)
-    }
-
-    /// Creates a coroutine that reads the whole content of a file to a `Vec`.
-    pub fn read_to_end_async<C: Has<Filesystem> + 'static>(
-        &self,
-        path: impl Into<PathBuf>,
-    ) -> Coroutine<GameResult<Vec<u8>>, C> {
-        let path = path.into();
-        let fs = self.clone();
-        Coroutine::new(move |_| async move {
-            #[cfg(target_arch = "wasm32")]
-            {
-                let path = fs
-                    .resources_dir
-                    .join(path.strip_prefix("/").unwrap_or(path.as_path()));
-                let window = web_sys::window()
-                    .ok_or_else(|| GameError::FilesystemError(String::from("no window")))?;
-                let resp_value =
-                    JsFuture::from(window.fetch_with_str(path.to_str().ok_or_else(|| {
-                        GameError::FilesystemError(format!("Invalid path: {path:?}"))
-                    })?))
-                    .await
-                    .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
-                let resp: Response = resp_value
-                    .dyn_into()
-                    .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
-                let data = JsFuture::from(
-                    resp.array_buffer()
-                        .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?,
-                )
-                .await
-                .map_err(|err| GameError::FilesystemError(format!("{err:?}")))?;
-                let bytes = Uint8Array::new(&data).to_vec();
-                Ok(bytes.into())
-            }
-
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                let finished = Arc::new(AtomicBool::new(false));
-                let handle = std::thread::spawn({
-                    let finished = Arc::clone(&finished);
-                    move || {
-                        let result = fs.read(path);
-                        finished.store(true, Ordering::Relaxed);
-                        result
-                    }
-                });
-                while !finished.load(Ordering::Relaxed) {
-                    yield_now().await;
-                }
-                handle.join().unwrap()
-            }
-        })
     }
 
     /// Reads the whole content of a file to a `String`.

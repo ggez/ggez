@@ -1,13 +1,13 @@
 //! The simplest possible example that does something.
 #![allow(clippy::unnecessary_wraps)]
 
-use std::{cell::Cell, path::PathBuf, rc::Rc};
+use std::{cell::Cell, rc::Rc};
 
 use ggez::{
-    coroutine::{yield_now, Loading},
+    coroutine::yield_now,
     event,
     glam::*,
-    graphics::{self, Color, Image},
+    graphics::{self, Color},
     Context, Coroutine, GameResult,
 };
 
@@ -16,7 +16,6 @@ struct MainState {
     circle: graphics::Mesh,
     coroutine: Coroutine,
     slow_coroutine: Coroutine<String>,
-    image: Loading<Image>,
 }
 
 impl MainState {
@@ -35,13 +34,13 @@ impl MainState {
         Ok(MainState {
             pos_x: Rc::clone(&pos_x),
             circle,
-            coroutine: Coroutine::new(move |_ctx| async move {
+            coroutine: Coroutine::new(async move {
                 loop {
                     pos_x.set(pos_x.get() % 800.0 + 1.0);
                     yield_now().await
                 }
             }),
-            slow_coroutine: Coroutine::new(move |_ctx| async move {
+            slow_coroutine: Coroutine::new(async move {
                 // wait 100 frames
                 for _ in 0..100 {
                     yield_now().await
@@ -49,19 +48,15 @@ impl MainState {
 
                 String::from("I came from a coroutine!")
             }),
-            image: Image::from_path_async("/dragon4.png"),
         })
     }
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
-        self.coroutine.poll(ctx);
-        if let Some(val) = self.slow_coroutine.poll(ctx) {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+        self.coroutine.poll();
+        if let Some(val) = self.slow_coroutine.poll() {
             println!("Coroutine says: \"{val}\"");
-        }
-        if self.image.poll(ctx)?.is_some() {
-            println!("Loaded image.");
         }
         Ok(())
     }
@@ -71,9 +66,6 @@ impl event::EventHandler for MainState {
             graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
         canvas.draw(&self.circle, Vec2::new(self.pos_x.get(), 380.0));
-        if let Some(image) = self.image.result() {
-            canvas.draw(image, Vec2::new(self.pos_x.get(), 100.0));
-        }
 
         canvas.finish(ctx)?;
 
@@ -82,15 +74,7 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let resource_dir = if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
-        let mut path = PathBuf::from(manifest_dir);
-        path.push("resources");
-        path
-    } else {
-        PathBuf::from("./resources")
-    };
-
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez").add_resource_path(resource_dir);
+    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
     let (mut ctx, event_loop) = cb.build()?;
     let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)

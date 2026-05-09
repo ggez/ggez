@@ -2,16 +2,11 @@ use super::{
     context::GraphicsContext, gpu::bind_group::BindGroupBuilder, Canvas, Color, Draw, DrawParam,
     Drawable, Rect, WgpuContext,
 };
-use crate::{
-    context::Has,
-    coroutine::{yield_now, Loading},
-    filesystem::Filesystem,
-    Context, Coroutine, GameError, GameResult,
-};
+use crate::{context::Has, Context, GameError, GameResult};
 use image::ImageEncoder;
 use std::{
     collections::BTreeMap,
-    path::{Path, PathBuf},
+    path::Path,
     sync::{Arc, RwLock},
 };
 
@@ -159,27 +154,6 @@ impl Image {
         let gfx = gfx.retrieve();
 
         Self::from_bytes(gfx, &gfx.fs.read(path)?)
-    }
-
-    /// Creates a new coroutine that returns an image initialized with pixel data loaded from a given path as an
-    /// encoded image (e.g. PNG or JPEG).
-    pub fn from_path_async<C: Has<Filesystem> + Has<GraphicsContext> + 'static>(
-        path: impl Into<PathBuf>,
-    ) -> Loading<Self, C> {
-        let path = path.into();
-        Loading::new(Coroutine::<_, C>::new(move |mut ctx| async move {
-            let fs: &Filesystem = (*ctx).retrieve();
-            let mut bytes_coroutine = fs.read_to_end_async::<C>(path);
-            let bytes = loop {
-                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
-                    break bytes;
-                }
-                yield_now().await;
-            }?;
-
-            let gfx: &GraphicsContext = (*ctx).retrieve();
-            Self::from_bytes(gfx, &bytes)
-        }))
     }
 
     /// Creates a new image initialized with pixel data from a given encoded image (e.g. PNG or JPEG)

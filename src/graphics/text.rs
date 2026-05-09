@@ -2,17 +2,9 @@ use super::{
     gpu::text::{Extra, TextRenderer},
     Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
 };
-use crate::{
-    context::Has,
-    coroutine::{yield_now, Loading},
-    filesystem::Filesystem,
-    Coroutine, GameError, GameResult,
-};
+use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::Path};
 
 /// Font data that can be used to create a new font in [`GraphicsContext`].
 #[derive(Debug, Clone)]
@@ -29,28 +21,6 @@ impl FontData {
         Ok(FontData {
             font: ab_glyph::FontArc::try_from_vec(fs.read(path)?)?,
         })
-    }
-
-    /// Loads font data from a given path in the filesystem except async.
-    #[allow(unsafe_code)]
-    pub fn from_path_async<C: Has<Filesystem> + 'static>(
-        path: impl Into<PathBuf>,
-    ) -> Loading<Self, C> {
-        let path = path.into();
-        Loading::new(Coroutine::<_, C>::new(move |mut ctx| async move {
-            let fs: &Filesystem = (*ctx).retrieve();
-            let mut bytes_coroutine = fs.read_to_end_async::<C>(path);
-            let bytes = loop {
-                if let Some(bytes) = bytes_coroutine.poll(&mut *ctx) {
-                    break bytes;
-                }
-                yield_now().await;
-            }?;
-
-            Ok(FontData {
-                font: ab_glyph::FontArc::try_from_vec(bytes)?,
-            })
-        }))
     }
 
     /// Loads font data from owned bytes.

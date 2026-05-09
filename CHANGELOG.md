@@ -6,8 +6,7 @@ You are now able to add your own custom contexts! Using the new `ContextFields` 
 
 ### Web
 
-You can now use ggez on web officially! The main thing to keep in mind is web doesn't support non async loading of assets so make sure to use
-the async versions of all loading functions!
+You can now use ggez on web officially. Assets are bundled into a single zip that the JS host stashes on `window.__GGEZ_RESOURCES_ZIP__` before the starts, so sync `Filesystem` APIs work. See `examples/web/` for the build pipeline.
 
 ### Coroutines
 

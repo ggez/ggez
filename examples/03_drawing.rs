@@ -1,18 +1,17 @@
 //! A collection of semi-random shape and image drawing examples.
 
 use ggez::{
-    coroutine::Loading,
     event,
     glam::*,
-    graphics::{self, Color, Image},
+    graphics::{self, Color},
     Context, GameResult,
 };
 use std::{env, path};
 
 struct MainState {
-    image1: Loading<Image>,
-    image2: Loading<Image>,
-    meshes: Vec<(Option<Loading<Image>>, graphics::Mesh)>,
+    image1: graphics::Image,
+    image2: graphics::Image,
+    meshes: Vec<(Option<graphics::Image>, graphics::Mesh)>,
     rect: graphics::Mesh,
     rotation: f32,
 }
@@ -20,8 +19,8 @@ struct MainState {
 impl MainState {
     /// Load images and create meshes.
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image1 = graphics::Image::from_path_async("/dragon1.png");
-        let image2 = graphics::Image::from_path_async("/shot.png");
+        let image1 = graphics::Image::from_path(ctx, "/dragon1.png")?;
+        let image2 = graphics::Image::from_path(ctx, "/shot.png")?;
 
         let mb = &mut graphics::MeshBuilder::new();
         mb.rectangle(
@@ -30,7 +29,7 @@ impl MainState {
             graphics::Color::new(1.0, 0.0, 0.0, 1.0),
         )?;
 
-        let rock = graphics::Image::from_path_async("/rock.png");
+        let rock = graphics::Image::from_path(ctx, "/rock.png")?;
 
         let meshes = vec![
             (None, build_mesh(ctx)?),
@@ -124,15 +123,6 @@ impl event::EventHandler for MainState {
             self.rotation += 0.01;
         }
 
-        self.image1.poll(ctx)?;
-        self.image2.poll(ctx)?;
-
-        for (og, _) in self.meshes.iter_mut() {
-            if let Some(ref mut image) = og {
-                image.poll(ctx)?;
-            }
-        }
-
         Ok(())
     }
 
@@ -142,9 +132,7 @@ impl event::EventHandler for MainState {
 
         // Draw an image.
         let dst = glam::Vec2::new(20.0, 20.0);
-        if let Some(image) = &self.image1.result() {
-            canvas.draw(image, graphics::DrawParam::new().dest(dst));
-        }
+        canvas.draw(&self.image1, graphics::DrawParam::new().dest(dst));
 
         // Draw an image with some options, and different filter modes.
         let dst = glam::Vec2::new(200.0, 100.0);
@@ -167,7 +155,6 @@ impl event::EventHandler for MainState {
                 .scale(scale)
                 .offset(vec2(0.5, 0.5)),
         );
-
         canvas.set_default_sampler();
 
         // Draw a filled rectangle mesh.
@@ -186,13 +173,7 @@ impl event::EventHandler for MainState {
         // Draw some pre-made meshes
         for (image, mesh) in &self.meshes {
             if let Some(image) = image {
-                if let Some(image) = &image.result() {
-                    canvas.draw_textured_mesh(
-                        mesh.clone(),
-                        image.clone(),
-                        graphics::DrawParam::new(),
-                    );
-                }
+                canvas.draw_textured_mesh(mesh.clone(), image.clone(), graphics::DrawParam::new());
             } else {
                 canvas.draw(mesh, graphics::DrawParam::new());
             }

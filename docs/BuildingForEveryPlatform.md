@@ -169,9 +169,12 @@ This is a no-op on other targets, so you can leave it on a single build configur
 
 ## Asset loading
 
-Asset reads on the web go through `fetch` against `<resources_dir>/<path>`, where `<resources_dir>`
-is the value passed to `ContextBuilder::resources_dir_name` (default `resources`). The URL is
-**relative to the loaded page**, so serve the page from a path where `resources/foo.png` resolves
-to the right file. For example, host the page at the site root and place assets under `/resources/`.
+Browsers can't do synchronous file I/O, so on web ggez expects the JS host to hand it a single
+`Uint8Array` containing a zip of your resources, stashed on `window.__GGEZ_RESOURCES_ZIP__` before
+the wasm module starts. ggez mounts that zip as a `ZipFS` so the regular synchronous
+`Filesystem::open` / `read` / `read_to_string` calls just work.
 
-`add_resource_path` and `resources.zip` lookups are no-ops on the web target.
+The bundled `examples/web/` pipeline shows one way to produce that zip — see
+[`examples/web/src/runner.js`](../examples/web/src/runner.js) and
+[`examples/web/build.mjs`](../examples/web/build.mjs). `add_resource_path` and the on-disk
+`resources.zip` lookups are no-ops on the web target.

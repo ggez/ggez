@@ -1,6 +1,5 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
-use ggez::coroutine::Loading;
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -15,15 +14,15 @@ use winit::keyboard::KeyCode;
 use winit::keyboard::PhysicalKey;
 
 struct MainState {
-    // Sound data is loaded async the for web, where synchronous file reads aren't supported
-    data: Loading<audio::SoundData>,
-    sound: Option<audio::Source>,
+    data: audio::SoundData,
+    sound: audio::Source,
 }
 
 impl MainState {
-    fn new(_ctx: &mut Context) -> GameResult<MainState> {
-        let data = audio::SoundData::new_async::<Context, _>("/sound.ogg");
-        let s = MainState { data, sound: None };
+    fn new(ctx: &mut Context) -> GameResult<MainState> {
+        let data = audio::SoundData::new(ctx, "/sound.ogg")?;
+        let sound = audio::Source::from_data(ctx, data.clone())?;
+        let s = MainState { data, sound };
         Ok(s)
     }
 
@@ -34,61 +33,46 @@ impl MainState {
 
     /// Plays the sound multiple times
     fn play_detached(&mut self, ctx: &mut Context) {
-        let Some(data) = self.data.result() else {
-            return;
-        };
-        let sound = audio::Source::from_data(ctx, data.clone()).unwrap();
+        let sound = audio::Source::from_data(ctx, self.data.clone()).unwrap();
         // "detached" sounds keep playing even after they are dropped
         sound.play_detached();
     }
 
     /// Waits until the sound is done playing before playing again.
     fn play_later(&self) {
-        if let Some(s) = &self.sound {
-            s.play_later();
-        }
+        self.sound.play_later();
     }
 
     /// Fades the sound in over a second
     /// Which isn't really ideal 'cause the sound is barely a second long, but still.
     fn play_fadein(&mut self) {
-        if let Some(s) = &mut self.sound {
-            s.set_fade_in(Duration::from_secs(1));
-            s.play();
-            s.set_fade_in(Duration::ZERO);
-        }
+        self.sound.set_fade_in(Duration::from_secs(1));
+        self.sound.play();
+        self.sound.set_fade_in(Duration::ZERO);
     }
 
     fn play_highpitch(&mut self) {
-        if let Some(s) = &mut self.sound {
-            s.set_pitch(2.0);
-            s.play();
-            s.set_pitch(1.0);
-        }
+        self.sound.set_pitch(2.0);
+        self.sound.play();
+        self.sound.set_pitch(1.0);
     }
     fn play_lowpitch(&mut self) {
-        if let Some(s) = &mut self.sound {
-            s.set_pitch(0.5);
-            s.play();
-            s.set_pitch(1.0);
-        }
+        self.sound.set_pitch(0.5);
+        self.sound.play();
+        self.sound.set_pitch(1.0);
     }
 
-    /// Plays the sound and prints how long it had been playing at call time.
+    /// Plays the sound and prints out stats until it's done.
     fn play_stats(&self) {
-        let Some(sound) = &self.sound else { return };
-        sound.play();
-        println!("Elapsed time at play: {:?}", sound.elapsed());
+        self.sound.play();
+        while self.sound.playing() {
+            println!("Elapsed time: {:?}", self.sound.elapsed());
+        }
     }
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if self.sound.is_none() {
-            if let Some(data) = self.data.poll(ctx)? {
-                self.sound = Some(audio::Source::from_data(ctx, data.clone())?);
-            }
-        }
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
 
