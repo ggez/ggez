@@ -80,11 +80,11 @@ if (installedBindgen !== requiredBindgen) {
   run('cargo', ['install', '--locked', '--version', requiredBindgen, 'wasm-bindgen-cli']);
 }
 
-// Group examples by feature set so each cargo invocation builds many
+// Group examples by feature set so each cargo invocation builds many.
 
 const groups = new Map(); // featureKey -> { features: string[], names: string[] }
 for (const name of wanted) {
-  const feats = requiredFeatures.get(name) ?? [];
+  const feats = ['webgl', ...(requiredFeatures.get(name) ?? [])];
   const key = feats.slice().sort().join(',');
   if (!groups.has(key)) groups.set(key, { features: feats, names: [] });
   groups.get(key).names.push(name);

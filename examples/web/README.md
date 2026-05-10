@@ -30,9 +30,9 @@ runs the selected one in an iframe pointed at `run.html?example=NAME`.
 
 ## Layout
 
-- `build.mjs` — invokes `cargo build --target wasm32-unknown-unknown --example NAME`
-  for each example (grouped by features), then `wasm-bindgen --target web`, and copies
-  `../../resources` to `public/resources`.
+- `build.mjs` — invokes `cargo build --target wasm32-unknown-unknown --example NAME` for each
+  example (grouped by features), then `wasm-bindgen --target web`, and copies `../../resources`
+  to `public/resources`.
 - `index.html` / `src/gallery.js` — the gallery (sidebar + iframe).
 - `run.html` / `src/runner.js` — example host, a canvas is appended to `#ggez-canvas-host`.
 - `public/` gitignored output: `examples/<name>/<name>.js`, `<name>_bg.wasm`, `resources/`.

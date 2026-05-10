@@ -108,9 +108,11 @@ You might be able to use [`good-web-game`] though to run your `ggez` app on Andr
 ggez targets `wasm32-unknown-unknown` via `wasm-bindgen`. Audio uses the WebAudio backend of
 `rodio`, assets via `fetch`, and the a canvas is appended to `<body>` (or a DOM element you choose).
 
+Enable the `webgl` feature when building for web, to turn on wgpu's WebGL2 backend (it's off by default).
+
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo build --target wasm32-unknown-unknown --release
+cargo build --target wasm32-unknown-unknown --release --features webgl
 ```
 
 Once built, run `wasm-bindgen` against the output to get an ES module + `.wasm`
