@@ -13,34 +13,32 @@ const frameReload = document.getElementById('frame-reload');
 const framePopout = document.getElementById('frame-popout');
 const placeholder = document.getElementById('placeholder');
 
-const manifest = await fetch('/manifest.json')
+const examples = await fetch('/manifest.json')
   .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
   .catch(() => null);
 
-let entries = [];
 let current = null;
 
-if (!manifest || !manifest.examples?.length) {
+if (!examples?.length) {
   nav.querySelector('.loading').textContent =
     'No examples built yet. Run `npm run build`.';
 } else {
-  entries = manifest.examples;
-  renderList(entries);
+  renderList(examples);
 
   // Deep-link via ?example=NAME or #NAME.
   const initial =
     new URLSearchParams(location.search).get('example') ||
     location.hash.slice(1) ||
     null;
-  if (initial && entries.some(e => e.name === initial)) {
+  if (initial && examples.includes(initial)) {
     select(initial);
   }
 
   filter.addEventListener('input', () => {
     const q = filter.value.trim().toLowerCase();
     const filtered = q
-      ? entries.filter(e => e.name.toLowerCase().includes(q))
-      : entries;
+      ? examples.filter(name => name.toLowerCase().includes(q))
+      : examples;
     renderList(filtered);
   });
 }
@@ -60,20 +58,20 @@ function renderList(items) {
   }
 
   const list = document.createElement('ul');
-  for (const ex of items) {
+  for (const name of items) {
     const li = document.createElement('li');
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.dataset.example = ex.name;
-    if (ex.name === current) btn.setAttribute('aria-current', 'true');
+    btn.dataset.example = name;
+    if (name === current) btn.setAttribute('aria-current', 'true');
 
-    const name = document.createElement('span');
-    name.className = 'ex-name';
-    name.textContent = prettify(ex.name);
+    const label = document.createElement('span');
+    label.className = 'ex-name';
+    label.textContent = prettify(name);
 
-    btn.appendChild(name);
+    btn.appendChild(label);
 
-    btn.addEventListener('click', () => select(ex.name));
+    btn.addEventListener('click', () => select(name));
     li.appendChild(btn);
     list.appendChild(li);
   }
@@ -93,7 +91,6 @@ function select(name) {
       b.dataset.example === name ? 'true' : 'false',
     );
   }
-  const ex = entries.find(e => e.name === name);
   placeholder.hidden = true;
   frameWrap.hidden = false;
   frameTitle.textContent = prettify(name);

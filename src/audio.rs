@@ -370,8 +370,8 @@ impl SoundSource for Source {
     fn stop(&self) {
         self.state.play_time.store(0, Ordering::SeqCst);
         // rodio clear() blocks the calling thread until the audio thread drains the queue.
-        // On wasm that thread is driving the audio callback, so the it deadlocks the tab.
-        // Skip each queued source instead — the audio thread acts on it within ~5ms.
+        // On wasm that thread controls the audio callback, so the it deadlocks the tab.
+        // Skip each queued source instead.
         for _ in 0..self.sink.len() {
             self.sink.skip_one();
         }

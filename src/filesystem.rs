@@ -160,10 +160,20 @@ impl Filesystem {
     #[cfg(target_arch = "wasm32")]
     pub fn new_web(resources_dir_name: &path::Path) -> Filesystem {
         let mut overlay = vfs::OverlayFS::new();
-        if let Some(zip_bytes) = preloaded_resources_zip() {
-            match vfs::ZipFS::from_read(io::Cursor::new(zip_bytes)) {
+        match preloaded_resources_zip() {
+            Some(zip_bytes) => match vfs::ZipFS::from_read(io::Cursor::new(zip_bytes)) {
                 Ok(zipfs) => overlay.push_back(Box::new(zipfs)),
                 Err(e) => log::warn!("could not mount preloaded resources.zip: {e}"),
+            },
+            None => {
+                // Use `console.warn`, not `log::warn!`, because users might not have a log adapter,
+                // and this hint point them at the fix before they spend hours debugging "file not found".
+                web_sys::console::warn_1(&JsValue::from_str(
+                    "ggez: no resources zip on window.__GGEZ_RESOURCES_ZIP__. \
+                     Synchronous filesystem reads (Image::from_path, SoundData::new, ...) will fail. \
+                     Either preload a zip from JS before wasm init, embed via ContextBuilder::add_zipfile_bytes, \
+                     or use *_async loader variants. See examples/web/README.md.",
+                ));
             }
         }
         Filesystem {

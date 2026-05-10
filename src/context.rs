@@ -391,10 +391,8 @@ impl ContextBuilder {
         )?;
 
         #[cfg(not(target_arch = "wasm32"))]
-        {
-            for path in &self.paths {
-                fs.mount(path, true);
-            }
+        for path in &self.paths {
+            fs.mount(path, true);
         }
 
         for zipfile_bytes in self.memory_zip_files {
@@ -438,10 +436,8 @@ impl ContextBuilder {
         )?;
 
         #[cfg(not(target_arch = "wasm32"))]
-        {
-            for path in &self.paths {
-                fs.mount(path, true);
-            }
+        for path in &self.paths {
+            fs.mount(path, true);
         }
 
         for zipfile_bytes in self.memory_zip_files {
