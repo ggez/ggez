@@ -7,7 +7,6 @@
 //   node build.mjs 04_snake             # build a single example
 //   node build.mjs 04_snake bunnymark   # build several
 //   node build.mjs --release            # build in release mode (much faster runtime)
-//   node build.mjs --no-bindgen-install # skip auto-installing wasm-bindgen-cli
 
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync, readdirSync, rmSync } from 'node:fs';
@@ -25,14 +24,7 @@ const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
 const targets = argv.filter(a => !a.startsWith('--'));
 const release = flags.has('--release');
-const skipInstall = flags.has('--no-bindgen-install');
 
-// Discover examples from Cargo.toml
-
-const cargoToml = readFileSync(join(REPO, 'Cargo.toml'), 'utf8');
-// Examples that need a feature flag are declared as `[[example]]` blocks.
-const featureBlocks = [...cargoToml.matchAll(/\[\[example\]\]\s*\nname\s*=\s*"([^"]+)"\s*\nrequired-features\s*=\s*\[([^\]]+)\]/g)];
-const requiredFeatures = new Map(featureBlocks.map(m => [m[1], m[2].split(',').map(s => s.trim().replace(/"/g, ''))]));
 const allExamples = readdirSync(join(REPO, 'examples'))
   .filter(f => f.endsWith('.rs'))
   .map(f => f.replace(/\.rs$/, ''))
@@ -46,7 +38,7 @@ for (const name of wanted) {
   }
 }
 
-// Make sure wasm-bindgen-cli matches the locked wasm-bindgen version
+// Check that wasm-bindgen-cli matches the locked wasm-bindgen version.
 
 const lock = readFileSync(join(REPO, 'Cargo.lock'), 'utf8');
 const lockMatch = lock.match(/name = "wasm-bindgen"\nversion = "([^"]+)"/);
@@ -62,32 +54,15 @@ function run(cmd, args, opts = {}) {
   return r;
 }
 
-function tryRun(cmd, args, opts = {}) {
-  return spawnSync(cmd, args, { stdio: 'pipe', cwd: REPO, ...opts });
-}
-
-const bindgenProbe = tryRun('wasm-bindgen', ['--version']);
+const bindgenProbe = spawnSync('wasm-bindgen', ['--version'], { stdio: 'pipe', cwd: REPO });
 const installedBindgen = bindgenProbe.status === 0
   ? bindgenProbe.stdout.toString().trim().split(/\s+/).pop()
   : null;
 
 if (installedBindgen !== requiredBindgen) {
-  if (skipInstall) {
-    console.error(`wasm-bindgen ${requiredBindgen} required (have ${installedBindgen ?? 'none'}); rerun without --no-bindgen-install`);
-    process.exit(1);
-  }
-  console.log(`installing wasm-bindgen-cli ${requiredBindgen} (matching Cargo.lock)…`);
-  run('cargo', ['install', '--locked', '--version', requiredBindgen, 'wasm-bindgen-cli']);
-}
-
-// Group examples by feature set so each cargo invocation builds many.
-
-const groups = new Map(); // featureKey -> { features: string[], names: string[] }
-for (const name of wanted) {
-  const feats = ['webgl', ...(requiredFeatures.get(name) ?? [])];
-  const key = feats.slice().sort().join(',');
-  if (!groups.has(key)) groups.set(key, { features: feats, names: [] });
-  groups.get(key).names.push(name);
+  console.error(`wasm-bindgen ${requiredBindgen} required (have ${installedBindgen ?? 'none'}).`);
+  console.error(`install with: cargo install --locked --version ${requiredBindgen} wasm-bindgen-cli`);
+  process.exit(1);
 }
 
 const profileDir = release ? 'release' : 'debug';
@@ -95,13 +70,13 @@ const profileArgs = release ? ['--release'] : [];
 
 mkdirSync(EXAMPLES_OUT, { recursive: true });
 
-for (const { features, names } of groups.values()) {
-  const args = ['build', '--target', 'wasm32-unknown-unknown', ...profileArgs];
-  if (features.length) args.push('--features', features.join(','));
-  for (const n of names) args.push('--example', n);
-  console.log(`\n→ cargo ${args.join(' ')}`);
-  run('cargo', args);
-}
+const cargoArgs = [
+  'build', '--target', 'wasm32-unknown-unknown', ...profileArgs,
+  '--features', 'webgl,3d',
+  ...wanted.flatMap(n => ['--example', n]),
+];
+console.log(`\n→ cargo ${cargoArgs.join(' ')}`);
+run('cargo', cargoArgs);
 
 // Run wasm-bindgen on each produced .wasm
 
@@ -124,9 +99,8 @@ for (const name of wanted) {
   ]);
 }
 
-// Copy /resources into public/ so fetch('resources/foo') works for the async path,
-// and bundle the same files into resources.zip so the runner can pre-populate the
-// VFS for the synchronous Filesystem::open path.
+// Copy /resources into public/ so fetch('resources/foo') works for the async path, and
+// bundle them into resources.zip so the runner can populate VFS for Filesystem::open
 
 rmSync(RESOURCES_OUT, { recursive: true, force: true });
 cpSync(join(REPO, 'resources'), RESOURCES_OUT, { recursive: true });
@@ -148,15 +122,7 @@ writeFileSync(join(PUBLIC, 'resources.zip'), buildStoredZip(walkFiles(join(REPO,
 
 // Write a manifest the gallery can read
 
-const manifest = {
-  generatedAt: new Date().toISOString(),
-  profile: profileDir,
-  examples: wanted.map(name => ({
-    name,
-    features: requiredFeatures.get(name) ?? [],
-  })),
-};
-writeFileSync(join(PUBLIC, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+writeFileSync(join(PUBLIC, 'manifest.json'), JSON.stringify(wanted, null, 2) + '\n');
 
 console.log(`\n✓ built ${wanted.length} example(s) into ${PUBLIC}`);
 console.log(`  next: \`npm run serve\` (or \`npm run dev\` to rebuild + serve)`);

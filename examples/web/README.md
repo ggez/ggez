@@ -11,8 +11,8 @@ cd examples/web
 npm install
 ```
 
-`build.mjs` installs a matching `wasm-bindgen-cli` via `cargo install` on the first run
-if your version doesn't match `Cargo.lock`. Pass `--no-bindgen-install` to opt out.
+`build.mjs` checks that your `wasm-bindgen-cli` matches `Cargo.lock` and prints the
+install command if it doesn't.
 
 ## Scripts
 

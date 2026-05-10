@@ -170,20 +170,10 @@ nav button[aria-current='true'] {
   color: #fff;
   border-color: var(--accent);
 }
-nav button[aria-current='true'] .ex-feat {
-  color: rgba(255, 255, 255, 0.85);
-}
 
 .ex-name {
   font-weight: 600;
   font-size: 0.92rem;
-}
-.ex-feat {
-  font-size: 0.7rem;
-  letter-spacing: 0.03em;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-top: 2px;
 }
 
 #viewer {
