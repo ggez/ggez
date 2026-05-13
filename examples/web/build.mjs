@@ -72,7 +72,7 @@ mkdirSync(EXAMPLES_OUT, { recursive: true });
 
 const cargoArgs = [
   'build', '--target', 'wasm32-unknown-unknown', ...profileArgs,
-  '--features', 'webgl,3d',
+  '--features', '3d',
   ...wanted.flatMap(n => ['--example', n]),
 ];
 console.log(`\n→ cargo ${cargoArgs.join(' ')}`);

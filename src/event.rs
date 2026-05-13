@@ -256,6 +256,19 @@ where
     }
 }
 
+/// Convenience trait wrapping `EventHandler` with a constructor, so the whole
+/// build-context → create-state → run-event-loop dance can be expressed as
+/// `ContextBuilder::new(...).run::<MyGame>()`.
+///
+/// Implement this on your top-level state type alongside [`EventHandler`]. The
+/// trait then gives [`ContextBuilder::run`](crate::ContextBuilder::run) all the
+/// pieces it needs to drive the game on both native (sync) and web (async)
+/// targets without exposing the platform split to user code.
+pub trait Game: EventHandler<Context, GameError> + Sized + 'static {
+    /// Construct the game state once the [`Context`] is ready.
+    fn new(ctx: &mut Context) -> GameResult<Self>;
+}
+
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///

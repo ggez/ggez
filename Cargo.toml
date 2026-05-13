@@ -24,8 +24,6 @@ zip-zstd = ["zip/zstd"]
 rayon = ["image/rayon"]
 audio = ["dep:rodio"]
 gamepad = ["gilrs"]
-# Enables wgpu's WebGL2 backend for web (wasm32) target on browsers without WebGPU.
-webgl = ["wgpu/webgl"]
 3d = []
 gltf = ["dep:gltf", "dep:base64", "dep:percent-encoding", "3d"]
 obj = ["dep:obj-rs", "3d"]
@@ -62,6 +60,7 @@ num-traits = "0.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
 js-sys = "0.3.64"
 web-sys = { version = "0.3", features = [
     "console",

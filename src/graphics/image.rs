@@ -282,10 +282,9 @@ impl Image {
 
         let _ = gfx.wgpu.queue.submit([cmd]);
 
-        // wait...
-        // `map_async` fires the callback when the buffer is mapped. Normally we ask the device
-        // to wait, on web `Poll::wait_indefinitely` blocks the callback thread so we poll once
-        // (WebGL2 readback is sync and the callback fires from the poll)
+        // wait for the mapping callback. On native we can block the device on the queue until
+        // work is done; on web we can't block so we poll once and bail if the result isn't ready
+        // TODO - proper async API for web
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         buffer
             .slice(..)

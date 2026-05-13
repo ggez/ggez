@@ -3,6 +3,9 @@
 Use build.mjs to compile examples to `wasm32-unknown-unknown`, run `wasm-bindgen`, and
 serve them in a gallery.
 
+ggez only supports WebGPU (not WebGL2). On Linux you may need to enable experimental
+WebGPU implementation in your browser (e.g. `chrome://flags/#enable-unsafe-webgpu` for Chrome)
+
 ## One-time setup
 
 ```sh
