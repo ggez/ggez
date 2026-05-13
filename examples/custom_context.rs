@@ -118,24 +118,18 @@ impl event::EventHandler<MyContext> for MainState {
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    let (mut ctx, event_loop) =
-        cb.custom_build::<MyContext>(|game_id: String, conf: Conf, fs: Filesystem| {
+    ggez::ContextBuilder::new("super_simple", "ggez").custom_run(
+        |game_id: String, conf: Conf, fs: Filesystem| async move {
             let events_loop = winit::event_loop::EventLoop::new()?;
-            let timer_context = timer::TimeContext::new();
-            let graphics_context = pollster::block_on(graphics::context::GraphicsContext::new(
-                &game_id,
-                &events_loop,
-                &conf,
-                &fs,
-            ))?;
+            let graphics_context =
+                graphics::context::GraphicsContext::new(&game_id, &events_loop, &conf, &fs).await?;
 
             let ctx = MyContext {
                 fs,
                 gfx: graphics_context,
-                time: timer_context,
-                keyboard: input::keyboard::KeyboardContext::new(),
-                mouse: input::mouse::MouseContext::new(),
+                time: TimeContext::new(),
+                keyboard: KeyboardContext::new(),
+                mouse: MouseContext::new(),
                 gamepad: GamepadContext::new()?,
                 fields: ContextFields {
                     conf,
@@ -145,7 +139,7 @@ pub fn main() -> GameResult {
             };
 
             Ok((ctx, events_loop))
-        })?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+        },
+        MainState::new,
+    )
 }

@@ -139,7 +139,8 @@ impl GraphicsContext {
                 Err(e) => Err(e),
             }
         } else {
-            let instance = new_instance(match conf.backend {
+            #[cfg(not(target_arch = "wasm32"))]
+            let backends = match conf.backend {
                 Backend::All => unreachable!(),
                 Backend::OnlyPrimary => wgpu::Backends::PRIMARY,
                 Backend::Vulkan => wgpu::Backends::VULKAN,
@@ -147,9 +148,30 @@ impl GraphicsContext {
                 Backend::Dx12 => wgpu::Backends::DX12,
                 Backend::Gl => wgpu::Backends::GL,
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
-            });
+            };
+            // Only WebGPU is supported on web. Warn users who set `Backend::Gl` or similar
+            // in `conf.toml` instead of an opaque `GraphicsInitializationError`.
+            #[cfg(target_arch = "wasm32")]
+            let backends = match conf.backend {
+                Backend::All => unreachable!(),
+                Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
+                other => {
+                    warn!(
+                        "Backend::{other:?} is not supported on the web target; \
+                         falling back to Backend::BrowserWebGpu."
+                    );
+                    wgpu::Backends::BROWSER_WEBGPU
+                }
+            };
 
-            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem).await
+            Self::new_from_instance(
+                game_id,
+                new_instance(backends),
+                event_loop,
+                conf,
+                filesystem,
+            )
+            .await
         }
     }
 
