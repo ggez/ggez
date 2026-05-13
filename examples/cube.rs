@@ -63,8 +63,8 @@ struct MainState {
     depth: graphics::ScreenImage,
 }
 
-impl MainState {
-    fn new(ctx: &mut Context) -> Self {
+impl ggez::Game for MainState {
+    fn new(ctx: &mut Context) -> GameResult<Self> {
         // Shaders.
         let shader = ctx
             .gfx
@@ -260,7 +260,7 @@ impl MainState {
         );
         let transform = proj * default_view();
 
-        MainState {
+        Ok(MainState {
             frames: 0,
             transform,
             rotation: 0.0,
@@ -271,7 +271,7 @@ impl MainState {
             locals,
             bind_group,
             depth,
-        }
+        })
     }
 }
 
@@ -364,9 +364,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("cube", "ggez").add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx);
-    event::run(ctx, events_loop, state)
+    ggez::ContextBuilder::new("cube", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

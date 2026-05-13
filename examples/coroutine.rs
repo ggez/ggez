@@ -18,7 +18,7 @@ struct MainState {
     slow_coroutine: Coroutine<String>,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let circle = graphics::Mesh::new_circle(
             ctx,
@@ -74,8 +74,5 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    let (mut ctx, event_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("super_simple", "ggez").run::<MainState>()
 }

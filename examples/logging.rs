@@ -15,9 +15,17 @@ use ggez::graphics;
 use ggez::input::keyboard::KeyInput;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
+use std::cell::RefCell;
 use std::io::Write;
 use std::sync::mpsc;
 use winit::keyboard::{Key, NamedKey};
+
+// Hand the log channel's receiver into `App::new` via thread-local storage.
+// `Game::new` doesn't take extra arguments, so we stash it here right before
+// invoking `run::<App>()`.
+thread_local! {
+    static PENDING_LOG_RX: RefCell<Option<mpsc::Receiver<String>>> = const { RefCell::new(None) };
+}
 
 /// A basic file writer.
 /// Hogs it's log file until dropped, writes to it whenever `update()` is called.
@@ -66,13 +74,18 @@ struct App {
     file_logger: FileLogger,
 }
 
-impl App {
-    #[allow(clippy::new_ret_no_self, clippy::unnecessary_wraps)]
-    /// Creates an instance, takes ownership of passed `FileLogger`.
-    fn new(_ctx: &mut Context, logger: FileLogger) -> GameResult<App> {
-        Ok(App {
-            file_logger: logger,
-        })
+impl ggez::Game for App {
+    fn new(ctx: &mut Context) -> GameResult<App> {
+        trace!("Context created, creating a file logger.");
+
+        let log_rx = PENDING_LOG_RX
+            .with(|cell| cell.borrow_mut().take())
+            .expect("log receiver was not handed off before run::<App>()");
+        let file_logger = FileLogger::new(ctx, "/out.log", log_rx)?;
+
+        trace!("File logger created, starting loop.");
+
+        Ok(App { file_logger })
     }
 }
 
@@ -151,32 +164,15 @@ pub fn main() -> GameResult {
 
     trace!("Creating ggez context.");
 
-    // This sets up `ggez` guts (including filesystem) and creates a window.
-    let (mut ctx, events_loop) = ContextBuilder::new("logging", "ggez")
+    PENDING_LOG_RX.with(|cell| *cell.borrow_mut() = Some(log_rx));
+
+    // This sets up `ggez` guts (including filesystem) and runs the loop.
+    ContextBuilder::new("logging", "ggez")
         .window_setup(WindowSetup::default().title("Pretty console output!"))
         .window_mode(
             WindowMode::default()
                 .dimensions(640.0, 480.0)
                 .resizable(true),
         )
-        .build()?;
-
-    trace!("Context created, creating a file logger.");
-
-    let file_logger = FileLogger::new(&mut ctx, "/out.log", log_rx)?;
-
-    trace!("File logger created, starting loop.");
-
-    // Creates our state, and starts `ggez`' loop.
-    match App::new(&mut ctx, file_logger) {
-        Err(e) => {
-            error!("Could not initialize: {e}");
-        }
-        Ok(app) => {
-            let _ = ggez::event::run(ctx, events_loop, app);
-        }
-    }
-
-    trace!("Since file logger is dropped with App, this line will cause an error in fern!");
-    Ok(())
+        .run::<App>()
 }

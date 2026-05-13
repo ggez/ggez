@@ -16,8 +16,7 @@ struct MainState {
     rotation: f32,
 }
 
-impl MainState {
-    /// Load images and create meshes.
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let image1 = graphics::Image::from_path(ctx, "/dragon1.png")?;
         let image2 = graphics::Image::from_path(ctx, "/shot.png")?;
@@ -195,10 +194,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("drawing", "ggez").add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-
-    let state = MainState::new(&mut ctx).unwrap();
-    event::run(ctx, events_loop, state)
+    ggez::ContextBuilder::new("drawing", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

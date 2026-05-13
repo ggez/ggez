@@ -16,7 +16,7 @@ struct MainState {
     mesh: graphics::Mesh,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let mesh = graphics::Mesh::from_data(
             ctx,
@@ -42,7 +42,9 @@ impl MainState {
         s.populate(ctx, w, h);
         Ok(s)
     }
+}
 
+impl MainState {
     fn populate(&mut self, ctx: &mut Context, width: f32, height: f32) {
         // On web `drawable_size` can report (0, 0) until the canvas `ResizeObserver` fires.
         // Clamp to at least 1×1 so `resize` doesn't trip capacity assert.
@@ -136,9 +138,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("meshbatch", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("meshbatch", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

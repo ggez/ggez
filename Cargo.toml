@@ -93,6 +93,8 @@ getrandom = "0.4"
 # needs the `wasm_js` feature to compile
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["console"] }
 
 [workspace]
 members = ["doc_tests"]

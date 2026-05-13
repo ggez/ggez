@@ -18,7 +18,7 @@ struct MainState {
     instances: graphics::InstanceArray,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let image = graphics::Image::from_path(ctx, "/tile.png")?;
         let mut instances = graphics::InstanceArray::new(ctx, image);
@@ -95,9 +95,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("spritebatch", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("spritebatch", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }
