@@ -12,7 +12,7 @@ struct MainState {
     image: Image,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let og_image =
             graphics::Image::from_bytes(ctx, include_bytes!("../resources/wabbit_alpha.png"))?;
@@ -64,8 +64,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("cpu_image", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("cpu_image", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

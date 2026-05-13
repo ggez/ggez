@@ -3,6 +3,10 @@
 //!
 //! It doesn't use an event loop, it just runs once and exits,
 //! printing a bunch of stuff to the console.
+//!
+//! This example is native-only: it uses the synchronous `ContextBuilder::build`
+//! to grab a `Filesystem` without entering an event loop, which traps on wasm.
+#![cfg_attr(target_arch = "wasm32", allow(deprecated))]
 
 use ggez::{conf, filesystem, ContextBuilder, GameResult};
 use std::env;

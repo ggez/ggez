@@ -33,7 +33,7 @@ struct MainState {
     screen_coords: Rect,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let s = MainState {
             angle: 0.0,
@@ -212,7 +212,12 @@ struct Opt {
 }
 
 pub fn main() -> GameResult {
+    // argh::from_env on wasm dereferences argv and calls process::exit,
+    // which traps inside the wasm sandbox. Fall back to defaults on web.
+    #[cfg(not(target_arch = "wasm32"))]
     let opt: Opt = argh::from_env();
+    #[cfg(target_arch = "wasm32")]
+    let opt = Opt { msaa: 1 };
 
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -224,7 +229,9 @@ pub fn main() -> GameResult {
 
     let backend = conf::Backend::default();
 
-    let cb = ggez::ContextBuilder::new("graphics_settings", "ggez")
+    print_help();
+
+    ggez::ContextBuilder::new("graphics_settings", "ggez")
         .window_mode(
             conf::WindowMode::default()
                 .fullscreen_type(conf::FullscreenType::Windowed)
@@ -234,11 +241,6 @@ pub fn main() -> GameResult {
             conf::NumSamples::try_from(opt.msaa).expect("Option msaa needs to be 1 or 4!"),
         ))
         .backend(backend)
-        .add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-
-    print_help();
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, events_loop, state)
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

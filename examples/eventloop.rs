@@ -12,7 +12,9 @@
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::Context;
 use ggez::GameResult;
-use ggez::{event, GameError};
+use ggez::event;
+#[cfg(not(target_arch = "wasm32"))]
+use ggez::GameError;
 
 use winit::application::ApplicationHandler;
 use winit::event::{DeviceEvent, DeviceId, StartCause, WindowEvent};
@@ -121,6 +123,7 @@ impl ApplicationHandler<()> for CustomApplicationHandler {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("eventloop", "ggez");
     let (ctx, events_loop) = cb.build()?;
@@ -131,4 +134,27 @@ pub fn main() -> GameResult {
     events_loop
         .run_app(&mut app)
         .map_err(GameError::EventLoopError)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn main() -> GameResult {
+    // WebGPU init is async, and winit on the web wants `spawn_app` instead of
+    // `run_app` (which would throw an exception to bail out of the wasm-bindgen
+    // entrypoint). Drive both from a spawned future.
+    use winit::platform::web::EventLoopExtWebSys;
+    wasm_bindgen_futures::spawn_local(async move {
+        let (ctx, events_loop) = match ggez::ContextBuilder::new("eventloop", "ggez")
+            .build_async()
+            .await
+        {
+            Ok(x) => x,
+            Err(e) => {
+                web_sys::console::error_1(&format!("ggez: failed to build context: {e}").into());
+                return;
+            }
+        };
+        let app = CustomApplicationHandler { ctx, position: 1.0 };
+        events_loop.spawn_app(app);
+    });
+    Ok(())
 }

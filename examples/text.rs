@@ -25,7 +25,7 @@ struct App {
     rng: oorandom::Rand32,
 }
 
-impl App {
+impl ggez::Game for App {
     #[allow(clippy::needless_update)]
     fn new(ctx: &mut Context) -> GameResult<App> {
         let mut texts = BTreeMap::new();
@@ -211,7 +211,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let (mut ctx, events_loop) = ContextBuilder::new("text_cached", "ggez")
+    ContextBuilder::new("text_cached", "ggez")
         .window_setup(WindowSetup::default().title("Cached text example!"))
         .window_mode(
             WindowMode::default()
@@ -219,8 +219,5 @@ pub fn main() -> GameResult {
                 .resizable(true),
         )
         .add_resource_path(resource_dir)
-        .build()?;
-
-    let state = App::new(&mut ctx)?;
-    event::run(ctx, events_loop, state)
+        .run::<App>()
 }
