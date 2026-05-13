@@ -382,9 +382,14 @@ impl ContextBuilder {
 
     /// Build a `Context` synchronously.
     ///
-    /// On web this drives [`ContextBuilder::build_async`] via `pollster::block_on`, which
-    /// relies on the JS event loop, so will traps on wasm32. Web targets should call
-    /// [`build_async`](Self::build_async) directly or use [`ggez::start`](crate::start).
+    /// Native-only: on web use [`ContextBuilder::run`] or [`ContextBuilder::build_async`]
+    /// to drive the future yourself with `wasm_bindgen_futures`.
+    #[cfg_attr(
+        target_arch = "wasm32",
+        deprecated(
+            note = "traps on wasm; use `ContextBuilder::run::<G>()` or `ContextBuilder::build_async`"
+        )
+    )]
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         pollster::block_on(self.build_async())
     }
@@ -394,98 +399,78 @@ impl ContextBuilder {
     /// This is required on the web target, where WebGPU init is asynchronous.
     /// For native use [`ContextBuilder::build`], which drives this future via `pollster::block_on`.
     pub async fn build_async(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        #[cfg(target_arch = "wasm32")]
-        let fs = Filesystem::new_web(&self.resources_dir_name);
-
-        #[cfg(not(target_arch = "wasm32"))]
-        let fs = Filesystem::new(
-            self.game_id.as_ref(),
-            self.author.as_ref(),
-            &self.resources_dir_name,
-            &self.resources_zip_name,
-        )?;
-
-        #[cfg(not(target_arch = "wasm32"))]
-        for path in &self.paths {
-            fs.mount(path, true);
-        }
-
-        for zipfile_bytes in self.memory_zip_files {
-            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
-        }
-
-        let config = if self.load_conf_file {
-            fs.read_config().unwrap_or(self.conf)
-        } else {
-            self.conf
-        };
-
-        Context::from_conf(self.game_id.as_ref(), config, fs).await
+        let (game_id, config, fs) = self.prepare()?;
+        Context::from_conf(&game_id, config, fs).await
     }
 
-    /// Build a Custom `Context`.
+    /// Build a custom context type.
     ///
-    /// The user-supplied `from_conf` is expected to handle its own async work
-    /// (e.g. `pollster::block_on` on native or `wasm_bindgen_futures` on web).
-    pub fn custom_build<C>(
+    /// The supplied callback is async so it can `.await` [`GraphicsContext::new`] directly
+    /// without `pollster::block_on` to make this work on web. For normal use where the user
+    /// owns the event loop use [`ContextBuilder::custom_run`].
+    pub async fn custom_build_async<C, F, Fut>(
         self,
-        from_conf: impl Fn(
-            String,
-            conf::Conf,
-            Filesystem,
-        ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
+        from_conf: F,
     ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
     where
+        F: FnOnce(String, conf::Conf, Filesystem) -> Fut,
+        Fut: std::future::Future<Output = GameResult<(C, winit::event_loop::EventLoop<()>)>>,
         C: HasMut<ContextFields>
+            + HasMut<graphics::GraphicsContext>
+            + HasMut<timer::TimeContext>
+            + HasMut<input::keyboard::KeyboardContext>
+            + HasMut<input::mouse::MouseContext>
+            + HasMut<GamepadContext>,
+    {
+        let (game_id, config, fs) = self.prepare()?;
+        from_conf(game_id, config, fs).await
+    }
+
+    /// Build a [`Context`] and run a [`Game`](crate::event::Game) to completion.
+    ///
+    /// Cross platform convenience for build/run: synchronous on native and
+    /// asynchronous on web (spawned onto the JS event loop via
+    /// `wasm-bindgen-futures`). On wasm32 it returns immediately after spawning
+    /// the setup task; failures are reported to `console.error`.
+    pub fn run<G>(self) -> GameResult
+    where
+        G: crate::event::Game,
+    {
+        self.custom_run(
+            |game_id, conf, fs| async move { Context::from_conf(&game_id, conf, fs).await },
+            G::new,
+        )
+    }
+
+    /// Build a custom context and run an [`EventHandler`](crate::event::EventHandler)
+    ///
+    /// Mirrors [`ContextBuilder::run`] but for providing your owncontext type.
+    /// (see the `custom_context` example). The `from_conf` callback receives the game id,
+    /// resolved [`Conf`](conf::Conf), and mounted [`Filesystem`]. It returns the final context
+    /// with event loop. `create_state` builds the [`EventHandler`](crate::event::EventHandler)
+    ///
+    pub fn custom_run<C, F, Fut, S>(
+        self,
+        from_conf: F,
+        create_state: impl FnOnce(&mut C) -> GameResult<S> + 'static,
+    ) -> GameResult
+    where
+        F: FnOnce(String, conf::Conf, Filesystem) -> Fut + 'static,
+        Fut: std::future::Future<Output = GameResult<(C, winit::event_loop::EventLoop<()>)>>
+            + 'static,
+        S: crate::event::EventHandler<C> + 'static,
+        C: 'static
+            + HasMut<ContextFields>
+            + HasMut<graphics::GraphicsContext>
             + HasMut<timer::TimeContext>
             + HasMut<input::keyboard::KeyboardContext>
             + HasMut<input::mouse::MouseContext>
             + HasMut<GamepadContext>,
     {
         #[cfg(target_arch = "wasm32")]
-        let fs = Filesystem::new_web(&self.resources_dir_name);
-
-        #[cfg(not(target_arch = "wasm32"))]
-        let fs = Filesystem::new(
-            self.game_id.as_ref(),
-            self.author.as_ref(),
-            &self.resources_dir_name,
-            &self.resources_zip_name,
-        )?;
-
-        #[cfg(not(target_arch = "wasm32"))]
-        for path in &self.paths {
-            fs.mount(path, true);
-        }
-
-        for zipfile_bytes in self.memory_zip_files {
-            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
-        }
-
-        let config = if self.load_conf_file {
-            fs.read_config().unwrap_or(self.conf)
-        } else {
-            self.conf
-        };
-
-        from_conf(self.game_id, config, fs)
-    }
-
-    /// Build a [`Context`] and run a [`Game`](crate::event::Game) to completion.
-    ///
-    /// Hides the build/run dance plus the platform split: synchronous on native
-    /// targets, asynchronous (spawned onto the JS event loop via
-    /// `wasm-bindgen-futures`) on the web. On wasm32 this returns immediately
-    /// after spawning the setup task; build / state-construction failures are
-    /// reported to `console.error`.
-    pub fn run<G>(self) -> GameResult
-    where
-        G: crate::event::Game,
-    {
-        #[cfg(target_arch = "wasm32")]
         {
             wasm_bindgen_futures::spawn_local(async move {
-                let (mut ctx, event_loop) = match self.build_async().await {
+                let (mut ctx, event_loop) = match self.custom_build_async(from_conf).await {
                     Ok(x) => x,
                     Err(e) => {
                         web_sys::console::error_1(
@@ -494,7 +479,7 @@ impl ContextBuilder {
                         return;
                     }
                 };
-                let state = match G::new(&mut ctx) {
+                let state = match create_state(&mut ctx) {
                     Ok(s) => s,
                     Err(e) => {
                         web_sys::console::error_1(
@@ -511,10 +496,42 @@ impl ContextBuilder {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let (mut ctx, event_loop) = self.build()?;
-            let state = G::new(&mut ctx)?;
+            let (mut ctx, event_loop) = pollster::block_on(self.custom_build_async(from_conf))?;
+            let state = create_state(&mut ctx)?;
             crate::event::run(ctx, event_loop, state)
         }
+    }
+
+    /// Get the resolved game id, [`Conf`](conf::Conf), and [`Filesystem`].
+    /// Shared between [`Self::build_async`] and [`Self::custom_build_async`].
+    fn prepare(self) -> GameResult<(String, conf::Conf, Filesystem)> {
+        #[cfg(target_arch = "wasm32")]
+        let fs = Filesystem::new_web(&self.resources_dir_name);
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let fs = Filesystem::new(
+            self.game_id.as_ref(),
+            self.author.as_ref(),
+            &self.resources_dir_name,
+            &self.resources_zip_name,
+        )?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        for path in &self.paths {
+            fs.mount(path, true);
+        }
+
+        for zipfile_bytes in self.memory_zip_files {
+            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
+        }
+
+        let config = if self.load_conf_file {
+            fs.read_config().unwrap_or(self.conf)
+        } else {
+            self.conf
+        };
+
+        Ok((self.game_id, config, fs))
     }
 }
 
