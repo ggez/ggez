@@ -49,3 +49,21 @@ let cb = ggez::ContextBuilder::new("my_game", "me")
 ```
 
 That's all `run.html` does; you can copy it as a starting point.
+
+## Shipping resources without writing JS
+
+On wasm `Filesystem::new_web` builds an empty VFS. synchronous reads like `Image::from_path`
+fail unless you populate it. `run.html` solves this by fetching `resources.zip` and setting it
+to `window.__GGEZ_RESOURCES_ZIP__` before wasm boots (`src/runner.js::preloadResourcesZip`).
+
+If your game is small enough that you can afford to embed resources in the binary,
+`ContextBuilder::add_zipfile_bytes` lets you skip the JS preload step.
+Bundle your resources at build time and mount them in-process:
+
+```rust
+let cb = ggez::ContextBuilder::new("my_game", "me")
+    .add_zipfile_bytes(include_bytes!("../resources.zip").to_vec());
+let (mut ctx, event_loop) = cb.build()?;
+```
+
+This works the same on native and wasm!

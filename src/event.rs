@@ -261,6 +261,10 @@ where
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
+///
+/// On wasm this returns immediately!: it hands the `EventHandler` to the browser event loop
+/// and returns `Ok(())` so wasm-bindgen's `init()` promise resolves cleanly. Avoid setup code
+/// after `event::run(...)`* in `main()`; use `EventHandler::update` or run it before calling this
 pub fn run<S, C, E>(ctx: C, event_loop: EventLoop<()>, state: S) -> GameResult
 where
     S: EventHandler<C, E> + 'static,
