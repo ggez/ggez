@@ -432,14 +432,9 @@ impl<'a> InternalCanvas<'a> {
 
         self.pass
             .set_bind_group(0, &uniform_bind_group, &[uniform_alloc.offset as u32]);
-        #[cfg(not(target_arch = "wasm32"))]
         self.pass.set_bind_group(2, &instances.bind_group, &[]);
 
         self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
-        // On web the per-instance DrawParam comes through a vertex buffer instead
-        // of a uniform-bound array. slot-2 bind group is left as a dummy by `update_pipeline`.
-        #[cfg(target_arch = "wasm32")]
-        self.pass.set_vertex_buffer(1, instances.buffer.slice(..));
         self.pass
             .set_index_buffer(mesh.inds.slice(..), wgpu::IndexFormat::Uint32);
 
@@ -518,7 +513,6 @@ impl<'a> InternalCanvas<'a> {
                 .sampler(wgpu::ShaderStages::FRAGMENT)
                 .create(&self.wgpu.device, self.bind_group_cache);
 
-            #[cfg(not(target_arch = "wasm32"))]
             let instance_layout = BindGroupLayoutBuilder::new()
                 .buffer(
                     wgpu::ShaderStages::VERTEX,
@@ -547,17 +541,7 @@ impl<'a> InternalCanvas<'a> {
             let mut groups = vec![Some(&uniform_layout), Some(&texture_layout)];
 
             if let ShaderType::Instance { .. } = ty {
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    groups.push(Some(&instance_layout));
-                }
-                #[cfg(target_arch = "wasm32")]
-                {
-                    // On web the instance buffer is bound as a vertex buffer.
-                    // Slot 2 is filled with a dummy so the user shader goes in slot 3.
-                    groups.push(Some(&dummy_layout));
-                    self.pass.set_bind_group(2, &dummy_group, &[]);
-                }
+                groups.push(Some(&instance_layout));
             } else {
                 // the dummy group ensures the user's bind group is at index 3
                 groups.push(Some(&dummy_layout));
@@ -631,17 +615,9 @@ impl<'a> InternalCanvas<'a> {
                     },
                     vertex_layouts: match ty {
                         ShaderType::Text => vec![TextVertex::layout()],
-                        ShaderType::Instance { .. } => {
-                            #[cfg(target_arch = "wasm32")]
-                            {
-                                vec![Vertex::layout(), super::instance::instance_vertex_layout()]
-                            }
-                            #[cfg(not(target_arch = "wasm32"))]
-                            {
-                                vec![Vertex::layout()]
-                            }
+                        ShaderType::Instance { .. } | ShaderType::Draw => {
+                            vec![Vertex::layout()]
                         }
-                        ShaderType::Draw => vec![Vertex::layout()],
                     },
                     cull_mode: None,
                 },
@@ -697,10 +673,7 @@ impl Drop for InternalCanvas<'_> {
 
 #[derive(Debug)]
 pub struct InstanceArrayView {
-    #[cfg(not(target_arch = "wasm32"))]
     pub bind_group: wgpu::BindGroup,
-    #[cfg(target_arch = "wasm32")]
-    pub buffer: wgpu::Buffer,
     pub image: Image,
     pub len: u32,
     pub ordered: bool,
@@ -709,14 +682,11 @@ pub struct InstanceArrayView {
 impl InstanceArrayView {
     pub fn from_instances(ia: &InstanceArray) -> GameResult<Self> {
         Ok(InstanceArrayView {
-            #[cfg(not(target_arch = "wasm32"))]
             bind_group: ia
                 .bind_group
                 .lock()
                 .map_err(|_| GameError::LockError)?
                 .clone(),
-            #[cfg(target_arch = "wasm32")]
-            buffer: ia.buffer.lock().map_err(|_| GameError::LockError)?.clone(),
             image: ia.image.clone(),
             len: ia.instances().len() as u32,
             ordered: ia.ordered,

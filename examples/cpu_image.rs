@@ -17,8 +17,8 @@ impl MainState {
         let og_image =
             graphics::Image::from_bytes(ctx, include_bytes!("../resources/wabbit_alpha.png"))?;
 
-        // `Image::to_pixels` waits for `map_async`, which blocks the callback thread on web
-        // Skip on web and just display the original image.
+        // `Image::to_pixels` waits for `map_async`, which can't block the main thread on web.
+        // Skip the round-trip on web and just display the original image.
         #[cfg(target_arch = "wasm32")]
         let image = og_image;
 

@@ -78,9 +78,6 @@ pub struct GraphicsContext {
     pub(crate) copy_shader: wgpu::ShaderModule,
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
-    // Used by native InstanceArray and by 3D InstanceArray3d on web.
-    // The 2D web path feeds instances through a vertex buffer instead of a bind group.
-    #[cfg(any(not(target_arch = "wasm32"), feature = "3d"))]
     pub(crate) instance_bind_layout: wgpu::BindGroupLayout,
 
     pub(crate) fs: Filesystem,
@@ -89,8 +86,11 @@ pub struct GraphicsContext {
 }
 
 impl GraphicsContext {
-    /// Create a new graphics context
-    pub fn new(
+    /// Create a new graphics context.
+    ///
+    /// Returns a future because wgpu adapter and device requests resolve asynchronously
+    /// on web. On native they complete immediately (see `ContextBuilder::build`).
+    pub async fn new(
         game_id: &str,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
@@ -104,13 +104,8 @@ impl GraphicsContext {
         };
 
         if conf.backend == Backend::All {
-            // On the web we always use WebGL (`Backends::GL`). WebGPU request_adapter`
-            // returns a `JsFuture` that can only be driven by JS, but ggez uses
-            // `pollster::block_on`, which calls `Condvar::wait` on `Pending` and traps on
-            // `wasm32-unknown-unknown`. WebGL goes through `wgpu-core`, whose adapter/device
-            // requests resolve synchronously, so blocking on them is fine.
             #[cfg(target_arch = "wasm32")]
-            let primary = wgpu::Backends::GL;
+            let primary = wgpu::Backends::BROWSER_WEBGPU;
             #[cfg(not(target_arch = "wasm32"))]
             let primary = wgpu::Backends::PRIMARY;
 
@@ -120,7 +115,9 @@ impl GraphicsContext {
                 event_loop,
                 conf,
                 filesystem,
-            ) {
+            )
+            .await
+            {
                 Ok(o) => Ok(o),
                 Err(GameError::GraphicsInitializationError) => {
                     println!(
@@ -137,6 +134,7 @@ impl GraphicsContext {
                         conf,
                         filesystem,
                     )
+                    .await
                 }
                 Err(e) => Err(e),
             }
@@ -151,7 +149,7 @@ impl GraphicsContext {
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
 
-            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem)
+            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem).await
         }
     }
 
@@ -197,7 +195,7 @@ impl GraphicsContext {
         (bind_group, layout)
     }
 
-    pub(crate) fn new_from_instance(
+    pub(crate) async fn new_from_instance(
         #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
         event_loop: &winit::event_loop::EventLoop<()>,
@@ -279,27 +277,18 @@ impl GraphicsContext {
             .create_surface(window.clone())
             .map_err(|_| GameError::GraphicsInitializationError)?;
 
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            force_fallback_adapter: false,
-            compatible_surface: Some(&surface),
-        }))
-        .or(Err(GameError::GraphicsInitializationError))?;
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
+                compatible_surface: Some(&surface),
+            })
+            .await
+            .or(Err(GameError::GraphicsInitializationError))?;
 
-        let (device, queue) =
-            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-                required_limits: wgpu::Limits {
-                    // 1st: DrawParams
-                    // 2nd: Texture + Sampler
-                    // 3rd: InstanceArray
-                    // 4th: ShaderParams
-                    // InstanceArray uses 2 storage buffers.
-                    // max_storage_buffers_per_shader_stage: 2,
-                    // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
-                    ..wgpu::Limits::downlevel_webgl2_defaults()
-                },
-                ..wgpu::DeviceDescriptor::default()
-            }))?;
+        let (device, queue) = adapter
+            .request_device(&wgpu::DeviceDescriptor::default())
+            .await?;
 
         let wgpu = Arc::new(WgpuContext {
             instance,
@@ -374,29 +363,13 @@ impl GraphicsContext {
         #[cfg(feature = "3d")]
         let draw_shader_3d = load_shader(include_str!("shader/draw3d.wgsl"));
         #[cfg(feature = "3d")]
-        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader_3d = load_shader(include_str!("shader/instance3d.wgsl"));
         #[cfg(feature = "3d")]
-        #[cfg(target_arch = "wasm32")]
-        let instance_shader_3d = load_shader(include_str!("shader/instance3d_web.wgsl"));
-        #[cfg(feature = "3d")]
-        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader_3d =
             load_shader(include_str!("shader/instance_unordered3d.wgsl"));
-        #[cfg(feature = "3d")]
-        #[cfg(target_arch = "wasm32")]
-        let instance_unordered_shader_3d =
-            load_shader(include_str!("shader/instance_unordered3d_web.wgsl"));
 
-        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader = load_shader(include_str!("shader/instance.wgsl"));
-        #[cfg(target_arch = "wasm32")]
-        let instance_shader = load_shader(include_str!("shader/instance_web.wgsl"));
-        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader = load_shader(include_str!("shader/instance_unordered.wgsl"));
-        #[cfg(target_arch = "wasm32")]
-        let instance_unordered_shader =
-            load_shader(include_str!("shader/instance_unordered_web.wgsl"));
         let text_shader = load_shader(include_str!("shader/text.wgsl"));
         let copy_shader = load_shader(include_str!("shader/copy.wgsl"));
 
@@ -429,21 +402,6 @@ impl GraphicsContext {
             },
         );
 
-        #[cfg(all(target_arch = "wasm32", feature = "3d"))]
-        let instance_bind_layout = BindGroupLayoutBuilder::new()
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform {},
-                false,
-            )
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform {},
-                false,
-            )
-            .create(&wgpu.device, &mut bind_group_cache);
-
-        #[cfg(not(target_arch = "wasm32"))]
         let instance_bind_layout = BindGroupLayoutBuilder::new()
             .buffer(
                 wgpu::ShaderStages::VERTEX,
@@ -496,7 +454,6 @@ impl GraphicsContext {
             copy_shader,
             rect_mesh,
             white_image,
-            #[cfg(any(not(target_arch = "wasm32"), feature = "3d"))]
             instance_bind_layout,
 
             fs: filesystem.clone(),

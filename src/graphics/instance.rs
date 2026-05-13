@@ -6,7 +6,6 @@ use super::{
     internal_canvas::InstanceArrayView,
     transform_rect, Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
 };
-#[cfg(not(target_arch = "wasm32"))]
 use crate::graphics::gpu::bind_group::BindGroupBuilder;
 use crevice::std140::AsStd140;
 use std::{
@@ -19,60 +18,14 @@ use std::{
 
 const DEFAULT_CAPACITY: usize = 16;
 
-/// Per-instance vertex layout used on web. The bytes match `Std140DrawUniforms` layout
-/// (`color: vec4`, `src_rect: vec4`, `transform: mat4x4` as four columns).
-#[cfg(target_arch = "wasm32")]
-pub(crate) const fn instance_vertex_layout() -> wgpu::VertexBufferLayout<'static> {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 6] = [
-        wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x4,
-            offset: 0,
-            shader_location: 3,
-        },
-        wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x4,
-            offset: 16,
-            shader_location: 4,
-        },
-        wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x4,
-            offset: 32,
-            shader_location: 5,
-        },
-        wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x4,
-            offset: 48,
-            shader_location: 6,
-        },
-        wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x4,
-            offset: 64,
-            shader_location: 7,
-        },
-        wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x4,
-            offset: 80,
-            shader_location: 8,
-        },
-    ];
-    wgpu::VertexBufferLayout {
-        array_stride: 96,
-        step_mode: wgpu::VertexStepMode::Instance,
-        attributes: &ATTRIBUTES,
-    }
-}
-
 /// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
 #[derive(Debug)]
 pub struct InstanceArray {
     pub(crate) buffer: Mutex<wgpu::Buffer>,
-    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) indices: Mutex<wgpu::Buffer>,
-    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) bind_group: Mutex<wgpu::BindGroup>,
-    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) bind_layout: wgpu::BindGroupLayout,
     pub(crate) image: Image,
     pub(crate) ordered: bool,
@@ -116,72 +69,62 @@ impl InstanceArray {
     fn new_wgpu(gfx: &GraphicsContext, image: Image, capacity: usize, ordered: bool) -> Self {
         assert!(capacity > 0);
 
-        #[cfg(target_arch = "wasm32")]
-        let usage = wgpu::BufferUsages::VERTEX;
-        #[cfg(not(target_arch = "wasm32"))]
-        let usage = wgpu::BufferUsages::STORAGE;
-
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
-            usage: usage | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
 
-        #[cfg(not(target_arch = "wasm32"))]
-        let (indices, bind_group, bind_layout) = {
-            let bind_layout = gfx.instance_bind_layout.clone();
-            let indices = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-                label: None,
-                size: if ordered {
-                    std::mem::size_of::<u32>() as u64 * capacity as u64
-                } else {
-                    4 // min for layout
-                },
-                usage: wgpu::BufferUsages::STORAGE
-                    | wgpu::BufferUsages::COPY_SRC
-                    | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
+        let bind_layout = gfx.instance_bind_layout.clone();
+        let indices = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: if ordered {
+                std::mem::size_of::<u32>() as u64 * capacity as u64
+            } else {
+                4 // min for layout
+            },
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
 
-            let bind_group = BindGroupBuilder::new()
-                .buffer(
-                    &buffer,
-                    0,
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Storage { read_only: true },
-                    false,
-                    None,
-                )
-                .buffer(
-                    &indices,
-                    0,
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Storage { read_only: true },
-                    false,
-                    None,
-                );
-            let bind_group = gfx
-                .wgpu
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: None,
-                    layout: &bind_layout,
-                    entries: bind_group.entries(),
-                });
-            (indices, bind_group, bind_layout)
-        };
+        let bind_group = BindGroupBuilder::new()
+            .buffer(
+                &buffer,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+                None,
+            )
+            .buffer(
+                &indices,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+                None,
+            );
+        let bind_group = gfx
+            .wgpu
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &bind_layout,
+                entries: bind_group.entries(),
+            });
 
         let uniforms = Vec::with_capacity(capacity);
         let params = Vec::with_capacity(capacity);
 
         InstanceArray {
             buffer: Mutex::new(buffer),
-            #[cfg(not(target_arch = "wasm32"))]
             indices: Mutex::new(indices),
-            #[cfg(not(target_arch = "wasm32"))]
             bind_group: Mutex::new(bind_group),
-            #[cfg(not(target_arch = "wasm32"))]
             bind_layout,
             image,
             ordered,
@@ -260,104 +203,71 @@ impl InstanceArray {
 
         let len = self.uniforms.len();
 
-        #[cfg(target_arch = "wasm32")]
-        let usage = wgpu::BufferUsages::VERTEX
-            | wgpu::BufferUsages::COPY_DST
-            | wgpu::BufferUsages::COPY_SRC;
-        #[cfg(not(target_arch = "wasm32"))]
-        let usage = wgpu::BufferUsages::STORAGE
-            | wgpu::BufferUsages::COPY_DST
-            | wgpu::BufferUsages::COPY_SRC;
-
         let new_buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std140_size_static() as u64 * len as u64,
-            usage,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
 
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let new_indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-                label: None,
-                size: if self.ordered {
-                    std::mem::size_of::<u32>() as u64 * len as u64
-                } else {
-                    4
-                },
-                usage: wgpu::BufferUsages::STORAGE
-                    | wgpu::BufferUsages::COPY_SRC
-                    | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
+        let new_indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: if self.ordered {
+                std::mem::size_of::<u32>() as u64 * len as u64
+            } else {
+                4
+            },
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
 
-            let new_bind_group = BindGroupBuilder::new()
-                .buffer(
-                    &new_buffer,
-                    0,
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Storage { read_only: true },
-                    false,
-                    None,
-                )
-                .buffer(
-                    &new_indices,
-                    0,
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Storage { read_only: true },
-                    false,
-                    None,
-                );
-            let new_bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &self.bind_layout,
-                entries: new_bind_group.entries(),
-            });
+        let new_bind_group = BindGroupBuilder::new()
+            .buffer(
+                &new_buffer,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+                None,
+            )
+            .buffer(
+                &new_indices,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+                None,
+            );
+        let new_bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &self.bind_layout,
+            entries: new_bind_group.entries(),
+        });
 
-            *self.indices.lock().map_err(|_| GameError::LockError)? = new_indices;
-            *self.bind_group.lock().map_err(|_| GameError::LockError)? = new_bind_group;
-        }
-
+        *self.indices.lock().map_err(|_| GameError::LockError)? = new_indices;
+        *self.bind_group.lock().map_err(|_| GameError::LockError)? = new_bind_group;
         *self.buffer.lock().map_err(|_| GameError::LockError)? = new_buffer;
         self.capacity.store(len, SeqCst);
 
-        // On web with ordering enabled, the shader has no index indirection.
-        // We sort the std140 uniforms in-place so the GPU walks them in order.
-        #[cfg(target_arch = "wasm32")]
-        let upload_buffer = if self.ordered {
-            let mut indexed: Vec<_> = self.params.iter().enumerate().collect();
-            indexed.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
-            let sorted: Vec<Std140DrawUniforms> =
-                indexed.iter().map(|(i, _)| self.uniforms[*i]).collect();
-            std::borrow::Cow::Owned(sorted)
-        } else {
-            std::borrow::Cow::Borrowed(self.uniforms.as_slice())
-        };
-        #[cfg(target_arch = "wasm32")]
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
             0,
-            bytemuck::cast_slice(&upload_buffer),
+            bytemuck::cast_slice(self.uniforms.as_slice()),
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
-        {
+        if self.ordered {
+            let mut sorted: Vec<_> = self.params.iter().enumerate().collect();
+            sorted.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
+            let indices: Vec<u32> = sorted.iter().map(|(i, _)| *i as u32).collect();
             wgpu.queue.write_buffer(
-                &self.buffer.lock().unwrap(),
+                &self.indices.lock().unwrap(),
                 0,
-                bytemuck::cast_slice(self.uniforms.as_slice()),
+                bytemuck::cast_slice(indices.as_slice()),
             );
-
-            if self.ordered {
-                let mut sorted: Vec<_> = self.params.iter().enumerate().collect();
-                sorted.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
-                let indices: Vec<u32> = sorted.iter().map(|(i, _)| *i as u32).collect();
-                wgpu.queue.write_buffer(
-                    &self.indices.lock().unwrap(),
-                    0,
-                    bytemuck::cast_slice(indices.as_slice()),
-                );
-            }
         }
 
         Ok(())
@@ -375,11 +285,8 @@ impl InstanceArray {
         let gfx: &GraphicsContext = gfx.retrieve();
         let resized = InstanceArray::new_wgpu(gfx, self.image.clone(), new_capacity, self.ordered);
         self.buffer = resized.buffer;
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            self.indices = resized.indices;
-            self.bind_group = resized.bind_group;
-        }
+        self.indices = resized.indices;
+        self.bind_group = resized.bind_group;
 
         self.capacity.store(new_capacity, SeqCst);
         self.dirty.store(true, SeqCst);
@@ -461,8 +368,6 @@ impl Drawable for InstanceArray {
 
 #[cfg(test)]
 mod tests {
-    use super::super::draw::DrawUniforms;
-    use crevice::std140::AsStd140;
     use wgpu::naga::{front, valid};
 
     /// Parse + validate every WGSL shader naga sees to avoid layout regressions
@@ -474,14 +379,6 @@ mod tests {
                 "instance_unordered.wgsl",
                 include_str!("shader/instance_unordered.wgsl"),
             ),
-            (
-                "instance_web.wgsl",
-                include_str!("shader/instance_web.wgsl"),
-            ),
-            (
-                "instance_unordered_web.wgsl",
-                include_str!("shader/instance_unordered_web.wgsl"),
-            ),
         ];
         for (name, src) in shaders {
             let module = front::wgsl::parse_str(src)
@@ -491,44 +388,6 @@ mod tests {
             let _ = validator
                 .validate(&module)
                 .unwrap_or_else(|e| panic!("WGSL validation error in {name}: {e}"));
-        }
-    }
-
-    /// The web instance shaders read `Std140DrawUniforms` as six per-instance vec4 attributes
-    /// (color, src_rect, then four mat4 columns). The vertex layout (instance_vertex_layout) and
-    /// WGSL `@location` lines in the shaders both depend on std140 size and field offsets.
-    /// This test pins them so a layout change in `DrawUniforms` can't silently desync.
-    #[test]
-    fn headless_web_instance_layout_pinned() {
-        assert_eq!(
-            DrawUniforms::std140_size_static(),
-            96,
-            "Std140DrawUniforms must remain 96 bytes for the web vertex layout"
-        );
-
-        for (name, src) in [
-            (
-                "instance_web.wgsl",
-                include_str!("shader/instance_web.wgsl"),
-            ),
-            (
-                "instance_unordered_web.wgsl",
-                include_str!("shader/instance_unordered_web.wgsl"),
-            ),
-        ] {
-            for needle in [
-                "@location(3) inst_color: vec4<f32>",
-                "@location(4) inst_src_rect: vec4<f32>",
-                "@location(5) inst_t0: vec4<f32>",
-                "@location(6) inst_t1: vec4<f32>",
-                "@location(7) inst_t2: vec4<f32>",
-                "@location(8) inst_t3: vec4<f32>",
-            ] {
-                assert!(
-                    src.contains(needle),
-                    "{name} missing per-instance attribute `{needle}`"
-                );
-            }
         }
     }
 }

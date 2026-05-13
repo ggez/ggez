@@ -223,7 +223,10 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
-    fn from_conf(
+    ///
+    /// Returns a future because graphics initialization is asynchronous on the web target
+    /// (WebGPU adapter/device requests resolve only after the JS event loop runs).
+    async fn from_conf(
         game_id: &str,
         conf: conf::Conf,
         fs: Filesystem,
@@ -233,7 +236,7 @@ impl Context {
         let events_loop = winit::event_loop::EventLoop::new()?;
         let timer_context = timer::TimeContext::new();
         let graphics_context =
-            graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
+            graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs).await?;
 
         let ctx = Context {
             fs,
@@ -377,8 +380,20 @@ impl ContextBuilder {
         self
     }
 
-    /// Build a `Context`
+    /// Build a `Context` synchronously.
+    ///
+    /// On web this drives [`ContextBuilder::build_async`] via `pollster::block_on`, which
+    /// relies on the JS event loop, so will traps on wasm32. Web targets should call
+    /// [`build_async`](Self::build_async) directly or use [`ggez::start`](crate::start).
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
+        pollster::block_on(self.build_async())
+    }
+
+    /// Build a `Context` asynchronously.
+    ///
+    /// This is required on the web target, where WebGPU init is asynchronous.
+    /// For native use [`ContextBuilder::build`], which drives this future via `pollster::block_on`.
+    pub async fn build_async(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         #[cfg(target_arch = "wasm32")]
         let fs = Filesystem::new_web(&self.resources_dir_name);
 
@@ -405,10 +420,13 @@ impl ContextBuilder {
             self.conf
         };
 
-        Context::from_conf(self.game_id.as_ref(), config, fs)
+        Context::from_conf(self.game_id.as_ref(), config, fs).await
     }
 
     /// Build a Custom `Context`.
+    ///
+    /// The user-supplied `from_conf` is expected to handle its own async work
+    /// (e.g. `pollster::block_on` on native or `wasm_bindgen_futures` on web).
     pub fn custom_build<C>(
         self,
         from_conf: impl Fn(
@@ -451,6 +469,52 @@ impl ContextBuilder {
         };
 
         from_conf(self.game_id, config, fs)
+    }
+
+    /// Build a [`Context`] and run a [`Game`](crate::event::Game) to completion.
+    ///
+    /// Hides the build/run dance plus the platform split: synchronous on native
+    /// targets, asynchronous (spawned onto the JS event loop via
+    /// `wasm-bindgen-futures`) on the web. On wasm32 this returns immediately
+    /// after spawning the setup task; build / state-construction failures are
+    /// reported to `console.error`.
+    pub fn run<G>(self) -> GameResult
+    where
+        G: crate::event::Game,
+    {
+        #[cfg(target_arch = "wasm32")]
+        {
+            wasm_bindgen_futures::spawn_local(async move {
+                let (mut ctx, event_loop) = match self.build_async().await {
+                    Ok(x) => x,
+                    Err(e) => {
+                        web_sys::console::error_1(
+                            &format!("ggez: failed to build context: {e}").into(),
+                        );
+                        return;
+                    }
+                };
+                let state = match G::new(&mut ctx) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        web_sys::console::error_1(
+                            &format!("ggez: failed to create state: {e}").into(),
+                        );
+                        return;
+                    }
+                };
+                if let Err(e) = crate::event::run(ctx, event_loop, state) {
+                    web_sys::console::error_1(&format!("ggez: event loop error: {e}").into());
+                }
+            });
+            Ok(())
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let (mut ctx, event_loop) = self.build()?;
+            let state = G::new(&mut ctx)?;
+            crate::event::run(ctx, event_loop, state)
+        }
     }
 }
 

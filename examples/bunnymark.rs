@@ -16,10 +16,6 @@ use winit::keyboard::NamedKey;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...
-#[cfg(target_arch = "wasm32")]
-const INITIAL_BUNNIES: usize = 100;
-
-#[cfg(not(target_arch = "wasm32"))]
 const INITIAL_BUNNIES: usize = 1000;
 const WIDTH: u16 = 800;
 const HEIGHT: u16 = 600;
