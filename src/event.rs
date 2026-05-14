@@ -263,6 +263,9 @@ where
 /// Implement this on your top-level state type alongside [`EventHandler`]. It gives
 /// [`ContextBuilder::run`](crate::ContextBuilder::run) everything needed to run the game
 /// on both native (sync) and web (async).
+///
+/// If your state needs external resources that don't come from [`Context`] (network handle,
+/// CLI args, DB pool, etc), skip this trait and use `crate::ContextBuilder::run_with` instead.
 pub trait Game: EventHandler<Context, GameError> + Sized + 'static {
     /// Construct the game state once the [`Context`] is ready.
     fn new(ctx: &mut Context) -> GameResult<Self>;
