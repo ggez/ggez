@@ -8,7 +8,7 @@ pub use winit;
 #[cfg(feature = "audio")]
 use crate::audio;
 use crate::conf;
-use crate::error::GameResult;
+use crate::error::{GameError, GameResult};
 use crate::filesystem::Filesystem;
 use crate::graphics;
 use crate::graphics::GraphicsContext;
@@ -436,9 +436,19 @@ impl ContextBuilder {
     where
         G: crate::event::Game,
     {
+        self.run_with(G::new)
+    }
+
+    /// Like [`run`](Self::run), but takes a closure constructor for state with external resources
+    /// that `Game::new(&mut Context)` can't include.
+    pub fn run_with<S, F>(self, create_state: F) -> GameResult
+    where
+        S: crate::event::EventHandler<Context, GameError> + 'static,
+        F: FnOnce(&mut Context) -> GameResult<S> + 'static,
+    {
         self.custom_run(
             |game_id, conf, fs| async move { Context::from_conf(&game_id, conf, fs).await },
-            G::new,
+            create_state,
         )
     }
 
