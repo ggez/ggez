@@ -40,7 +40,6 @@ impl MainState {
 
         Ok(())
     }
-
 }
 
 impl ggez::Game for MainState {

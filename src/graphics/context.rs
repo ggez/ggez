@@ -119,7 +119,7 @@ impl GraphicsContext {
             .await
             {
                 Ok(o) => Ok(o),
-                Err(GameError::GraphicsInitializationError) => {
+                Err(GameError::GraphicsInitializationError(_)) => {
                     println!(
                         "Failed to initialize graphics, trying secondary backends.. Please mention this if you encounter any bugs!"
                     );
@@ -295,9 +295,16 @@ impl GraphicsContext {
             }
         }
 
-        let surface = instance
-            .create_surface(window.clone())
-            .map_err(|_| GameError::GraphicsInitializationError)?;
+        #[cfg(target_arch = "wasm32")]
+        if !webgpu_available() {
+            return Err(GameError::WebGpuUnavailable(String::from(
+                "`navigator.gpu` is not exposed by this browser",
+            )));
+        }
+
+        let surface = instance.create_surface(window.clone()).map_err(|e| {
+            GameError::GraphicsInitializationError(format!("could not create surface: {e}"))
+        })?;
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -306,7 +313,16 @@ impl GraphicsContext {
                 compatible_surface: Some(&surface),
             })
             .await
-            .or(Err(GameError::GraphicsInitializationError))?;
+            .map_err(|e| {
+                #[cfg(target_arch = "wasm32")]
+                {
+                    GameError::WebGpuUnavailable(format!("no compatible adapter: {e}"))
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    GameError::GraphicsInitializationError(format!("no compatible adapter: {e}"))
+                }
+            })?;
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor::default())
@@ -586,6 +602,22 @@ impl GraphicsContext {
         &self.window
     }
 
+    /// Whether the host page is visible. gate `update`/`draw` on it to skip
+    /// per-frame work in a backgrounded tab. Always `true` on native.
+    pub fn is_page_visible(&self) -> bool {
+        #[cfg(target_arch = "wasm32")]
+        {
+            web_sys::window()
+                .and_then(|w| w.document())
+                .map(|d| !d.hidden())
+                .unwrap_or(true)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            true
+        }
+    }
+
     /// Sets the window icon. `None` for path removes the icon.
     pub fn set_window_icon<P: AsRef<Path>>(
         &self,
@@ -681,7 +713,11 @@ impl GraphicsContext {
                         .wgpu
                         .instance
                         .create_surface(self.window.clone())
-                        .map_err(|_| GameError::GraphicsInitializationError)?;
+                        .map_err(|e| {
+                            GameError::GraphicsInitializationError(format!(
+                                "could not recreate surface after loss: {e}"
+                            ))
+                        })?;
                     self.reconfigure_surface();
                 }
 
@@ -891,6 +927,20 @@ impl GraphicsContext {
 
         Ok(())
     }
+}
+
+// Lets us return `WebGpuUnavailable` instead of an opaque failure when the browser has no WebGPU.
+#[cfg(target_arch = "wasm32")]
+fn webgpu_available() -> bool {
+    use wasm_bindgen::JsValue;
+    let global = js_sys::global();
+    let navigator = match js_sys::Reflect::get(&global, &JsValue::from_str("navigator")) {
+        Ok(v) if !v.is_undefined() && !v.is_null() => v,
+        _ => return false,
+    };
+    js_sys::Reflect::get(&navigator, &JsValue::from_str("gpu"))
+        .map(|gpu| !gpu.is_undefined() && !gpu.is_null())
+        .unwrap_or(false)
 }
 
 // This is kinda awful 'cause it copies a couple times,

@@ -51,10 +51,12 @@ impl AudioContext {
     }
 }
 
-// Browser autoplay policy keeps an `AudioContext` suspended until a user gesture occurs.
-// rodio creates the context before that during ggez init so we extend `AudioContext` with a
-// subclass that attaches a resume() listener to each instance. The first gesture event
-// resumes the context and removes the listeners.
+// Subclass `AudioContext` so each instance auto-resumes on the first user gesture and
+// mirrors its live state onto `window.__ggezAudioState` for [`AudioContext::state`] to read.
+//
+// This only catches contexts constructed after the patch runs. wasm-bindgen pins the
+// `AudioContext` constructor at JS module load time, so to also catch rodio's context an
+// equivalent shim must run from JS before the wasm module imports (`examples/web/src/runner.js`)
 #[cfg(target_arch = "wasm32")]
 fn install_web_audio_unlock() {
     const JS: &str = r#"
@@ -65,6 +67,9 @@ fn install_web_audio_unlock() {
         class GgezUnlockingAudioContext extends Original {
           constructor() {
             super(...arguments);
+            const sync = () => { window.__ggezAudioState = this.state; };
+            sync();
+            this.addEventListener('statechange', sync);
             if (this.state !== 'suspended') return;
             const unlock = () => { this.resume().catch(() => {}); };
             const opts = { capture: true, passive: true, once: true };
@@ -81,12 +86,76 @@ fn install_web_audio_unlock() {
     }
 }
 
+/// State of the audio output. On wasm this mirrors the browser
+/// [`AudioContext.state`](https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/state);
+/// on native it's [`Running`](Self::Running) when a device was opened and
+/// [`Closed`](Self::Closed) otherwise.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AudioState {
+    /// Awaiting a user gesture or suspended programmatically. No audio will play.
+    Suspended,
+    /// Audio is playing normally.
+    Running,
+    /// Context closed or no output device available. Cannot play sounds.
+    Closed,
+}
+
 impl AudioContext {
     /// Returns the audio device, if one was successfully opened.
     #[inline]
     pub fn device(&self) -> Option<&rodio::MixerDeviceSink> {
         self.stream.as_ref()
     }
+
+    /// Current state of the audio output. On wasm this starts
+    /// [`Suspended`](AudioState::Suspended) and flips to [`Running`](AudioState::Running) once
+    /// the user gestures — gate "click to enable sound" UI on this.
+    pub fn state(&self) -> AudioState {
+        if self.stream.is_none() {
+            return AudioState::Closed;
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            current_web_audio_state().unwrap_or(AudioState::Suspended)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            AudioState::Running
+        }
+    }
+
+    /// Shorthand for `self.state() == AudioState::Running`.
+    #[inline]
+    pub fn is_running(&self) -> bool {
+        self.state() == AudioState::Running
+    }
+}
+
+// rodio's wasm backend can't reclaim detached sinks, so any `play_detached` issued while
+// the AudioContext is suspended leaks decoded PCM until the tab closes. Native always OK.
+fn audio_output_ready() -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        matches!(current_web_audio_state(), Some(AudioState::Running))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        true
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn current_web_audio_state() -> Option<AudioState> {
+    use wasm_bindgen::JsValue;
+    let global = js_sys::global();
+    let value = js_sys::Reflect::get(&global, &JsValue::from_str("__ggezAudioState")).ok()?;
+    let s = value.as_string()?;
+    Some(match s.as_str() {
+        "running" => AudioState::Running,
+        "closed" => AudioState::Closed,
+        _ => AudioState::Suspended,
+    })
 }
 
 impl fmt::Debug for AudioContext {
@@ -341,6 +410,9 @@ impl SoundSource for Source {
     }
 
     fn play_detached(self) {
+        if !audio_output_ready() {
+            return;
+        }
         self.play();
         self.sink.detach();
     }
@@ -456,6 +528,9 @@ impl SoundSource for SpatialSource {
     }
 
     fn play_detached(self) {
+        if !audio_output_ready() {
+            return;
+        }
         self.play();
         self.sink.detach();
     }
