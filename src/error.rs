@@ -7,8 +7,11 @@ use std::sync::Arc;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
-    /// An error when intializing the graphics system.
-    GraphicsInitializationError,
+    /// An error intializing the graphics system; the string holds the underlying cause.
+    GraphicsInitializationError(String),
+    /// The browser doesn't expose WebGPU. Catch this on wasm to render an HTML fallback.
+    #[cfg(target_arch = "wasm32")]
+    WebGpuUnavailable(String),
     /// An error in the filesystem layout
     FilesystemError(String),
     /// An error in the config file
@@ -73,6 +76,13 @@ impl fmt::Display for GameError {
             GameError::CustomError(ref s) => write!(f, "Custom error: {s}"),
             GameError::RequestDeviceError(ref e) => {
                 write!(f, "Failed to request logical device: {e}")
+            }
+            GameError::GraphicsInitializationError(ref s) => {
+                write!(f, "Graphics initialization error: {s}")
+            }
+            #[cfg(target_arch = "wasm32")]
+            GameError::WebGpuUnavailable(ref s) => {
+                write!(f, "WebGPU is not available in this browser: {s}")
             }
             GameError::GlyphBrushError(ref e) => write!(f, "Text rendering error: {e}"),
             GameError::FontSelectError(ref e) => write!(f, "No such font '{e}'"),

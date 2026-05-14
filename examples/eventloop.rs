@@ -9,12 +9,12 @@
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
+use ggez::event;
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::Context;
-use ggez::GameResult;
-use ggez::event;
 #[cfg(not(target_arch = "wasm32"))]
 use ggez::GameError;
+use ggez::GameResult;
 
 use winit::application::ApplicationHandler;
 use winit::event::{DeviceEvent, DeviceId, StartCause, WindowEvent};

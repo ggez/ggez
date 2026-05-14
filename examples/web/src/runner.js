@@ -1,6 +1,9 @@
 // Single-example runner: reads ?example=NAME, dynamically imports the matching
 // wasm-bindgen JS shim, calls init(), and shows minimal status.
 
+// Must run before the wasm import: wasm-bindgen captures `AudioContext` at module load.
+installAudioUnlock();
+
 const status = document.getElementById('status');
 const params = new URLSearchParams(location.search);
 const name = params.get('example');
@@ -42,4 +45,29 @@ try {
 } catch (err) {
   console.error(err);
   setStatus(`error loading ${name}: ${err}`);
+}
+
+// Resume each `AudioContext` on the first user gesture and set `window.__ggezAudioState` so
+// `ggez::audio::AudioContext::state()` can read. See `install_web_audio_unlock` in src/audio.rs.
+function installAudioUnlock() {
+  if (window.__ggezAudioUnlockInstalled) return;
+  window.__ggezAudioUnlockInstalled = true;
+  const Original = window.AudioContext || window.webkitAudioContext;
+  if (!Original) return;
+  class GgezUnlockingAudioContext extends Original {
+    constructor() {
+      super(...arguments);
+      const sync = () => { window.__ggezAudioState = this.state; };
+      sync();
+      this.addEventListener('statechange', sync);
+      if (this.state !== 'suspended') return;
+      const unlock = () => { this.resume().catch(() => {}); };
+      const opts = { capture: true, passive: true, once: true };
+      for (const ev of ['pointerdown', 'keydown', 'touchstart', 'mousedown']) {
+        addEventListener(ev, unlock, opts);
+      }
+    }
+  }
+  window.AudioContext = GgezUnlockingAudioContext;
+  if (window.webkitAudioContext) window.webkitAudioContext = GgezUnlockingAudioContext;
 }
