@@ -655,44 +655,56 @@ where
             }
         }
 
-        let res = self.state.update(&mut self.ctx);
-        if catch_error(
-            &mut self.ctx,
-            res,
-            &mut self.state,
-            event_loop,
-            ErrorOrigin::Update,
-        ) {
-            return;
-        };
+        // Skip the whole frame when `document.hidden`
+        let page_visible = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).is_page_visible();
 
-        // Try to begin a frame. On some platforms (e.g. macOS Metal),
-        // the surface may be occluded, in which case we gracefully skip
-        // drawing this frame instead of blocking.
-        match HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
-            Ok(true) => {
-                if let Err(e) = self.state.draw(&mut self.ctx) {
-                    error!("Error on EventHandler::draw(): {e:?}");
-                    eprintln!("Error on EventHandler::draw(): {e:?}");
-                    if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+        if !page_visible {
+            let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
+            time.reset_residual_update_dt();
+        }
+
+        if page_visible {
+            let res = self.state.update(&mut self.ctx);
+            if catch_error(
+                &mut self.ctx,
+                res,
+                &mut self.state,
+                event_loop,
+                ErrorOrigin::Update,
+            ) {
+                return;
+            };
+
+            // Try to begin a frame. On some platforms (e.g. macOS Metal),
+            // the surface may be occluded, in which case we gracefully skip
+            // drawing this frame instead of blocking.
+            match HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
+                Ok(true) => {
+                    if let Err(e) = self.state.draw(&mut self.ctx) {
+                        error!("Error on EventHandler::draw(): {e:?}");
+                        eprintln!("Error on EventHandler::draw(): {e:?}");
+                        if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+                            event_loop.exit();
+                            return;
+                        }
+                    }
+
+                    if let Err(e) =
+                        HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame()
+                    {
+                        error!("Error on GraphicsContext::end_frame(): {e:?}");
+                        eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
                         event_loop.exit();
-                        return;
                     }
                 }
-
-                if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
-                    error!("Error on GraphicsContext::end_frame(): {e:?}");
-                    eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
+                Ok(false) => {
+                    // Surface unavailable (occluded) — skip drawing this frame.
+                }
+                Err(e) => {
+                    error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
                     event_loop.exit();
                 }
-            }
-            Ok(false) => {
-                // Surface unavailable (occluded) — skip drawing this frame.
-            }
-            Err(e) => {
-                error!("Error on GraphicsContext::begin_frame(): {e:?}");
-                eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-                event_loop.exit();
             }
         }
 
