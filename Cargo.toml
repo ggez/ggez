@@ -62,6 +62,9 @@ num-traits = "0.2"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3.64"
+# Matches winit's `Instant` type so we can construct `ControlFlow::WaitUntil(_)`
+# on wasm. winit already depends on `web-time` transitively.
+web-time = "1"
 web-sys = { version = "0.3", features = [
     "console",
     "Document",
