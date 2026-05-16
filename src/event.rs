@@ -366,6 +366,28 @@ where
             return;
         }
 
+        // On web, throttle the event loop while the tab is hidden. winit's
+        // default `PollStrategy::Scheduler` posts a task + creates / aborts an
+        // `AbortController` every iteration; with the page hidden but
+        // `requestAnimationFrame` still firing (because a live WebSocket or
+        // AudioContext defeats Chrome's hidden-tab throttle), that scheduler
+        // chatter pins a CPU core all on its own. A 1 s `WaitUntil` cadence
+        // is plenty — we just need to recheck visibility periodically; any
+        // real user interaction (focus, pointer, key) wakes winit immediately.
+        #[cfg(target_arch = "wasm32")]
+        {
+            let visible =
+                HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).is_page_visible();
+            if !visible {
+                // winit pulls `Instant` from `web_time` on wasm targets; match that
+                // so `WaitUntil` accepts the value.
+                let when =
+                    web_time::Instant::now() + std::time::Duration::from_secs(1);
+                event_loop.set_control_flow(ControlFlow::WaitUntil(when));
+                return;
+            }
+        }
+
         event_loop.set_control_flow(ControlFlow::Poll);
     }
 
