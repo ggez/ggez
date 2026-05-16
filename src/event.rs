@@ -655,36 +655,46 @@ where
             }
         }
 
-        let res = self.state.update(&mut self.ctx);
-        if catch_error(
-            &mut self.ctx,
-            res,
-            &mut self.state,
-            event_loop,
-            ErrorOrigin::Update,
-        ) {
-            return;
-        };
+        // Skip the whole frame when `document.hidden`
+        let page_visible = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).is_page_visible();
 
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
-            error!("Error on GraphicsContext::begin_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-            event_loop.exit();
+        if !page_visible {
+            let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
+            time.reset_residual_update_dt();
         }
 
-        if let Err(e) = self.state.draw(&mut self.ctx) {
-            error!("Error on EventHandler::draw(): {e:?}");
-            eprintln!("Error on EventHandler::draw(): {e:?}");
-            if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
-                event_loop.exit();
+        if page_visible {
+            let res = self.state.update(&mut self.ctx);
+            if catch_error(
+                &mut self.ctx,
+                res,
+                &mut self.state,
+                event_loop,
+                ErrorOrigin::Update,
+            ) {
                 return;
-            }
-        }
+            };
 
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
-            error!("Error on GraphicsContext::end_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
-            event_loop.exit();
+            if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
+                error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
+                event_loop.exit();
+            }
+
+            if let Err(e) = self.state.draw(&mut self.ctx) {
+                error!("Error on EventHandler::draw(): {e:?}");
+                eprintln!("Error on EventHandler::draw(): {e:?}");
+                if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+                    event_loop.exit();
+                    return;
+                }
+            }
+
+            if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
+                error!("Error on GraphicsContext::end_frame(): {e:?}");
+                eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
+                event_loop.exit();
+            }
         }
 
         // reset the mouse delta for the next frame

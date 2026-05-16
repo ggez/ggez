@@ -213,6 +213,13 @@ impl TimeContext {
 
         self.residual_update_dt += time_since_last;
     }
+
+    /// Clears accumulated fixed-step backlog. wasm calls this every frame on a hidden page
+    /// so background tabs don't fire tons of `check_update_time` when they return.
+    /// hits the moment it returns.
+    pub fn reset_residual_update_dt(&mut self) {
+        self.residual_update_dt = time::Duration::from_secs(0);
+    }
 }
 
 impl Default for TimeContext {
