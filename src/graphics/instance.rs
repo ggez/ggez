@@ -202,56 +202,71 @@ impl InstanceArray {
         }
 
         let len = self.uniforms.len();
+        if len == 0 {
+            // Nothing to upload; `draw_mesh_instances` skips zero-len views.
+            return Ok(());
+        }
 
-        let new_buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: DrawUniforms::std140_size_static() as u64 * len as u64,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST
-                | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
+        // Reuse the existing buffers when the data still fits — the old code
+        // allocated a fresh wgpu buffer + indices + bind group on every flush,
+        // which for a "particle batch that clears and refills per frame" is one
+        // wgpu allocation per layer per frame, on the JS main thread on web.
+        // Only reallocate when the data outgrows the current capacity, and
+        // grow geometrically so the buffer stabilises.
+        let cap = self.capacity.load(SeqCst);
+        if len > cap {
+            let new_cap = len.next_power_of_two().max(cap.saturating_mul(2));
 
-        let new_indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: if self.ordered {
-                std::mem::size_of::<u32>() as u64 * len as u64
-            } else {
-                4
-            },
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_SRC
-                | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
+            let new_buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: DrawUniforms::std140_size_static() as u64 * new_cap as u64,
+                usage: wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_DST
+                    | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
 
-        let new_bind_group = BindGroupBuilder::new()
-            .buffer(
-                &new_buffer,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            )
-            .buffer(
-                &new_indices,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            );
-        let new_bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &self.bind_layout,
-            entries: new_bind_group.entries(),
-        });
+            let new_indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: if self.ordered {
+                    std::mem::size_of::<u32>() as u64 * new_cap as u64
+                } else {
+                    4
+                },
+                usage: wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_SRC
+                    | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
 
-        *self.indices.lock().map_err(|_| GameError::LockError)? = new_indices;
-        *self.bind_group.lock().map_err(|_| GameError::LockError)? = new_bind_group;
-        *self.buffer.lock().map_err(|_| GameError::LockError)? = new_buffer;
-        self.capacity.store(len, SeqCst);
+            let new_bind_group = BindGroupBuilder::new()
+                .buffer(
+                    &new_buffer,
+                    0,
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Storage { read_only: true },
+                    false,
+                    None,
+                )
+                .buffer(
+                    &new_indices,
+                    0,
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Storage { read_only: true },
+                    false,
+                    None,
+                );
+            let new_bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &self.bind_layout,
+                entries: new_bind_group.entries(),
+            });
+
+            *self.indices.lock().map_err(|_| GameError::LockError)? = new_indices;
+            *self.bind_group.lock().map_err(|_| GameError::LockError)? = new_bind_group;
+            *self.buffer.lock().map_err(|_| GameError::LockError)? = new_buffer;
+            self.capacity.store(new_cap, SeqCst);
+        }
 
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
