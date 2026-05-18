@@ -554,6 +554,17 @@ impl GraphicsContext {
         (size.width as f32, size.height as f32)
     }
 
+    /// Returns the window's device pixel ratio (logical pixels / physical pixels).
+    ///
+    /// `1.0` on a standard display, `2.0` on a 2× retina or `devicePixelRatio = 2` browser, etc.
+    /// Useful when mixing logical-pixel layout (e.g. [`WindowMode::logical_dimensions`]) with
+    /// APIs that take physical pixel values, or when sizing text via
+    /// [`Text::set_logical_scale`](crate::graphics::Text::set_logical_scale).
+    #[inline]
+    pub fn pixel_scale(&self) -> f32 {
+        self.window.scale_factor() as f32
+    }
+
     /// Sets the window size (in physical pixels) / resolution to the specified width and height.
     ///
     /// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
