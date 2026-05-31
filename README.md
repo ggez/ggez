@@ -73,7 +73,7 @@ crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```
-ggez = "0.10.0-rc0"
+ggez = "0.10.0"
 ```
 
 ggez consists of three main parts: A `Context` object which
