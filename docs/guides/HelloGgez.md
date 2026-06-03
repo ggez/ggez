@@ -31,8 +31,6 @@ Open up `Cargo.toml` with a text editor and add `ggez` as a dependency:
 [package]
 name = "hello_ggez"
 version = "0.1.0"
-# Replace with your name and email
-authors = ["Awesome Person awesome@person.com"]
 
 [dependencies]
 ggez = "0.10.0-rc0"
