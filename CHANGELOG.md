@@ -4,6 +4,10 @@
 
 You are now able to add your own custom contexts! Using the new `ContextFields` type and implementing `HasMut<KeyboardContext>, HasMut<MouseContext>, HasMut<TimeContext>, HasMut<GraphicsContext>, and HasMut<GamepadContext>` if gamepad is enabled
 
+### Web
+
+You can now use ggez on web officially. Assets are bundled into a single zip that the JS host stashes on `window.__GGEZ_RESOURCES_ZIP__` before the starts, so sync `Filesystem` APIs work. See `examples/web/` for the build pipeline.
+
 ### Coroutines
 
 You can create a new coroutine by doing

@@ -124,7 +124,11 @@ impl Default for WindowMode {
 }
 
 impl WindowMode {
-    /// Set default window size, or screen resolution in true fullscreen mode.
+    /// Set default window size in physical pixels, or screen resolution in true fullscreen mode.
+    ///
+    /// On HiDPI displays (Mac retina, Wayland fractional scaling, browsers with
+    /// `devicePixelRatio > 1`) a window sized in physical pixels appears smaller than expected.
+    /// Use [`logical_dimensions`](Self::logical_dimensions) to opt into DPI-independent sizing.
     #[must_use]
     pub fn dimensions(mut self, width: f32, height: f32) -> Self {
         if width >= 1.0 {
@@ -133,6 +137,17 @@ impl WindowMode {
         if height >= 1.0 {
             self.height = height;
         }
+        self
+    }
+
+    /// Set default window size in logical pixels.
+    /// Overrides any value previously set by [`dimensions`](Self::dimensions).
+    ///
+    /// Use this when you want the window to take up the same visual area regardless of
+    /// the display's DPI scale factor.
+    #[must_use]
+    pub fn logical_dimensions(mut self, width: f32, height: f32) -> Self {
+        self.logical_size = Some(winit::dpi::LogicalSize::new(width, height));
         self
     }
 
@@ -240,6 +255,7 @@ impl WindowMode {
 ///     vsync: true,
 ///     icon: "".to_owned(),
 ///     srgb: true,
+///     web_canvas_parent_id: None,
 /// }
 /// # , WindowSetup::default()); }
 /// ```
@@ -258,6 +274,10 @@ pub struct WindowSetup {
     /// Whether or not to enable sRGB (gamma corrected color)
     /// handling on the display.
     pub srgb: bool,
+    /// Web only: id of an existing DOM element to append the rendering canvas to.
+    /// When `None` (default), the canvas is appended to `<body>`.
+    #[serde(default)]
+    pub web_canvas_parent_id: Option<String>,
 }
 
 impl Default for WindowSetup {
@@ -268,6 +288,7 @@ impl Default for WindowSetup {
             vsync: true,
             icon: String::new(),
             srgb: true,
+            web_canvas_parent_id: None,
         }
     }
 }
@@ -305,6 +326,13 @@ impl WindowSetup {
     #[must_use]
     pub fn srgb(mut self, active: bool) -> Self {
         self.srgb = active;
+        self
+    }
+
+    /// Set the DOM element id the canvas will be appended to on web.
+    #[must_use]
+    pub fn web_canvas_parent_id(mut self, id: impl Into<String>) -> Self {
+        self.web_canvas_parent_id = Some(id.into());
         self
     }
 }

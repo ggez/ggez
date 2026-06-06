@@ -16,14 +16,14 @@ struct MainState {
     instances: InstanceArray3d,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut camera = Camera3d::default();
         camera.transform.yaw = 90.0;
         let cube = Mesh3dBuilder::new().cube(Vec3::splat(10.0)).build(ctx);
 
         let mut instances = graphics::InstanceArray3d::new(ctx, None, cube);
-        instances.resize(ctx, 150 * 150);
+        instances.resize(ctx, 100);
 
         Ok(MainState { camera, instances })
     }
@@ -79,8 +79,8 @@ impl event::EventHandler for MainState {
         let time = (ctx.time.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
         // These are settings that apply per instance. These can be different per one
-        self.instances.set((0..150).flat_map(|x| {
-            (0..150).map(move |y| {
+        self.instances.set((0..10).flat_map(|x| {
+            (0..10).map(move |y| {
                 let x = x as f32;
                 let y = y as f32;
                 graphics::DrawParam3d::default()
@@ -135,11 +135,8 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("3dshapes", "ggez")
+    ggez::ContextBuilder::new("3dshapes", "ggez")
         .window_mode(ggez::conf::WindowMode::default().resizable(true))
-        .add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, events_loop, state)
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

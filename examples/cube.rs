@@ -1,7 +1,7 @@
 //! How to draw a 3D cube in ggez.
 //!
-//! ggez doesn't provide any 3D drawing itself, but it exposes
-//! the underlying `gfx-rs` data types, so you can bypass ggez's
+//! ggez provide's 3D drawing itself, but this may not be suitable for all cases,
+//! so ggez exposes the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
 // You must depend on the same version of `crevice` that ggez uses
@@ -63,8 +63,8 @@ struct MainState {
     depth: graphics::ScreenImage,
 }
 
-impl MainState {
-    fn new(ctx: &mut Context) -> Self {
+impl ggez::Game for MainState {
+    fn new(ctx: &mut Context) -> GameResult<Self> {
         // Shaders.
         let shader = ctx
             .gfx
@@ -192,7 +192,7 @@ impl MainState {
                         entry_point: Some("fs_main"),
                         compilation_options: Default::default(),
                         targets: &[Some(wgpu::ColorTargetState {
-                            format: ctx.gfx.surface_format(),
+                            format: ctx.gfx.frame().format(),
                             blend: None,
                             write_mask: wgpu::ColorWrites::ALL,
                         })],
@@ -255,7 +255,7 @@ impl MainState {
         let proj = Mat4::perspective_rh(f32::consts::PI / 4.0, 4.0 / 3.0, 1.0, 10.0);
         let transform = proj * default_view();
 
-        MainState {
+        Ok(MainState {
             frames: 0,
             transform,
             rotation: 0.0,
@@ -266,7 +266,7 @@ impl MainState {
             locals,
             bind_group,
             depth,
-        }
+        })
     }
 }
 
@@ -359,9 +359,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("cube", "ggez").add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx);
-    event::run(ctx, events_loop, state)
+    ggez::ContextBuilder::new("cube", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

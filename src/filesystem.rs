@@ -45,6 +45,12 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+#[cfg(target_arch = "wasm32")]
+use {
+    js_sys::{Reflect, Uint8Array},
+    wasm_bindgen::{JsCast, JsValue},
+};
+
 pub use crate::vfs::OpenOptions;
 
 const CONFIG_NAME: &str = "/conf.toml";
@@ -115,6 +121,18 @@ impl io::Seek for File {
     }
 }
 
+/// Reads the resource zip the JS host stashed on `window.__GGEZ_RESOURCES_ZIP__`.
+#[cfg(target_arch = "wasm32")]
+fn preloaded_resources_zip() -> Option<Vec<u8>> {
+    let window = web_sys::window()?;
+    let val = Reflect::get(&window, &JsValue::from_str("__GGEZ_RESOURCES_ZIP__")).ok()?;
+    if val.is_undefined() || val.is_null() {
+        return None;
+    }
+    let arr = val.dyn_into::<Uint8Array>().ok()?;
+    Some(arr.to_vec())
+}
+
 impl Filesystem {
     /// Create a new `Filesystem` instance, using the given `id` and (on
     /// some platforms) the `author` as a portion of the user
@@ -132,6 +150,39 @@ impl Filesystem {
             resources_dir_name.as_ref(),
             resources_zip_name.as_ref(),
         )
+    }
+
+    /// Creates a filesystem for web builds.
+    ///
+    /// If the JS host has set `window.__GGEZ_RESOURCES_ZIP__` to a `Uint8Array` before wasm
+    /// starts (see `examples/web/src/runner.js`), the zip is mounted as a `ZipFS`
+    /// so synchronous `Filesystem::open` calls work.
+    #[cfg(target_arch = "wasm32")]
+    pub fn new_web(resources_dir_name: &path::Path) -> Filesystem {
+        let mut overlay = vfs::OverlayFS::new();
+        match preloaded_resources_zip() {
+            Some(zip_bytes) => match vfs::ZipFS::from_read(io::Cursor::new(zip_bytes)) {
+                Ok(zipfs) => overlay.push_back(Box::new(zipfs)),
+                Err(e) => log::warn!("could not mount preloaded resources.zip: {e}"),
+            },
+            None => {
+                // Use `console.warn`, not `log::warn!`, because users might not have a log adapter,
+                // and this hint point them at the fix before they spend hours debugging "file not found".
+                web_sys::console::warn_1(&JsValue::from_str(
+                    "ggez: no resources zip on window.__GGEZ_RESOURCES_ZIP__. \
+                     Synchronous filesystem reads (Image::from_path, SoundData::new, ...) will fail. \
+                     Either preload a zip from JS before wasm init, embed via ContextBuilder::add_zipfile_bytes, \
+                     or use *_async loader variants. See examples/web/README.md.",
+                ));
+            }
+        }
+        Filesystem {
+            vfs: Arc::new(RwLock::new(overlay)),
+            resources_dir: resources_dir_name.to_path_buf(),
+            zip_dir: Default::default(),
+            user_config_dir: Default::default(),
+            user_data_dir: Default::default(),
+        }
     }
 
     /// Actual implementation of `new`, without generics.

@@ -1,4 +1,4 @@
-use crate::{context::Has, graphics::gpu::bind_group::BindGroupBuilder, GameError, GameResult};
+use crate::{context::Has, GameError, GameResult};
 
 use super::{
     context::GraphicsContext,
@@ -6,6 +6,7 @@ use super::{
     internal_canvas::InstanceArrayView,
     transform_rect, Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
 };
+use crate::graphics::gpu::bind_group::BindGroupBuilder;
 use crevice::std140::AsStd140;
 use std::{
     cmp::Ordering,
@@ -45,8 +46,7 @@ impl InstanceArray {
     pub fn new(gfx: &impl Has<GraphicsContext>, image: impl Into<Option<Image>>) -> Self {
         let gfx = gfx.retrieve();
         InstanceArray::new_wgpu(
-            &gfx.wgpu,
-            gfx.instance_bind_layout.clone(),
+            gfx,
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             DEFAULT_CAPACITY,
             false,
@@ -59,24 +59,17 @@ impl InstanceArray {
     pub fn new_ordered(gfx: &impl Has<GraphicsContext>, image: impl Into<Option<Image>>) -> Self {
         let gfx = gfx.retrieve();
         InstanceArray::new_wgpu(
-            &gfx.wgpu,
-            gfx.instance_bind_layout.clone(),
+            gfx,
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             DEFAULT_CAPACITY,
             true,
         )
     }
 
-    fn new_wgpu(
-        wgpu: &WgpuContext,
-        bind_layout: wgpu::BindGroupLayout,
-        image: Image,
-        capacity: usize,
-        ordered: bool,
-    ) -> Self {
+    fn new_wgpu(gfx: &GraphicsContext, image: Image, capacity: usize, ordered: bool) -> Self {
         assert!(capacity > 0);
 
-        let buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+        let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
             usage: wgpu::BufferUsages::STORAGE
@@ -85,7 +78,8 @@ impl InstanceArray {
             mapped_at_creation: false,
         });
 
-        let indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+        let bind_layout = gfx.instance_bind_layout.clone();
+        let indices = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: if ordered {
                 std::mem::size_of::<u32>() as u64 * capacity as u64
@@ -115,11 +109,14 @@ impl InstanceArray {
                 false,
                 None,
             );
-        let bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &bind_layout,
-            entries: bind_group.entries(),
-        });
+        let bind_group = gfx
+            .wgpu
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &bind_layout,
+                entries: bind_group.entries(),
+            });
 
         let uniforms = Vec::with_capacity(capacity);
         let params = Vec::with_capacity(capacity);
@@ -150,6 +147,11 @@ impl InstanceArray {
                 .iter()
                 .map(|x| DrawUniforms::from_param(x, None).as_std140()),
         );
+    }
+
+    /// Update the image for this instance mainly useful for async loading
+    pub fn set_image(&mut self, image: Image) {
+        self.image = image;
     }
 
     /// Pushes a new instance onto the end.
@@ -200,22 +202,71 @@ impl InstanceArray {
         }
 
         let len = self.uniforms.len();
-        //if len > self.capacity.load(SeqCst) {
-        let mut resized = InstanceArray::new_wgpu(
-            wgpu,
-            self.bind_layout.clone(),
-            self.image.clone(),
-            len,
-            self.ordered,
-        );
-        *self.buffer.lock().map_err(|_| GameError::LockError)? =
-            resized.buffer.get_mut().unwrap().clone();
-        *self.indices.lock().map_err(|_| GameError::LockError)? =
-            resized.indices.get_mut().unwrap().clone();
-        *self.bind_group.lock().map_err(|_| GameError::LockError)? =
-            resized.bind_group.get_mut().unwrap().clone();
-        self.capacity.store(len, SeqCst);
-        //}
+        if len == 0 {
+            // Nothing to upload; `draw_mesh_instances` skips zero-len views.
+            return Ok(());
+        }
+
+        // Reuse the existing buffers when the data still fits — the old code
+        // allocated a fresh wgpu buffer + indices + bind group on every flush,
+        // which for a "particle batch that clears and refills per frame" is one
+        // wgpu allocation per layer per frame, on the JS main thread on web.
+        // Only reallocate when the data outgrows the current capacity, and
+        // grow geometrically so the buffer stabilises.
+        let cap = self.capacity.load(SeqCst);
+        if len > cap {
+            let new_cap = len.next_power_of_two().max(cap.saturating_mul(2));
+
+            let new_buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: DrawUniforms::std140_size_static() as u64 * new_cap as u64,
+                usage: wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_DST
+                    | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+
+            let new_indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: if self.ordered {
+                    std::mem::size_of::<u32>() as u64 * new_cap as u64
+                } else {
+                    4
+                },
+                usage: wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_SRC
+                    | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+
+            let new_bind_group = BindGroupBuilder::new()
+                .buffer(
+                    &new_buffer,
+                    0,
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Storage { read_only: true },
+                    false,
+                    None,
+                )
+                .buffer(
+                    &new_indices,
+                    0,
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Storage { read_only: true },
+                    false,
+                    None,
+                );
+            let new_bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &self.bind_layout,
+                entries: new_bind_group.entries(),
+            });
+
+            *self.indices.lock().map_err(|_| GameError::LockError)? = new_indices;
+            *self.bind_group.lock().map_err(|_| GameError::LockError)? = new_bind_group;
+            *self.buffer.lock().map_err(|_| GameError::LockError)? = new_buffer;
+            self.capacity.store(new_cap, SeqCst);
+        }
 
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
@@ -226,7 +277,7 @@ impl InstanceArray {
         if self.ordered {
             let mut sorted: Vec<_> = self.params.iter().enumerate().collect();
             sorted.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
-            let indices: Vec<_> = sorted.iter().map(|(i, _)| *i as u32).collect();
+            let indices: Vec<u32> = sorted.iter().map(|(i, _)| *i as u32).collect();
             wgpu.queue.write_buffer(
                 &self.indices.lock().unwrap(),
                 0,
@@ -247,13 +298,7 @@ impl InstanceArray {
         assert!(new_capacity > 0);
 
         let gfx: &GraphicsContext = gfx.retrieve();
-        let resized = InstanceArray::new_wgpu(
-            &gfx.wgpu,
-            self.bind_layout.clone(),
-            self.image.clone(),
-            new_capacity,
-            self.ordered,
-        );
+        let resized = InstanceArray::new_wgpu(gfx, self.image.clone(), new_capacity, self.ordered);
         self.buffer = resized.buffer;
         self.indices = resized.indices;
         self.bind_group = resized.bind_group;
@@ -333,5 +378,31 @@ impl Drawable for InstanceArray {
             .iter()
             .map(|&param| transform_rect(dimensions, param))
             .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use wgpu::naga::{front, valid};
+
+    /// Parse + validate every WGSL shader naga sees to avoid layout regressions
+    #[test]
+    fn headless_validate_instance_shaders() {
+        let shaders: &[(&str, &str)] = &[
+            ("instance.wgsl", include_str!("shader/instance.wgsl")),
+            (
+                "instance_unordered.wgsl",
+                include_str!("shader/instance_unordered.wgsl"),
+            ),
+        ];
+        for (name, src) in shaders {
+            let module = front::wgsl::parse_str(src)
+                .unwrap_or_else(|e| panic!("WGSL parse error in {name}: {e}"));
+            let mut validator =
+                valid::Validator::new(valid::ValidationFlags::all(), valid::Capabilities::all());
+            let _ = validator
+                .validate(&module)
+                .unwrap_or_else(|e| panic!("WGSL validation error in {name}: {e}"));
+        }
     }
 }

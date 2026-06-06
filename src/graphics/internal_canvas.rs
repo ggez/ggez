@@ -610,9 +610,11 @@ impl<'a> InternalCanvas<'a> {
                         ShaderType::Text => wgpu::PrimitiveTopology::TriangleStrip,
                         _ => wgpu::PrimitiveTopology::TriangleList,
                     },
-                    vertex_layout: match ty {
-                        ShaderType::Text => TextVertex::layout(),
-                        _ => Vertex::layout(),
+                    vertex_layouts: match ty {
+                        ShaderType::Text => vec![TextVertex::layout()],
+                        ShaderType::Instance { .. } | ShaderType::Draw => {
+                            vec![Vertex::layout()]
+                        }
                     },
                     cull_mode: None,
                 },

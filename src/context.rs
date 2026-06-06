@@ -8,7 +8,7 @@ pub use winit;
 #[cfg(feature = "audio")]
 use crate::audio;
 use crate::conf;
-use crate::error::GameResult;
+use crate::error::{GameError, GameResult};
 use crate::filesystem::Filesystem;
 use crate::graphics;
 use crate::graphics::GraphicsContext;
@@ -223,7 +223,10 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
-    fn from_conf(
+    ///
+    /// Returns a future because graphics initialization is asynchronous on the web target
+    /// (WebGPU adapter/device requests resolve only after the JS event loop runs).
+    async fn from_conf(
         game_id: &str,
         conf: conf::Conf,
         fs: Filesystem,
@@ -233,7 +236,7 @@ impl Context {
         let events_loop = winit::event_loop::EventLoop::new()?;
         let timer_context = timer::TimeContext::new();
         let graphics_context =
-            graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
+            graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs).await?;
 
         let ctx = Context {
             fs,
@@ -265,6 +268,7 @@ pub struct ContextBuilder {
     pub(crate) author: String,
     pub(crate) conf: conf::Conf,
     pub(crate) resources_dir_name: path::PathBuf,
+    /// Does nothing on the Web target at the moment
     pub(crate) resources_zip_name: path::PathBuf,
     pub(crate) paths: Vec<path::PathBuf>,
     pub(crate) memory_zip_files: Vec<Cow<'static, [u8]>>,
@@ -376,48 +380,145 @@ impl ContextBuilder {
         self
     }
 
-    /// Build a `Context`
+    /// Build a `Context` synchronously.
+    ///
+    /// Native-only: on web use [`ContextBuilder::run`] or [`ContextBuilder::build_async`]
+    /// to drive the future yourself with `wasm_bindgen_futures`.
+    #[cfg_attr(
+        target_arch = "wasm32",
+        deprecated(
+            note = "traps on wasm; use `ContextBuilder::run::<G>()` or `ContextBuilder::build_async`"
+        )
+    )]
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        let fs = Filesystem::new(
-            self.game_id.as_ref(),
-            self.author.as_ref(),
-            &self.resources_dir_name,
-            &self.resources_zip_name,
-        )?;
-
-        for path in &self.paths {
-            fs.mount(path, true);
-        }
-
-        for zipfile_bytes in self.memory_zip_files {
-            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
-        }
-
-        let config = if self.load_conf_file {
-            fs.read_config().unwrap_or(self.conf)
-        } else {
-            self.conf
-        };
-
-        Context::from_conf(self.game_id.as_ref(), config, fs)
+        pollster::block_on(self.build_async())
     }
 
-    /// Build a Custom `Context`.
-    pub fn custom_build<C>(
+    /// Build a `Context` asynchronously.
+    ///
+    /// This is required on the web target, where WebGPU init is asynchronous.
+    /// For native use [`ContextBuilder::build`], which drives this future via `pollster::block_on`.
+    pub async fn build_async(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
+        let (game_id, config, fs) = self.prepare()?;
+        Context::from_conf(&game_id, config, fs).await
+    }
+
+    /// Build a custom context type.
+    ///
+    /// The supplied callback is async so it can `.await` [`GraphicsContext::new`] directly
+    /// without `pollster::block_on` to make this work on web. For normal use where the user
+    /// owns the event loop use [`ContextBuilder::custom_run`].
+    pub async fn custom_build_async<C, F, Fut>(
         self,
-        from_conf: impl Fn(
-            String,
-            conf::Conf,
-            Filesystem,
-        ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
+        from_conf: F,
     ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
     where
+        F: FnOnce(String, conf::Conf, Filesystem) -> Fut,
+        Fut: std::future::Future<Output = GameResult<(C, winit::event_loop::EventLoop<()>)>>,
         C: HasMut<ContextFields>
+            + HasMut<graphics::GraphicsContext>
             + HasMut<timer::TimeContext>
             + HasMut<input::keyboard::KeyboardContext>
             + HasMut<input::mouse::MouseContext>
             + HasMut<GamepadContext>,
     {
+        let (game_id, config, fs) = self.prepare()?;
+        from_conf(game_id, config, fs).await
+    }
+
+    /// Build a [`Context`] and run a [`Game`](crate::event::Game) to completion.
+    ///
+    /// Cross platform convenience for build/run: synchronous on native and
+    /// asynchronous on web (spawned onto the JS event loop via
+    /// `wasm-bindgen-futures`). On wasm32 it returns immediately after spawning
+    /// the setup task; failures are reported to `console.error`.
+    pub fn run<G>(self) -> GameResult
+    where
+        G: crate::event::Game,
+    {
+        self.run_with(G::new)
+    }
+
+    /// Like [`run`](Self::run), but takes a closure constructor for state with external resources
+    /// that `Game::new(&mut Context)` can't include.
+    pub fn run_with<S, F>(self, create_state: F) -> GameResult
+    where
+        S: crate::event::EventHandler<Context, GameError> + 'static,
+        F: FnOnce(&mut Context) -> GameResult<S> + 'static,
+    {
+        self.custom_run(
+            |game_id, conf, fs| async move { Context::from_conf(&game_id, conf, fs).await },
+            create_state,
+        )
+    }
+
+    /// Build a custom context and run an [`EventHandler`](crate::event::EventHandler)
+    ///
+    /// Mirrors [`ContextBuilder::run`] but for providing your owncontext type.
+    /// (see the `custom_context` example). The `from_conf` callback receives the game id,
+    /// resolved [`Conf`](conf::Conf), and mounted [`Filesystem`]. It returns the final context
+    /// with event loop. `create_state` builds the [`EventHandler`](crate::event::EventHandler)
+    ///
+    pub fn custom_run<C, F, Fut, S>(
+        self,
+        from_conf: F,
+        create_state: impl FnOnce(&mut C) -> GameResult<S> + 'static,
+    ) -> GameResult
+    where
+        F: FnOnce(String, conf::Conf, Filesystem) -> Fut + 'static,
+        Fut: std::future::Future<Output = GameResult<(C, winit::event_loop::EventLoop<()>)>>
+            + 'static,
+        S: crate::event::EventHandler<C> + 'static,
+        C: 'static
+            + HasMut<ContextFields>
+            + HasMut<graphics::GraphicsContext>
+            + HasMut<timer::TimeContext>
+            + HasMut<input::keyboard::KeyboardContext>
+            + HasMut<input::mouse::MouseContext>
+            + HasMut<GamepadContext>,
+    {
+        #[cfg(target_arch = "wasm32")]
+        {
+            wasm_bindgen_futures::spawn_local(async move {
+                let (mut ctx, event_loop) = match self.custom_build_async(from_conf).await {
+                    Ok(x) => x,
+                    Err(e) => {
+                        web_sys::console::error_1(
+                            &format!("ggez: failed to build context: {e}").into(),
+                        );
+                        return;
+                    }
+                };
+                let state = match create_state(&mut ctx) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        web_sys::console::error_1(
+                            &format!("ggez: failed to create state: {e}").into(),
+                        );
+                        return;
+                    }
+                };
+                if let Err(e) = crate::event::run(ctx, event_loop, state) {
+                    web_sys::console::error_1(&format!("ggez: event loop error: {e}").into());
+                }
+            });
+            Ok(())
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let (mut ctx, event_loop) = pollster::block_on(self.custom_build_async(from_conf))?;
+            let state = create_state(&mut ctx)?;
+            crate::event::run(ctx, event_loop, state)
+        }
+    }
+
+    /// Get the resolved game id, [`Conf`](conf::Conf), and [`Filesystem`].
+    /// Shared between [`Self::build_async`] and [`Self::custom_build_async`].
+    fn prepare(self) -> GameResult<(String, conf::Conf, Filesystem)> {
+        #[cfg(target_arch = "wasm32")]
+        let fs = Filesystem::new_web(&self.resources_dir_name);
+
+        #[cfg(not(target_arch = "wasm32"))]
         let fs = Filesystem::new(
             self.game_id.as_ref(),
             self.author.as_ref(),
@@ -425,6 +526,7 @@ impl ContextBuilder {
             &self.resources_zip_name,
         )?;
 
+        #[cfg(not(target_arch = "wasm32"))]
         for path in &self.paths {
             fs.mount(path, true);
         }
@@ -439,7 +541,7 @@ impl ContextBuilder {
             self.conf
         };
 
-        from_conf(self.game_id, config, fs)
+        Ok((self.game_id, config, fs))
     }
 }
 

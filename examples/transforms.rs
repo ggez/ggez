@@ -22,7 +22,7 @@ struct MainState {
     screen_coords: graphics::Rect,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let angle = graphics::Image::from_path(ctx, "/angle.png")?;
         let gridmesh_builder = &mut graphics::MeshBuilder::new();
@@ -122,13 +122,11 @@ pub fn main() -> GameResult {
     } else {
         path::PathBuf::from("./resources")
     };
-    let cb = ggez::ContextBuilder::new("transforms", "ggez")
+    ggez::ContextBuilder::new("transforms", "ggez")
         .window_setup(
             ggez::conf::WindowSetup::default()
                 .title("transforms -- Press spacebar to cycle projection!"),
         )
-        .add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

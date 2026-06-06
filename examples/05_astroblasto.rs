@@ -5,7 +5,7 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
-use ggez::event::{self, EventHandler};
+use ggez::event::EventHandler;
 use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::timer;
@@ -322,7 +322,7 @@ struct MainState {
     rng: Rand32,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         println!("Game resource path: {:?}", ctx.fs);
 
@@ -357,7 +357,9 @@ impl MainState {
 
         Ok(s)
     }
+}
 
+impl MainState {
     fn fire_player_shot(&mut self) {
         self.player_shot_timeout = PLAYER_SHOT_TIME;
 
@@ -596,6 +598,12 @@ impl EventHandler for MainState {
         }
         Ok(())
     }
+
+    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> GameResult {
+        self.screen_width = width;
+        self.screen_height = height;
+        Ok(())
+    }
 }
 
 // **********************************************************************
@@ -614,13 +622,9 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ContextBuilder::new("astroblasto", "ggez")
+    ContextBuilder::new("astroblasto", "ggez")
         .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
         .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0))
-        .add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-
-    let game = MainState::new(&mut ctx)?;
-    event::run(ctx, events_loop, game)
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

@@ -36,7 +36,7 @@ struct MainState {
     meshes: Vec<PosMesh>,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut camera = Camera3d::default();
         camera.transform.yaw = 90.0;
@@ -150,11 +150,8 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("3dshapes", "ggez")
+    ggez::ContextBuilder::new("3dshapes", "ggez")
         .window_mode(ggez::conf::WindowMode::default().resizable(true))
-        .add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, events_loop, state)
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

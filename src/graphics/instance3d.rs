@@ -209,7 +209,6 @@ impl InstanceArray3d {
         }
 
         let len = self.uniforms.len();
-        //if len > self.capacity.load(SeqCst) {
         let mut resized = InstanceArray3d::new_wgpu(
             wgpu,
             self.bind_layout.clone(),
@@ -225,7 +224,6 @@ impl InstanceArray3d {
         *self.bind_group.lock().map_err(|_| GameError::LockError)? =
             resized.bind_group.get_mut().unwrap().clone();
         self.capacity.store(len, SeqCst);
-        //}
 
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
@@ -236,7 +234,7 @@ impl InstanceArray3d {
         if self.ordered {
             let mut sorted: Vec<_> = self.params.iter().enumerate().collect();
             sorted.sort_by(|(_, a), (_, b)| (self.sort_by)(a, b));
-            let indices: Vec<_> = sorted.iter().map(|(i, _)| *i as u32).collect();
+            let indices: Vec<u32> = sorted.iter().map(|(i, _)| *i as u32).collect();
             wgpu.queue.write_buffer(
                 &self.indices.lock().unwrap(),
                 0,
@@ -322,5 +320,32 @@ impl Drawable3d for InstanceArray3d {
             },
             param.into(),
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Parse + validate every 3D WGSL shader so layout regressions surface as test
+    /// failures instead of runtime pipeline-creation errors.
+    #[test]
+    fn headless_validate_instance3d_shaders() {
+        let shaders: &[(&str, &str)] = &[
+            ("instance3d.wgsl", include_str!("shader/instance3d.wgsl")),
+            (
+                "instance_unordered3d.wgsl",
+                include_str!("shader/instance_unordered3d.wgsl"),
+            ),
+        ];
+        for (name, src) in shaders {
+            let module = wgpu::naga::front::wgsl::parse_str(src)
+                .unwrap_or_else(|e| panic!("WGSL parse error in {name}: {e}"));
+            let mut validator = wgpu::naga::valid::Validator::new(
+                wgpu::naga::valid::ValidationFlags::all(),
+                wgpu::naga::valid::Capabilities::all(),
+            );
+            let _ = validator
+                .validate(&module)
+                .unwrap_or_else(|e| panic!("WGSL validation error in {name}: {e}"));
+        }
     }
 }

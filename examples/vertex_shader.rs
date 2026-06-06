@@ -18,7 +18,7 @@ struct MainState {
     shader_params: graphics::ShaderParams<ShaderUniforms>,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let square_mesh = graphics::Mesh::new_rectangle(
             ctx,
@@ -26,8 +26,10 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
+        // Use `vertex_code` with `include_str!` so the build is fully synchronous.
+        // vertex_path().build reads via VFS, which fails on web
         let shader = graphics::ShaderBuilder::new()
-            .vertex_path("/vertex.wgsl")
+            .vertex_code(include_str!("../resources/vertex.wgsl"))
             .build(ctx)?;
         let shader_params = graphics::ShaderParamsBuilder::new(&ShaderUniforms {
             rotation: Mat4::IDENTITY,
@@ -81,9 +83,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("vertex_shader", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("vertex_shader", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

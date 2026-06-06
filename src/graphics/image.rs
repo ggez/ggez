@@ -282,15 +282,28 @@ impl Image {
 
         let _ = gfx.wgpu.queue.submit([cmd]);
 
-        // wait...
+        // wait for the mapping callback. On native we can block the device on the queue until
+        // work is done; on web we can't block so we poll once and bail if the result isn't ready
+        // TODO - proper async API for web
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         buffer
             .slice(..)
             .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap()); // Unwrap is fine as this should never fail
-        let _ = gfx.wgpu.device.poll(wgpu::PollType::wait_indefinitely());
-        let map_result = rx
-            .recv()
-            .expect("All senders dropped, this should not be possible.");
+        #[cfg(not(target_arch = "wasm32"))]
+        let map_result = {
+            let _ = gfx.wgpu.device.poll(wgpu::PollType::wait_indefinitely());
+            rx.recv()
+                .expect("All senders dropped, this should not be possible.")
+        };
+        #[cfg(target_arch = "wasm32")]
+        let map_result = {
+            let _ = gfx.wgpu.device.poll(wgpu::PollType::Poll);
+            rx.try_recv().map_err(|_| {
+                GameError::RenderError(String::from(
+                    "Image::to_pixels: buffer mapping did not complete synchronously on web",
+                ))
+            })?
+        };
         map_result?;
 
         let mut out = Vec::new();

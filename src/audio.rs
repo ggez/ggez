@@ -24,17 +24,26 @@ use crate::filesystem::Filesystem;
 /// of your `Context` object.
 pub struct AudioContext {
     fs: Filesystem,
-    stream: rodio::MixerDeviceSink,
+    // `None` when no output device could be opened.
+    // [`Source`]/[`SpatialSource`] creation then fails gracefully instead of crashing
+    stream: Option<rodio::MixerDeviceSink>,
 }
 
 impl AudioContext {
-    /// Create new `AudioContext`.
+    /// Create new `AudioContext` if there is a usable output device.
     pub fn new(fs: &Filesystem) -> GameResult<Self> {
-        let stream = rodio::DeviceSinkBuilder::open_default_sink().map_err(|_e| {
-            GameError::AudioError(String::from(
-                "Could not initialize sound system using default output device (for some reason)",
-            ))
-        })?;
+        #[cfg(target_arch = "wasm32")]
+        install_web_audio_unlock();
+
+        let stream = match rodio::DeviceSinkBuilder::open_default_sink() {
+            Ok(stream) => Some(stream),
+            Err(e) => {
+                log::warn!(
+                    "Could not initialize audio using default output device ({e:?}); audio is disabled"
+                );
+                None
+            }
+        };
         Ok(Self {
             fs: fs.clone(),
             stream,
@@ -42,12 +51,111 @@ impl AudioContext {
     }
 }
 
-impl AudioContext {
-    /// Returns the audio device.
-    #[inline]
-    pub fn device(&self) -> &rodio::MixerDeviceSink {
-        &self.stream
+// Subclass `AudioContext` so each instance auto-resumes on the first user gesture and
+// mirrors its live state onto `window.__ggezAudioState` for [`AudioContext::state`] to read.
+//
+// This only catches contexts constructed after the patch runs. wasm-bindgen pins the
+// `AudioContext` constructor at JS module load time, so to also catch rodio's context an
+// equivalent shim must run from JS before the wasm module imports (`examples/web/src/runner.js`)
+#[cfg(target_arch = "wasm32")]
+fn install_web_audio_unlock() {
+    const JS: &str = r#"
+        if (window.__ggezAudioUnlockInstalled) return;
+        window.__ggezAudioUnlockInstalled = true;
+        const Original = window.AudioContext || window.webkitAudioContext;
+        if (!Original) return;
+        class GgezUnlockingAudioContext extends Original {
+          constructor() {
+            super(...arguments);
+            const sync = () => { window.__ggezAudioState = this.state; };
+            sync();
+            this.addEventListener('statechange', sync);
+            if (this.state !== 'suspended') return;
+            const unlock = () => { this.resume().catch(() => {}); };
+            const opts = { capture: true, passive: true, once: true };
+            for (const ev of ['pointerdown', 'keydown', 'touchstart', 'mousedown']) {
+              addEventListener(ev, unlock, opts);
+            }
+          }
+        }
+        window.AudioContext = GgezUnlockingAudioContext;
+        if (window.webkitAudioContext) window.webkitAudioContext = GgezUnlockingAudioContext;
+    "#;
+    if let Err(e) = js_sys::Function::new_no_args(JS).call0(&wasm_bindgen::JsValue::NULL) {
+        log::warn!("Could not install web audio unlock hook: {e:?}");
     }
+}
+
+/// State of the audio output. On wasm this mirrors the browser
+/// [`AudioContext.state`](https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/state);
+/// on native it's [`Running`](Self::Running) when a device was opened and
+/// [`Closed`](Self::Closed) otherwise.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AudioState {
+    /// Awaiting a user gesture or suspended programmatically. No audio will play.
+    Suspended,
+    /// Audio is playing normally.
+    Running,
+    /// Context closed or no output device available. Cannot play sounds.
+    Closed,
+}
+
+impl AudioContext {
+    /// Returns the audio device, if one was successfully opened.
+    #[inline]
+    pub fn device(&self) -> Option<&rodio::MixerDeviceSink> {
+        self.stream.as_ref()
+    }
+
+    /// Current state of the audio output. On wasm this starts
+    /// [`Suspended`](AudioState::Suspended) and flips to [`Running`](AudioState::Running) once
+    /// the user gestures — gate "click to enable sound" UI on this.
+    pub fn state(&self) -> AudioState {
+        if self.stream.is_none() {
+            return AudioState::Closed;
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            current_web_audio_state().unwrap_or(AudioState::Suspended)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            AudioState::Running
+        }
+    }
+
+    /// Shorthand for `self.state() == AudioState::Running`.
+    #[inline]
+    pub fn is_running(&self) -> bool {
+        self.state() == AudioState::Running
+    }
+}
+
+// rodio's wasm backend can't reclaim detached sinks, so any `play_detached` issued while
+// the AudioContext is suspended leaks decoded PCM until the tab closes. Native always OK.
+fn audio_output_ready() -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        matches!(current_web_audio_state(), Some(AudioState::Running))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        true
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn current_web_audio_state() -> Option<AudioState> {
+    use wasm_bindgen::JsValue;
+    let global = js_sys::global();
+    let value = js_sys::Reflect::get(&global, &JsValue::from_str("__ggezAudioState")).ok()?;
+    let s = value.as_string()?;
+    Some(match s.as_str() {
+        "running" => AudioState::Running,
+        "closed" => AudioState::Closed,
+        _ => AudioState::Suspended,
+    })
 }
 
 impl fmt::Debug for AudioContext {
@@ -285,8 +393,13 @@ impl Source {
 
     /// Creates a new `Source` using the given `SoundData` object.
     pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
+        let stream = audio.retrieve().stream.as_ref().ok_or_else(|| {
+            GameError::AudioError(String::from(
+                "audio is disabled (no output device available)",
+            ))
+        })?;
         let state = SourceState::new(data);
-        let sink = rodio::Player::connect_new(audio.retrieve().stream.mixer());
+        let sink = rodio::Player::connect_new(stream.mixer());
         Ok(Source { sink, state })
     }
 }
@@ -297,6 +410,9 @@ impl SoundSource for Source {
     }
 
     fn play_detached(self) {
+        if !audio_output_ready() {
+            return;
+        }
         self.play();
         self.sink.detach();
     }
@@ -325,7 +441,13 @@ impl SoundSource for Source {
 
     fn stop(&self) {
         self.state.play_time.store(0, Ordering::SeqCst);
-        self.sink.clear();
+        // rodio clear() blocks the calling thread until the audio thread drains the queue.
+        // On wasm that thread controls the audio callback, so the it deadlocks the tab.
+        // Skip each queued source instead.
+        for _ in 0..self.sink.len() {
+            self.sink.skip_one();
+        }
+        self.sink.pause();
     }
 
     fn stopped(&self) -> bool {
@@ -381,10 +503,15 @@ impl SpatialSource {
     /// Creates a new `SpatialSource` using the given `SoundData` object.
     pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
         let audio = audio.retrieve();
+        let stream = audio.stream.as_ref().ok_or_else(|| {
+            GameError::AudioError(String::from(
+                "audio is disabled (no output device available)",
+            ))
+        })?;
 
         let state = SourceState::new(data);
         let sink = rodio::SpatialPlayer::connect_new(
-            audio.stream.mixer(),
+            stream.mixer(),
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
@@ -401,6 +528,9 @@ impl SoundSource for SpatialSource {
     }
 
     fn play_detached(self) {
+        if !audio_output_ready() {
+            return;
+        }
         self.play();
         self.sink.detach();
     }
@@ -435,6 +565,8 @@ impl SoundSource for SpatialSource {
 
     fn stop(&self) {
         self.state.play_time.store(0, Ordering::SeqCst);
+        // FIXME: same wasm deadlock as `Source::stop`, but `rodio::SpatialPlayer`
+        // doesn't expose a non-blocking `skip_one` we can use to work around it.
         self.sink.clear();
     }
 

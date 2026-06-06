@@ -7,7 +7,7 @@ use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, path::Path};
 
 /// Font data that can be used to create a new font in [`GraphicsContext`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FontData {
     pub(crate) font: ab_glyph::FontArc,
 }
@@ -191,8 +191,30 @@ impl Text {
     }
 
     /// Specifies the text's font scale for fragments that don't specify their own scale.
+    ///
+    /// The scale is intepreted as physical pixels. For text sized in logical/CSS pixels and
+    /// rasterized at the display's native resolution, use [`Text::set_logical_scale`].
     pub fn set_scale(&mut self, scale: impl Into<PxScale>) -> &mut Self {
         self.scale = scale.into();
+        self
+    }
+
+    /// Sets the text's font scale in logical pixels.
+    ///
+    /// On a display with `pixel_scale = N`, this stores `scale * N` as the rasterization scale,
+    /// so glyph_brush rasterizes at the display's native resolution and rendered text occupies
+    /// `scale` pixels (mainly useful for HiDPI displays with wasm target).
+    pub fn set_logical_scale(
+        &mut self,
+        scale: impl Into<PxScale>,
+        gfx: &impl Has<GraphicsContext>,
+    ) -> &mut Self {
+        let dpr = gfx.retrieve().pixel_scale();
+        let scale: PxScale = scale.into();
+        self.scale = PxScale {
+            x: scale.x * dpr,
+            y: scale.y * dpr,
+        };
         self
     }
 

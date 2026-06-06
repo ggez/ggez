@@ -29,6 +29,7 @@ gltf = ["dep:gltf", "dep:base64", "dep:percent-encoding", "3d"]
 obj = ["dep:obj-rs", "3d"]
 
 [dependencies]
+instant = { version = "0.1", features = ["inaccurate", "wasm-bindgen"] }
 bitflags = "2.1"
 zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
 directories = "6"
@@ -36,7 +37,7 @@ wgpu = "29"
 glyph_brush = "0.7"
 winit = { version = "0.30", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["png", "webp", "bmp", "jpeg"] }
-rodio = { version = "0.22", optional = true, default-features = false, features = ["playback", "flac", "mp3", "vorbis", "wav"] }
+rodio = { version = "0.22", optional = true, default-features = false, features = ["playback", "flac", "mp3", "vorbis", "wav", "wasm-bindgen"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "1.0"
 log = "0.4"
@@ -57,6 +58,27 @@ gltf = { version = "1.2.0", optional = true, default-features = false, features 
 obj-rs = { version = "0.7.1", optional = true }
 num-traits = "0.2"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3.64"
+# Matches winit's `Instant` type so we can construct `ControlFlow::WaitUntil(_)`
+# on wasm. winit already depends on `web-time` transitively.
+web-time = "1"
+web-sys = { version = "0.3", features = [
+    "console",
+    "Document",
+    "Window",
+    "Element",
+    "HtmlElement",
+    "Node",
+    "Headers",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+]}
+
 [dev-dependencies]
 chrono = "0.4"
 fern = "0.7"
@@ -69,6 +91,13 @@ num-derive = "0.4"
 
 skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }
 getrandom = "0.4"
+
+# `rand` (a dev-dependency) depends on `getrandom 0.4`, which on `wasm32-unknown-unknown`
+# needs the `wasm_js` feature to compile
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["console"] }
 
 [workspace]
 members = ["doc_tests"]

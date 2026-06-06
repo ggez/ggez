@@ -6,7 +6,7 @@
 //! (for more explanations on this see https://github.com/ggez/ggez/issues/694#issuecomment-853724926)
 
 use ggez::context::HasMut;
-use ggez::event::{self, EventHandler};
+use ggez::event::EventHandler;
 use ggez::glam::Vec2;
 use ggez::graphics::{self, BlendMode, Color, DrawParam, GraphicsContext};
 use ggez::input::keyboard::KeyInput;
@@ -20,7 +20,7 @@ struct MainState {
     circle: graphics::Mesh,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let layer = graphics::ScreenImage::new(ctx, 1., 1., 1);
 
@@ -40,7 +40,9 @@ impl MainState {
         };
         Ok(s)
     }
+}
 
+impl MainState {
     fn draw_venn(
         &self,
         _gfx: &mut impl HasMut<GraphicsContext>,
@@ -200,14 +202,12 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("blend_modes", "ggez")
+    ggez::ContextBuilder::new("blend_modes", "ggez")
         .window_mode(ggez::conf::WindowMode::default().dimensions(1400., 600.))
         .window_setup(
             ggez::conf::WindowSetup::default()
                 .title("blend modes -- Press a button to change the canvas blend mode!"),
         )
-        .add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

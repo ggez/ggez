@@ -209,3 +209,4 @@ pub use crate::coroutine::Coroutine;
 
 pub use crate::context::{Context, ContextBuilder};
 pub use crate::error::*;
+pub use crate::event::Game;

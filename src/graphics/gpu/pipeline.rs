@@ -14,7 +14,7 @@ pub struct RenderPipelineInfo {
     pub depth: Option<wgpu::CompareFunction>,
     pub vertices: bool,
     pub topology: wgpu::PrimitiveTopology,
-    pub vertex_layout: wgpu::VertexBufferLayout<'static>,
+    pub vertex_layouts: Vec<wgpu::VertexBufferLayout<'static>>,
     pub cull_mode: Option<wgpu::Face>,
 }
 
@@ -38,8 +38,6 @@ impl PipelineCache {
         device: &wgpu::Device,
         info: RenderPipelineInfo,
     ) -> wgpu::RenderPipeline {
-        let vertex_buffers = [info.vertex_layout.clone()];
-
         self.pipelines
             .entry(info)
             .or_insert_with_key(|info| {
@@ -50,7 +48,11 @@ impl PipelineCache {
                         module: &info.vs,
                         entry_point: Some("vs_main"),
                         compilation_options: wgpu::PipelineCompilationOptions::default(),
-                        buffers: if info.vertices { &vertex_buffers } else { &[] },
+                        buffers: if info.vertices {
+                            &info.vertex_layouts
+                        } else {
+                            &[]
+                        },
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: info.topology,

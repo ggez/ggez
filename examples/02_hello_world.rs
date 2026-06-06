@@ -8,7 +8,7 @@ struct MainState {
     frames: usize,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.gfx.add_font(
             "LiberationMono",
@@ -74,9 +74,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("helloworld", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("helloworld", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

@@ -12,17 +12,28 @@ struct MainState {
     image: Image,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let og_image = Image::from_path(ctx, "/wabbit_alpha.png")?;
-        let cpu_image = og_image.to_pixels(ctx)?;
-        let image = Image::from_pixels(
-            ctx,
-            cpu_image.as_slice(),
-            og_image.format(),
-            og_image.width(),
-            og_image.height(),
-        );
+        let og_image =
+            graphics::Image::from_bytes(ctx, include_bytes!("../resources/wabbit_alpha.png"))?;
+
+        // `Image::to_pixels` waits for `map_async`, which can't block the main thread on web.
+        // Skip the round-trip on web and just display the original image.
+        #[cfg(target_arch = "wasm32")]
+        let image = og_image;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let image = {
+            let cpu_image = og_image.to_pixels(ctx)?;
+            Image::from_pixels(
+                ctx,
+                cpu_image.as_slice(),
+                og_image.format(),
+                og_image.width(),
+                og_image.height(),
+            )
+        };
+
         Ok(MainState { image })
     }
 }
@@ -53,8 +64,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("cpu_image", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("cpu_image", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

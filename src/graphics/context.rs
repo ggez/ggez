@@ -86,8 +86,11 @@ pub struct GraphicsContext {
 }
 
 impl GraphicsContext {
-    /// Create a new graphics context
-    pub fn new(
+    /// Create a new graphics context.
+    ///
+    /// Returns a future because wgpu adapter and device requests resolve asynchronously
+    /// on web. On native they complete immediately (see `ContextBuilder::build`).
+    pub async fn new(
         game_id: &str,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
@@ -101,15 +104,22 @@ impl GraphicsContext {
         };
 
         if conf.backend == Backend::All {
+            #[cfg(target_arch = "wasm32")]
+            let primary = wgpu::Backends::BROWSER_WEBGPU;
+            #[cfg(not(target_arch = "wasm32"))]
+            let primary = wgpu::Backends::PRIMARY;
+
             match Self::new_from_instance(
                 game_id,
-                new_instance(wgpu::Backends::PRIMARY),
+                new_instance(primary),
                 event_loop,
                 conf,
                 filesystem,
-            ) {
+            )
+            .await
+            {
                 Ok(o) => Ok(o),
-                Err(GameError::GraphicsInitializationError) => {
+                Err(GameError::GraphicsInitializationError(_)) => {
                     println!(
                         "Failed to initialize graphics, trying secondary backends.. Please mention this if you encounter any bugs!"
                     );
@@ -124,11 +134,13 @@ impl GraphicsContext {
                         conf,
                         filesystem,
                     )
+                    .await
                 }
                 Err(e) => Err(e),
             }
         } else {
-            let instance = new_instance(match conf.backend {
+            #[cfg(not(target_arch = "wasm32"))]
+            let backends = match conf.backend {
                 Backend::All => unreachable!(),
                 Backend::OnlyPrimary => wgpu::Backends::PRIMARY,
                 Backend::Vulkan => wgpu::Backends::VULKAN,
@@ -136,9 +148,30 @@ impl GraphicsContext {
                 Backend::Dx12 => wgpu::Backends::DX12,
                 Backend::Gl => wgpu::Backends::GL,
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
-            });
+            };
+            // Only WebGPU is supported on web. Warn users who set `Backend::Gl` or similar
+            // in `conf.toml` instead of an opaque `GraphicsInitializationError`.
+            #[cfg(target_arch = "wasm32")]
+            let backends = match conf.backend {
+                Backend::All => unreachable!(),
+                Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
+                other => {
+                    warn!(
+                        "Backend::{other:?} is not supported on the web target; \
+                         falling back to Backend::BrowserWebGpu."
+                    );
+                    wgpu::Backends::BROWSER_WEBGPU
+                }
+            };
 
-            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem)
+            Self::new_from_instance(
+                game_id,
+                new_instance(backends),
+                event_loop,
+                conf,
+                filesystem,
+            )
+            .await
         }
     }
 
@@ -184,7 +217,7 @@ impl GraphicsContext {
         (bind_group, layout)
     }
 
-    pub(crate) fn new_from_instance(
+    pub(crate) async fn new_from_instance(
         #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
         event_loop: &winit::event_loop::EventLoop<()>,
@@ -235,38 +268,65 @@ impl GraphicsContext {
         // In order to do this, we need to switch window creation to a point inside the active event loop instead of before.
         #[allow(deprecated)]
         let window = Arc::new(event_loop.create_window(window_builder)?);
-        let surface = instance
-            .create_surface(window.clone())
-            .map_err(|_| GameError::GraphicsInitializationError)?;
 
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            force_fallback_adapter: false,
-            compatible_surface: Some(&surface),
-        }))
-        .or(Err(GameError::GraphicsInitializationError))?;
+        #[cfg(target_arch = "wasm32")]
+        {
+            use winit::platform::web::WindowExtWebSys;
 
-        // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
-        const MAX_INSTANCES: u64 = 1_000_000;
-        const INSTANCE_BUFFER_SIZE: u64 = 96 * MAX_INSTANCES;
+            if let Some(canvas) = window.canvas() {
+                let parent_id = conf.window_setup.web_canvas_parent_id.as_deref();
+                web_sys::window()
+                    .and_then(|win| win.document())
+                    .and_then(|doc| {
+                        if let Some(element) = doc.get_element_by_id("ggez-body") {
+                            element.remove();
+                        }
 
-        let (device, queue) =
-            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-                required_limits: wgpu::Limits {
-                    // 1st: DrawParams
-                    // 2nd: Texture + Sampler
-                    // 3rd: InstanceArray
-                    // 4th: ShaderParams
-                    max_bind_groups: 4,
-                    // InstanceArray uses 2 storage buffers.
-                    max_storage_buffers_per_shader_stage: 2,
-                    max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
-                    max_texture_dimension_1d: 8192,
-                    max_texture_dimension_2d: 8192,
-                    ..wgpu::Limits::downlevel_webgl2_defaults()
-                },
-                ..wgpu::DeviceDescriptor::default()
-            }))?;
+                        let dst: web_sys::Node = match parent_id {
+                            Some(id) => doc.get_element_by_id(id)?.into(),
+                            None => doc.body()?.into(),
+                        };
+                        let canvas = web_sys::Element::from(canvas);
+                        canvas.set_id("ggez-body");
+                        let _ = dst.append_child(&canvas).ok()?;
+                        Some(())
+                    })
+                    .expect("could not append canvas to document body");
+            }
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        if !webgpu_available() {
+            return Err(GameError::WebGpuUnavailable(String::from(
+                "`navigator.gpu` is not exposed by this browser",
+            )));
+        }
+
+        let surface = instance.create_surface(window.clone()).map_err(|e| {
+            GameError::GraphicsInitializationError(format!("could not create surface: {e}"))
+        })?;
+
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
+                compatible_surface: Some(&surface),
+            })
+            .await
+            .map_err(|e| {
+                #[cfg(target_arch = "wasm32")]
+                {
+                    GameError::WebGpuUnavailable(format!("no compatible adapter: {e}"))
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    GameError::GraphicsInitializationError(format!("no compatible adapter: {e}"))
+                }
+            })?;
+
+        let (device, queue) = adapter
+            .request_device(&wgpu::DeviceDescriptor::default())
+            .await?;
 
         let wgpu = Arc::new(WgpuContext {
             instance,
@@ -276,12 +336,25 @@ impl GraphicsContext {
 
         let capabilities = surface.get_capabilities(&adapter);
 
+        // On web, `window.inner_size()` comes from a ResizeObserver that hasn't fired at
+        // this point, and reports `(0, 0)`. Configure the surface against the window mode instead,
+        // once the observer fires, `on_resize` updates the surface to the actual canvas size.
         let size = window.inner_size();
+        let (width, height) = if size.width == 0 || size.height == 0 {
+            let physical = conf
+                .window_mode
+                .actual_size()
+                .map(|s| s.to_physical::<u32>(window.scale_factor()))
+                .unwrap_or_else(|_| winit::dpi::PhysicalSize::new(800, 600));
+            (physical.width.max(1), physical.height.max(1))
+        } else {
+            (size.width, size.height)
+        };
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: capabilities.formats[0],
-            width: size.width,
-            height: size.height,
+            width,
+            height,
             present_mode: if conf.window_setup.vsync {
                 wgpu::PresentMode::AutoVsync
             } else {
@@ -481,6 +554,17 @@ impl GraphicsContext {
         (size.width as f32, size.height as f32)
     }
 
+    /// Returns the window's device pixel ratio (logical pixels / physical pixels).
+    ///
+    /// `1.0` on a standard display, `2.0` on a 2× retina or `devicePixelRatio = 2` browser, etc.
+    /// Useful when mixing logical-pixel layout (e.g. [`WindowMode::logical_dimensions`]) with
+    /// APIs that take physical pixel values, or when sizing text via
+    /// [`Text::set_logical_scale`](crate::graphics::Text::set_logical_scale).
+    #[inline]
+    pub fn pixel_scale(&self) -> f32 {
+        self.window.scale_factor() as f32
+    }
+
     /// Sets the window size (in physical pixels) / resolution to the specified width and height.
     ///
     /// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
@@ -527,6 +611,22 @@ impl GraphicsContext {
     #[inline]
     pub fn window(&self) -> &winit::window::Window {
         &self.window
+    }
+
+    /// Whether the host page is visible. gate `update`/`draw` on it to skip
+    /// per-frame work in a backgrounded tab. Always `true` on native.
+    pub fn is_page_visible(&self) -> bool {
+        #[cfg(target_arch = "wasm32")]
+        {
+            web_sys::window()
+                .and_then(|w| w.document())
+                .map(|d| !d.hidden())
+                .unwrap_or(true)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            true
+        }
     }
 
     /// Sets the window icon. `None` for path removes the icon.
@@ -623,7 +723,11 @@ impl GraphicsContext {
                         .wgpu
                         .instance
                         .create_surface(self.window.clone())
-                        .map_err(|_| GameError::GraphicsInitializationError)?;
+                        .map_err(|e| {
+                            GameError::GraphicsInitializationError(format!(
+                                "could not recreate surface after loss: {e}"
+                            ))
+                        })?;
                     self.reconfigure_surface();
                 }
 
@@ -699,7 +803,7 @@ impl GraphicsContext {
                     depth: None,
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
-                    vertex_layout: Vertex::layout(),
+                    vertex_layouts: vec![Vertex::layout()],
                     cull_mode: None,
                 },
             );
@@ -778,7 +882,10 @@ impl GraphicsContext {
 
         match mode.fullscreen_type {
             FullscreenType::Windowed => {
-                window.set_fullscreen(None);
+                // Avoid calling set_fullscreen(None) when already windowed (avoids web crash)
+                if window.fullscreen().is_some() {
+                    window.set_fullscreen(None);
+                }
                 window.set_decorations(!mode.borderless);
                 let _ = window.request_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
@@ -812,15 +919,39 @@ impl GraphicsContext {
         }
 
         let size = window.inner_size();
-        assert!(size.width > 0 && size.height > 0);
-        self.surface_config.width = size.width.max(1);
-        self.surface_config.height = size.height.max(1);
+        let (width, height) = if size.width == 0 || size.height == 0 {
+            // On web, canvas `ResizeObserver` may not have fired, so `inner_size` is `(0, 0)`.
+            // Fall back to the configured size and let the resize event handler reconfigure.
+            let physical = mode
+                .actual_size()
+                .map(|s| s.to_physical::<u32>(window.scale_factor()))
+                .unwrap_or_else(|_| winit::dpi::PhysicalSize::new(800, 600));
+            (physical.width.max(1), physical.height.max(1))
+        } else {
+            (size.width, size.height)
+        };
+        self.surface_config.width = width;
+        self.surface_config.height = height;
 
         self.surface
             .configure(&self.wgpu.device, &self.surface_config);
 
         Ok(())
     }
+}
+
+// Lets us return `WebGpuUnavailable` instead of an opaque failure when the browser has no WebGPU.
+#[cfg(target_arch = "wasm32")]
+fn webgpu_available() -> bool {
+    use wasm_bindgen::JsValue;
+    let global = js_sys::global();
+    let navigator = match js_sys::Reflect::get(&global, &JsValue::from_str("navigator")) {
+        Ok(v) if !v.is_undefined() && !v.is_null() => v,
+        _ => return false,
+    };
+    js_sys::Reflect::get(&navigator, &JsValue::from_str("gpu"))
+        .map(|gpu| !gpu.is_undefined() && !gpu.is_null())
+        .unwrap_or(false)
 }
 
 // This is kinda awful 'cause it copies a couple times,

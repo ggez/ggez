@@ -56,11 +56,12 @@ your own libraries atop ggez.
 ### Supported platforms
 
  * Fully supported: Windows, Linux, MacOS
- * Not officially supported but might work anyway: Android, iOS, Web
+ * Preliminary support for Web (there may be sharp edges)
+ * Not officially supported but might work anyway: Android, iOS
 
-For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
-
-If you want to run ggez (up to 0.7 as of now) on Android, iOS or the web using WebAssembly right now, take a look at [good-web-game](https://github.com/ggez/good-web-game).
+For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md). If you want better mobile
+support, [good-web-game](https://github.com/ggez/good-web-game) targets Android, iOS, and the web from a similar
+API and may be a better fit.
 
 ### Who's using ggez?
 

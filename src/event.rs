@@ -256,15 +256,34 @@ where
     }
 }
 
+/// Convenience trait wrapper for `EventHandler` with a constructor, so
+/// build-context -> create-state -> event-loop can be expressed as:
+/// `ContextBuilder::new(...).run::<MyGame>()`.
+///
+/// Implement this on your top-level state type alongside [`EventHandler`]. It gives
+/// [`ContextBuilder::run`](crate::ContextBuilder::run) everything needed to run the game
+/// on both native (sync) and web (async).
+///
+/// If your state needs external resources that don't come from [`Context`] (network handle,
+/// CLI args, DB pool, etc), skip this trait and use `crate::ContextBuilder::run_with` instead.
+pub trait Game: EventHandler<Context, GameError> + Sized + 'static {
+    /// Construct the game state once the [`Context`] is ready.
+    fn new(ctx: &mut Context) -> GameResult<Self>;
+}
+
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
+///
+/// On wasm this returns immediately!: it hands the `EventHandler` to the browser event loop
+/// and returns `Ok(())` so wasm-bindgen's `init()` promise resolves cleanly. Avoid setup code
+/// after `event::run(...)`* in `main()`; use `EventHandler::update` or run it before calling this
 pub fn run<S, C, E>(ctx: C, event_loop: EventLoop<()>, state: S) -> GameResult
 where
     S: EventHandler<C, E> + 'static,
-    E: std::fmt::Debug,
+    E: std::fmt::Debug + 'static,
     C: 'static
         + HasMut<ContextFields>
         + HasMut<GraphicsContext>
@@ -273,15 +292,28 @@ where
         + HasMut<GamepadContext>
         + HasMut<crate::timer::TimeContext>,
 {
-    let mut app = GgezApplicationHandler {
+    let app = GgezApplicationHandler {
         ctx,
         state,
         _p: PhantomData,
     };
 
-    event_loop
-        .run_app(&mut app)
-        .map_err(GameError::EventLoopError)
+    #[cfg(target_arch = "wasm32")]
+    {
+        // `run_app` on web throws a JS exception that causes wasm-bindgen `init()` promise
+        // to reject and looks like a load error to the page.
+        // `spawn_app` returns normally and lets the browser drive the event loop.
+        use winit::platform::web::EventLoopExtWebSys;
+        event_loop.spawn_app(app);
+        Ok(())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let mut app = app;
+        event_loop
+            .run_app(&mut app)
+            .map_err(GameError::EventLoopError)
+    }
 }
 
 struct GgezApplicationHandler<S, C, E>
@@ -332,6 +364,28 @@ where
         if !HasMut::<ContextFields>::retrieve_mut(&mut self.ctx).continuing {
             event_loop.exit();
             return;
+        }
+
+        // On web, throttle the event loop while the tab is hidden. winit's
+        // default `PollStrategy::Scheduler` posts a task + creates / aborts an
+        // `AbortController` every iteration; with the page hidden but
+        // `requestAnimationFrame` still firing (because a live WebSocket or
+        // AudioContext defeats Chrome's hidden-tab throttle), that scheduler
+        // chatter pins a CPU core all on its own. A 1 s `WaitUntil` cadence
+        // is plenty — we just need to recheck visibility periodically; any
+        // real user interaction (focus, pointer, key) wakes winit immediately.
+        #[cfg(target_arch = "wasm32")]
+        {
+            let visible =
+                HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).is_page_visible();
+            if !visible {
+                // winit pulls `Instant` from `web_time` on wasm targets; match that
+                // so `WaitUntil` accepts the value.
+                let when =
+                    web_time::Instant::now() + std::time::Duration::from_secs(1);
+                event_loop.set_control_flow(ControlFlow::WaitUntil(when));
+                return;
+            }
         }
 
         event_loop.set_control_flow(ControlFlow::Poll);
@@ -623,36 +677,46 @@ where
             }
         }
 
-        let res = self.state.update(&mut self.ctx);
-        if catch_error(
-            &mut self.ctx,
-            res,
-            &mut self.state,
-            event_loop,
-            ErrorOrigin::Update,
-        ) {
-            return;
-        };
+        // Skip the whole frame when `document.hidden`
+        let page_visible = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).is_page_visible();
 
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
-            error!("Error on GraphicsContext::begin_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-            event_loop.exit();
+        if !page_visible {
+            let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
+            time.reset_residual_update_dt();
         }
 
-        if let Err(e) = self.state.draw(&mut self.ctx) {
-            error!("Error on EventHandler::draw(): {e:?}");
-            eprintln!("Error on EventHandler::draw(): {e:?}");
-            if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
-                event_loop.exit();
+        if page_visible {
+            let res = self.state.update(&mut self.ctx);
+            if catch_error(
+                &mut self.ctx,
+                res,
+                &mut self.state,
+                event_loop,
+                ErrorOrigin::Update,
+            ) {
                 return;
-            }
-        }
+            };
 
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
-            error!("Error on GraphicsContext::end_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
-            event_loop.exit();
+            if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
+                error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
+                event_loop.exit();
+            }
+
+            if let Err(e) = self.state.draw(&mut self.ctx) {
+                error!("Error on EventHandler::draw(): {e:?}");
+                eprintln!("Error on EventHandler::draw(): {e:?}");
+                if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+                    event_loop.exit();
+                    return;
+                }
+            }
+
+            if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
+                error!("Error on GraphicsContext::end_frame(): {e:?}");
+                eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
+                event_loop.exit();
+            }
         }
 
         // reset the mouse delta for the next frame
