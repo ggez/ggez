@@ -1,6 +1,10 @@
 use std::marker::PhantomData;
 
-use crate::{context::Has, Context, GameError, GameResult};
+use crate::{
+    context::{Has, HasMut},
+    timer::TimeContext,
+    GameError, GameResult,
+};
 
 use super::{
     context::GraphicsContext,
@@ -257,24 +261,22 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     }
 
     /// Produce a [`ShaderParams`] from the builder.
-    pub fn build(self, ctx: &mut Context) -> ShaderParams<Uniforms> {
+    pub fn build<C>(self, ctx: &mut C) -> ShaderParams<Uniforms>
+    where
+        C: HasMut<GraphicsContext> + HasMut<TimeContext>,
+    {
+        let gfx = <C as HasMut<GraphicsContext>>::retrieve_mut(ctx);
         let images = self.images.iter().map(|image| image.view.clone()).collect();
         let samplers = self
             .samplers
             .iter()
-            .map(|&sampler| ctx.gfx.sampler_cache.get(&ctx.gfx.wgpu.device, sampler))
+            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
             .collect();
 
         let mut params = ShaderParams {
             uniform_arena: GrowingBufferArena::new(
-                &ctx.gfx.wgpu.device,
-                u64::from(
-                    ctx.gfx
-                        .wgpu
-                        .device
-                        .limits()
-                        .min_uniform_buffer_offset_alignment,
-                ),
+                &gfx.wgpu.device,
+                u64::from(gfx.wgpu.device.limits().min_uniform_buffer_offset_alignment),
                 wgpu::BufferDescriptor {
                     label: None,
                     size: ShaderParams::<Uniforms>::UPDATES_PER_ARENA
@@ -341,19 +343,23 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     /// Updates the uniform data.
     ///
     /// When called, [`Canvas::set_shader_params`] (or [`Canvas::set_text_shader_params`]) **needs to be called again** for the new uniforms to take effect.
-    pub fn set_uniforms(&mut self, ctx: &mut Context, uniforms: &Uniforms) {
-        if ctx.time.ticks() != self.last_tick {
+    pub fn set_uniforms<C>(&mut self, ctx: &mut C, uniforms: &Uniforms)
+    where
+        C: HasMut<GraphicsContext> + HasMut<TimeContext>,
+    {
+        let ticks = <C as HasMut<TimeContext>>::retrieve_mut(ctx).ticks();
+        let gfx = <C as HasMut<GraphicsContext>>::retrieve_mut(ctx);
+
+        if ticks != self.last_tick {
             self.uniform_arena.free();
-            self.last_tick = ctx.time.ticks();
+            self.last_tick = ticks;
         }
         let alloc = self
             .uniform_arena
-            .allocate(&ctx.gfx.wgpu.device, Uniforms::std140_size_static() as u64);
-        ctx.gfx.wgpu.queue.write_buffer(
-            &alloc.buffer,
-            alloc.offset,
-            uniforms.as_std140().as_bytes(),
-        );
+            .allocate(&gfx.wgpu.device, Uniforms::std140_size_static() as u64);
+        gfx.wgpu
+            .queue
+            .write_buffer(&alloc.buffer, alloc.offset, uniforms.as_std140().as_bytes());
 
         self.buffer_offset = alloc.offset as u32;
 
@@ -381,8 +387,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             builder = builder.sampler(sampler, vis);
         }
 
-        let (bind_group, layout) =
-            builder.create(&ctx.gfx.wgpu.device, &mut ctx.gfx.bind_group_cache);
+        let (bind_group, layout) = builder.create(&gfx.wgpu.device, &mut gfx.bind_group_cache);
         self.layout = Some(layout);
         self.bind_group = Some(bind_group);
     }
