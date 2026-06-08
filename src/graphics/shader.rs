@@ -307,7 +307,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 /// ```rust,ignore
 /// ggez::graphics::ShaderParamsBuilder::new(&my_uniforms)
 ///     .images(&[&image1, &image2], &[sampler1], false)
-///     .build(&mut ctx.gfx)
+///     .build(ctx)
 /// ```
 /// Corresponds to...
 /// ```ignore
