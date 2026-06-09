@@ -1,3 +1,9 @@
+# Unreleased
+
+## Changed
+
+- Generalized `ShaderParamsBuilder::build` and `ShaderParams::set_uniforms` to accept custom contexts with graphics and time contexts.
+
 # 0.10.0
 
 ## Added
