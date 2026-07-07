@@ -617,8 +617,9 @@ impl GraphicsContext {
                 }
                 wgpu::CurrentSurfaceTexture::Outdated => self.reconfigure_surface(),
                 wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
-                    // TODO: Add proper way to skip frame
-                    continue;
+                    return Err(GameError::RenderError(
+                        "surface occluded or timed out".into(),
+                    ));
                 }
                 wgpu::CurrentSurfaceTexture::Lost => {
                     self.surface = self

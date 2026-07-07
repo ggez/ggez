@@ -634,25 +634,31 @@ where
             return;
         };
 
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
-            error!("Error on GraphicsContext::begin_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-            event_loop.exit();
-        }
+        // Try to begin a frame. On some platforms (e.g. macOS Metal),
+        // the surface may be occluded or timed out, in which case we
+        // gracefully skip drawing this frame instead of blocking.
+        match HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
+            Ok(()) => {
+                if let Err(e) = self.state.draw(&mut self.ctx) {
+                    error!("Error on EventHandler::draw(): {e:?}");
+                    eprintln!("Error on EventHandler::draw(): {e:?}");
+                    if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+                        event_loop.exit();
+                        return;
+                    }
+                }
 
-        if let Err(e) = self.state.draw(&mut self.ctx) {
-            error!("Error on EventHandler::draw(): {e:?}");
-            eprintln!("Error on EventHandler::draw(): {e:?}");
-            if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
-                event_loop.exit();
-                return;
+                if let Err(e) =
+                    HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame()
+                {
+                    error!("Error on GraphicsContext::end_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
+                    event_loop.exit();
+                }
             }
-        }
-
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
-            error!("Error on GraphicsContext::end_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
-            event_loop.exit();
+            Err(_e) => {
+                // Surface unavailable (occluded, timed out) — skip drawing this frame
+            }
         }
 
         // reset the mouse delta for the next frame
