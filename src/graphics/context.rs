@@ -23,6 +23,12 @@ use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use winit::dpi::{self, PhysicalPosition};
 
+/// Error message returned by [`GraphicsContext::begin_frame()`] when the
+/// surface is unavailable due to occlusion or timeout. Callers can match
+/// on this string to distinguish transient surface unavailability from
+/// other render errors.
+pub const SURFACE_UNAVAILABLE: &str = "surface occluded or timed out";
+
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,
     pub present: Image,
@@ -617,9 +623,7 @@ impl GraphicsContext {
                 }
                 wgpu::CurrentSurfaceTexture::Outdated => self.reconfigure_surface(),
                 wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
-                    return Err(GameError::RenderError(
-                        "surface occluded or timed out".into(),
-                    ));
+                    return Err(GameError::RenderError(SURFACE_UNAVAILABLE.into()));
                 }
                 wgpu::CurrentSurfaceTexture::Lost => {
                     self.surface = self

@@ -656,8 +656,18 @@ where
                     event_loop.exit();
                 }
             }
-            Err(_e) => {
-                // Surface unavailable (occluded, timed out) — skip drawing this frame
+            Err(e) => {
+                // Only skip the frame for transient surface unavailability.
+                // Other errors (validation, surface lost, etc.) should still
+                // terminate the event loop.
+                let msg = format!("{e:?}");
+                if msg.contains(crate::graphics::SURFACE_UNAVAILABLE) {
+                    // Surface unavailable (occluded, timed out) — skip drawing this frame
+                } else {
+                    error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
+                    event_loop.exit();
+                }
             }
         }
 
