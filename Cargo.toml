@@ -32,7 +32,7 @@ obj = ["dep:obj-rs", "3d"]
 bitflags = "2.1"
 zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
 directories = "6"
-wgpu = "29"
+wgpu = "30"
 glyph_brush = "0.7"
 winit = { version = "0.30", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["png", "webp", "bmp", "jpeg"] }
@@ -41,18 +41,18 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "1.0"
 log = "0.4"
 lyon = "1.0"
-glam = { version = "0.32", features = ["mint", "bytemuck"] }
+glam = { version = "0.33", features = ["mint", "bytemuck"] }
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5.9"
 gilrs = { version = "0.11", optional = true }
 approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
-pollster = "0.4"
+pollster = "1.0"
 memoffset = "0.9"
-crevice = { version = "0.19", features = ["glam"] }
+crevice = { version = "0.20", features = ["glam"] }
 ordered-float = "5"
 percent-encoding = { version = "2.3.0", optional = true }
-base64 = { version = "0.22", optional = true }
+base64 = { version = "0.23", optional = true }
 gltf = { version = "1.2.0", optional = true, default-features = false, features = ["utils"] }
 obj-rs = { version = "0.7.1", optional = true }
 num-traits = "0.2"
