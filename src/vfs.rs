@@ -206,11 +206,8 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
     // This could be done more cleverly but meh
     let mut accm = PathBuf::new();
     for component in c {
-        if let Some(s) = is_normal_component(component) {
-            accm.push(s);
-        } else {
-            return None;
-        }
+        let s = is_normal_component(component)?;
+        accm.push(s);
     }
     Some(accm)
 }
@@ -236,12 +233,9 @@ fn sanitize_path_for_zip(path: &path::Path) -> Option<String> {
     // This could be done more cleverly but meh
     let mut accm = String::new();
     for component in c {
-        if let Some(s) = is_normal_component(component) {
-            accm.push_str(s);
-            accm.push('/');
-        } else {
-            return None;
-        }
+        let s = is_normal_component(component)?;
+        accm.push_str(s);
+        accm.push('/');
     }
     let accm = accm.trim_end_matches('/').to_string();
     Some(accm)
