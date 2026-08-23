@@ -243,6 +243,7 @@ impl GraphicsContext {
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
+            apply_limit_buckets: false,
         }))
         .or(Err(GameError::GraphicsInitializationError))?;
 
@@ -290,6 +291,7 @@ impl GraphicsContext {
             desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
+            color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
         surface.configure(&wgpu.device, &surface_config);
@@ -712,7 +714,7 @@ impl GraphicsContext {
 
             let _ = self.wgpu.queue.submit([fcx.cmd.finish()]);
             self.window.pre_present_notify();
-            fcx.frame.present();
+            self.wgpu.queue.present(fcx.frame);
 
             Ok(())
         } else {

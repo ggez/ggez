@@ -72,7 +72,7 @@ impl Camera3dTransform {
         let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
         let (sin_yaw, cos_yaw) = self.yaw.sin_cos();
 
-        glam::Mat4::look_to_rh(
+        glam::camera::rh::view::look_to_mat4(
             self.position.into(),
             Vec3::new(cos_pitch * cos_yaw, sin_pitch, cos_pitch * sin_yaw).normalize(),
             Vec3::Y,
@@ -116,6 +116,6 @@ impl Projection {
     }
 
     pub(crate) fn to_matrix(self) -> Mat4 {
-        Mat4::perspective_rh(self.fovy, self.aspect, self.znear, self.zfar)
+        glam::camera::rh::proj::directx::perspective(self.fovy, self.aspect, self.znear, self.zfar)
     }
 }

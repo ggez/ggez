@@ -297,6 +297,7 @@ impl Image {
         for chunk in buffer
             .slice(..)
             .get_mapped_range()
+            .unwrap()
             .chunks(padded_bytes_per_row)
         {
             out.extend_from_slice(&chunk[..unpadded_bytes_per_row]);

@@ -552,7 +552,7 @@ struct InstanceUniforms3d {
 }
 
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
-    glam::Mat4::orthographic_rh(
+    glam::camera::rh::proj::directx::orthographic(
         screen.left(),
         screen.right(),
         screen.bottom(),

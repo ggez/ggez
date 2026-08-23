@@ -38,7 +38,7 @@ impl PipelineCache {
         device: &wgpu::Device,
         info: RenderPipelineInfo,
     ) -> wgpu::RenderPipeline {
-        let vertex_buffers = [info.vertex_layout.clone()];
+        let vertex_buffers = [Some(info.vertex_layout.clone())];
 
         self.pipelines
             .entry(info)

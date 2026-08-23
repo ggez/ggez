@@ -43,7 +43,7 @@ struct Locals {
 
 fn default_view() -> Isometry3 {
     // Eye location, target location, up-vector
-    Mat4::look_at_rh(
+    glam::camera::rh::view::look_at_mat4(
         Point3::new(1.5f32, -5.0, 3.0),
         Point3::new(0f32, 0.0, 0.0),
         Vector3::Z,
@@ -147,7 +147,7 @@ impl MainState {
                         module: &shader,
                         entry_point: Some("vs_main"),
                         compilation_options: Default::default(),
-                        buffers: &[wgpu::VertexBufferLayout {
+                        buffers: &[Some(wgpu::VertexBufferLayout {
                             array_stride: std::mem::size_of::<Vertex>() as _,
                             step_mode: wgpu::VertexStepMode::Vertex,
                             attributes: &[
@@ -164,7 +164,7 @@ impl MainState {
                                     shader_location: 1,
                                 },
                             ],
-                        }],
+                        })],
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -252,7 +252,12 @@ impl MainState {
         let depth = graphics::ScreenImage::new_depth(ctx);
 
         // FOV, spect ratio, znear, zfar
-        let proj = Mat4::perspective_rh(f32::consts::PI / 4.0, 4.0 / 3.0, 1.0, 10.0);
+        let proj = glam::camera::rh::proj::directx::perspective(
+            f32::consts::PI / 4.0,
+            4.0 / 3.0,
+            1.0,
+            10.0,
+        );
         let transform = proj * default_view();
 
         MainState {
