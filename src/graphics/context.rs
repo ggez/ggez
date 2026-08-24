@@ -23,12 +23,6 @@ use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use winit::dpi::{self, PhysicalPosition};
 
-/// Error message returned by [`GraphicsContext::begin_frame()`] when the
-/// surface is unavailable due to occlusion or timeout. Callers can match
-/// on this string to distinguish transient surface unavailability from
-/// other render errors.
-pub const SURFACE_UNAVAILABLE: &str = "surface occluded or timed out";
-
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,
     pub present: Image,
@@ -605,7 +599,9 @@ impl GraphicsContext {
     /// Begins a new frame.
     ///
     /// The only situation you need to call this in is when you are rolling your own event loop.
-    pub fn begin_frame(&mut self) -> GameResult {
+    /// Returns `Ok(false)` when the surface is temporarily unavailable due to occlusion or a
+    /// timeout; callers should skip drawing that frame. `Ok(true)` means a frame was acquired.
+    pub fn begin_frame(&mut self) -> GameResult<bool> {
         if self.fcx.is_some() {
             return Err(GameError::RenderError(String::from(
                 "cannot begin a new frame while another frame is still in progress; call end_frame first",
@@ -623,7 +619,7 @@ impl GraphicsContext {
                 }
                 wgpu::CurrentSurfaceTexture::Outdated => self.reconfigure_surface(),
                 wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
-                    return Err(GameError::RenderError(SURFACE_UNAVAILABLE.into()));
+                    return Ok(false);
                 }
                 wgpu::CurrentSurfaceTexture::Lost => {
                     self.surface = self
@@ -658,7 +654,7 @@ impl GraphicsContext {
 
         self.text.verts.free();
 
-        Ok(())
+        Ok(true)
     }
 
     /// Ends the current frame.

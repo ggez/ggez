@@ -638,7 +638,7 @@ where
         // the surface may be occluded or timed out, in which case we
         // gracefully skip drawing this frame instead of blocking.
         match HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
-            Ok(()) => {
+            Ok(true) => {
                 if let Err(e) = self.state.draw(&mut self.ctx) {
                     error!("Error on EventHandler::draw(): {e:?}");
                     eprintln!("Error on EventHandler::draw(): {e:?}");
@@ -648,26 +648,19 @@ where
                     }
                 }
 
-                if let Err(e) =
-                    HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame()
-                {
+                if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
                     error!("Error on GraphicsContext::end_frame(): {e:?}");
                     eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
                     event_loop.exit();
                 }
             }
+            Ok(false) => {
+                // Surface unavailable (occluded or timed out) — skip drawing this frame.
+            }
             Err(e) => {
-                // Only skip the frame for transient surface unavailability.
-                // Other errors (validation, surface lost, etc.) should still
-                // terminate the event loop.
-                let msg = format!("{e:?}");
-                if msg.contains(crate::graphics::SURFACE_UNAVAILABLE) {
-                    // Surface unavailable (occluded, timed out) — skip drawing this frame
-                } else {
-                    error!("Error on GraphicsContext::begin_frame(): {e:?}");
-                    eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-                    event_loop.exit();
-                }
+                error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
+                event_loop.exit();
             }
         }
 

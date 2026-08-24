@@ -85,25 +85,27 @@ impl ApplicationHandler<()> for CustomApplicationHandler {
         // Update
         self.position += 1.0;
 
-        // Draw
-        self.ctx.gfx.begin_frame().unwrap();
+        // Draw, unless the surface is temporarily unavailable.
+        if self.ctx.gfx.begin_frame().unwrap() {
+            let mut canvas = graphics::Canvas::from_frame(
+                &self.ctx,
+                graphics::Color::from([0.1, 0.2, 0.3, 1.0]),
+            );
 
-        let mut canvas =
-            graphics::Canvas::from_frame(&self.ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
+            let circle = graphics::Mesh::new_circle(
+                &self.ctx,
+                DrawMode::fill(),
+                ggez::glam::Vec2::new(0.0, 0.0),
+                100.0,
+                2.0,
+                Color::WHITE,
+            )
+            .unwrap();
+            canvas.draw(&circle, ggez::glam::Vec2::new(self.position, 380.0));
 
-        let circle = graphics::Mesh::new_circle(
-            &self.ctx,
-            DrawMode::fill(),
-            ggez::glam::Vec2::new(0.0, 0.0),
-            100.0,
-            2.0,
-            Color::WHITE,
-        )
-        .unwrap();
-        canvas.draw(&circle, ggez::glam::Vec2::new(self.position, 380.0));
-
-        canvas.finish(&mut self.ctx).unwrap();
-        self.ctx.gfx.end_frame().unwrap();
+            canvas.finish(&mut self.ctx).unwrap();
+            self.ctx.gfx.end_frame().unwrap();
+        }
 
         // reset the mouse delta for the next frame
         // necessary because it's calculated cumulatively each cycle
