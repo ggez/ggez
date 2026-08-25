@@ -599,8 +599,8 @@ impl GraphicsContext {
     /// Begins a new frame.
     ///
     /// The only situation you need to call this in is when you are rolling your own event loop.
-    /// Returns `Ok(false)` when the surface is temporarily unavailable due to occlusion or a
-    /// timeout; callers should skip drawing that frame. `Ok(true)` means a frame was acquired.
+    /// Returns `Ok(false)` when the surface is occluded; callers should skip drawing that frame.
+    /// `Ok(true)` means a frame was acquired.
     pub fn begin_frame(&mut self) -> GameResult<bool> {
         if self.fcx.is_some() {
             return Err(GameError::RenderError(String::from(
@@ -618,9 +618,8 @@ impl GraphicsContext {
                     self.reconfigure_surface();
                 }
                 wgpu::CurrentSurfaceTexture::Outdated => self.reconfigure_surface(),
-                wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
-                    return Ok(false);
-                }
+                wgpu::CurrentSurfaceTexture::Timeout => continue,
+                wgpu::CurrentSurfaceTexture::Occluded => return Ok(false),
                 wgpu::CurrentSurfaceTexture::Lost => {
                     self.surface = self
                         .wgpu

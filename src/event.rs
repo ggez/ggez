@@ -635,8 +635,8 @@ where
         };
 
         // Try to begin a frame. On some platforms (e.g. macOS Metal),
-        // the surface may be occluded or timed out, in which case we
-        // gracefully skip drawing this frame instead of blocking.
+        // the surface may be occluded, in which case we gracefully skip
+        // drawing this frame instead of blocking.
         match HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
             Ok(true) => {
                 if let Err(e) = self.state.draw(&mut self.ctx) {
@@ -655,7 +655,7 @@ where
                 }
             }
             Ok(false) => {
-                // Surface unavailable (occluded or timed out) — skip drawing this frame.
+                // Surface unavailable (occluded) — skip drawing this frame.
             }
             Err(e) => {
                 error!("Error on GraphicsContext::begin_frame(): {e:?}");
