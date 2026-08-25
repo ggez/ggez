@@ -634,25 +634,34 @@ where
             return;
         };
 
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
-            error!("Error on GraphicsContext::begin_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-            event_loop.exit();
-        }
+        // Try to begin a frame. On some platforms (e.g. macOS Metal),
+        // the surface may be occluded, in which case we gracefully skip
+        // drawing this frame instead of blocking.
+        match HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
+            Ok(true) => {
+                if let Err(e) = self.state.draw(&mut self.ctx) {
+                    error!("Error on EventHandler::draw(): {e:?}");
+                    eprintln!("Error on EventHandler::draw(): {e:?}");
+                    if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+                        event_loop.exit();
+                        return;
+                    }
+                }
 
-        if let Err(e) = self.state.draw(&mut self.ctx) {
-            error!("Error on EventHandler::draw(): {e:?}");
-            eprintln!("Error on EventHandler::draw(): {e:?}");
-            if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
-                event_loop.exit();
-                return;
+                if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
+                    error!("Error on GraphicsContext::end_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
+                    event_loop.exit();
+                }
             }
-        }
-
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
-            error!("Error on GraphicsContext::end_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
-            event_loop.exit();
+            Ok(false) => {
+                // Surface unavailable (occluded) — skip drawing this frame.
+            }
+            Err(e) => {
+                error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
+                event_loop.exit();
+            }
         }
 
         // reset the mouse delta for the next frame
