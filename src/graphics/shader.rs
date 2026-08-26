@@ -364,7 +364,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             wgpu::ShaderStages::VERTEX_FRAGMENT,
             wgpu::BufferBindingType::Uniform,
             true,
-            None,
+            Some(Uniforms::std140_size_static() as u64),
         );
 
         let vis = if self.images_vs_visible {
