@@ -4,7 +4,7 @@
 
 ## What is this?
 
-![Build status](https://github.com/ggez/ggez/workflows/CI/badge.svg)
+[![Build status](https://github.com/ggez/ggez/workflows/CI/badge.svg)](https://github.com/ggez/ggez/actions/workflows/rust.yml)
 [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
