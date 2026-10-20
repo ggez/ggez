@@ -152,11 +152,8 @@ impl Filesystem {
         )
     }
 
-    /// Creates a filesystem for web builds.
-    ///
-    /// If the JS host has set `window.__GGEZ_RESOURCES_ZIP__` to a `Uint8Array` before wasm
-    /// starts (see `examples/web/src/runner.js`), the zip is mounted as a `ZipFS`
-    /// so synchronous `Filesystem::open` calls work.
+    /// Creates a filesystem for web builds, mounting the zip in
+    /// `window.__GGEZ_RESOURCES_ZIP__` (a `Uint8Array`) if the page set one.
     #[cfg(target_arch = "wasm32")]
     pub fn new_web(resources_dir_name: &path::Path) -> Filesystem {
         let mut overlay = vfs::OverlayFS::new();
@@ -166,13 +163,10 @@ impl Filesystem {
                 Err(e) => log::warn!("could not mount preloaded resources.zip: {e}"),
             },
             None => {
-                // Use `console.warn`, not `log::warn!`, because users might not have a log adapter,
-                // and this hint point them at the fix before they spend hours debugging "file not found".
+                // `console.warn` so this shows up even without a logger.
                 web_sys::console::warn_1(&JsValue::from_str(
-                    "ggez: no resources zip on window.__GGEZ_RESOURCES_ZIP__. \
-                     Synchronous filesystem reads (Image::from_path, SoundData::new, ...) will fail. \
-                     Either preload a zip from JS before wasm init, embed via ContextBuilder::add_zipfile_bytes, \
-                     or use *_async loader variants. See examples/web/README.md.",
+                    "ggez: window.__GGEZ_RESOURCES_ZIP__ is not set, so only files added with \
+                     ContextBuilder::add_zipfile_bytes can be read. See examples/web/README.md.",
                 ));
             }
         }

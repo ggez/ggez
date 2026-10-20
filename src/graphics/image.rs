@@ -282,9 +282,8 @@ impl Image {
 
         let _ = gfx.wgpu.queue.submit([cmd]);
 
-        // wait for the mapping callback. On native we can block the device on the queue until
-        // work is done; on web we can't block so we poll once and bail if the result isn't ready
-        // TODO - proper async API for web
+        // wait... (web can't block, so poll once and fail if the mapping isn't ready)
+        // TODO: async API for web
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         buffer
             .slice(..)

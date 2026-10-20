@@ -14,11 +14,9 @@ struct MainState {
 
 impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let og_image =
-            graphics::Image::from_bytes(ctx, include_bytes!("../resources/wabbit_alpha.png"))?;
+        let og_image = Image::from_path(ctx, "/wabbit_alpha.png")?;
 
-        // `Image::to_pixels` waits for `map_async`, which can't block the main thread on web.
-        // Skip the round-trip on web and just display the original image.
+        // `Image::to_pixels` isn't supported on web, so just show the original image.
         #[cfg(target_arch = "wasm32")]
         let image = og_image;
 

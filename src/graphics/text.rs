@@ -191,19 +191,14 @@ impl Text {
     }
 
     /// Specifies the text's font scale for fragments that don't specify their own scale.
-    ///
-    /// The scale is intepreted as physical pixels. For text sized in logical/CSS pixels and
-    /// rasterized at the display's native resolution, use [`Text::set_logical_scale`].
+    /// The scale is in physical pixels; see also [`Text::set_logical_scale`].
     pub fn set_scale(&mut self, scale: impl Into<PxScale>) -> &mut Self {
         self.scale = scale.into();
         self
     }
 
-    /// Sets the text's font scale in logical pixels.
-    ///
-    /// On a display with `pixel_scale = N`, this stores `scale * N` as the rasterization scale,
-    /// so glyph_brush rasterizes at the display's native resolution and rendered text occupies
-    /// `scale` pixels (mainly useful for HiDPI displays with wasm target).
+    /// Sets the text's font scale in logical pixels, i.e. `scale` multiplied by
+    /// [`GraphicsContext::pixel_scale`].
     pub fn set_logical_scale(
         &mut self,
         scale: impl Into<PxScale>,

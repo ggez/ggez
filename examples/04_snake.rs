@@ -356,14 +356,8 @@ struct GameState {
 }
 
 impl ggez::Game for GameState {
-    fn new(_ctx: &mut Context) -> GameResult<Self> {
-        Ok(Self::build())
-    }
-}
-
-impl GameState {
     /// Our new function will set up the initial state of our game.
-    pub fn build() -> Self {
+    fn new(_ctx: &mut Context) -> GameResult<Self> {
         // First we put our snake a quarter of the way across our grid in the x axis
         // and half way down the y axis. This works well since we start out moving to the right.
         let snake_pos = (GRID_SIZE.0 / 4, GRID_SIZE.1 / 2).into();
@@ -375,12 +369,12 @@ impl GameState {
         // earlier.
         let food_pos = GridPosition::random(&mut rng, GRID_SIZE.0, GRID_SIZE.1);
 
-        GameState {
+        Ok(GameState {
             snake: Snake::new(snake_pos),
             food: Food::new(food_pos),
             gameover: false,
             rng,
-        }
+        })
     }
 }
 

@@ -1,7 +1,6 @@
-// Single-example runner: reads ?example=NAME, dynamically imports the matching
-// wasm-bindgen JS shim, calls init(), and shows minimal status.
+// Runs the example named by ?example=NAME.
 
-// Must run before the wasm import: wasm-bindgen captures `AudioContext` at module load.
+// Must run before the wasm import, which captures `AudioContext` when it loads.
 installAudioUnlock();
 
 const status = document.getElementById('status');
@@ -20,8 +19,7 @@ if (!name) {
 document.title = `ggez · ${name}`;
 setStatus(`loading ${name}…`);
 
-// Pre-fetch bundled resources zip and expose it on `window` for `Filesystem::new_web`.
-// Examples that use `Image::from_path` etc. need this.
+// ggez mounts this zip as its resources directory (see `Filesystem::new_web`).
 async function preloadResourcesZip() {
   try {
     const resp = await fetch('/resources.zip');
@@ -38,8 +36,7 @@ async function preloadResourcesZip() {
 try {
   await preloadResourcesZip();
   const mod = await import(/* @vite-ignore */ `/examples/${name}/${name}.js`);
-  // wasm-bindgen --target web exports init() as the default export. Calling it
-  // instantiates the wasm and runs the example's `main()`.
+  // The default export instantiates the wasm and runs `main()`.
   await mod.default();
   setStatus('');
 } catch (err) {
@@ -47,8 +44,8 @@ try {
   setStatus(`error loading ${name}: ${err}`);
 }
 
-// Resume each `AudioContext` on the first user gesture and set `window.__ggezAudioState` so
-// `ggez::audio::AudioContext::state()` can read. See `install_web_audio_unlock` in src/audio.rs.
+// Resumes each `AudioContext` on the first user gesture, and mirrors its state to
+// `window.__ggezAudioState` for `ggez::audio::AudioContext::state()`.
 function installAudioUnlock() {
   if (window.__ggezAudioUnlockInstalled) return;
   window.__ggezAudioUnlockInstalled = true;

@@ -140,9 +140,7 @@ pub fn main() -> GameResult {
 
 #[cfg(target_arch = "wasm32")]
 pub fn main() -> GameResult {
-    // WebGPU init is async, and winit on the web wants `spawn_app` instead of
-    // `run_app` (which would throw an exception to bail out of the wasm-bindgen
-    // entrypoint). Drive both from a spawned future.
+    // On web, the context must be built asynchronously and the loop started with `spawn_app`.
     use winit::platform::web::EventLoopExtWebSys;
     wasm_bindgen_futures::spawn_local(async move {
         let (ctx, events_loop) = match ggez::ContextBuilder::new("eventloop", "ggez")

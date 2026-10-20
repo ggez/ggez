@@ -105,27 +105,24 @@ You might be able to use [`good-web-game`] though to run your `ggez` app on Andr
 
 # Web (wasm32)
 
-ggez targets `wasm32-unknown-unknown` via `wasm-bindgen`. Audio uses the WebAudio backend of
-`rodio`, assets via `fetch`, and the canvas is appended to `<body>` (or a DOM element you choose).
+ggez targets `wasm32-unknown-unknown` via `wasm-bindgen`, and only supports WebGPU (not WebGL2).
+On Linux you may need to enable WebGPU in your browser (e.g. `chrome://flags/#enable-unsafe-webgpu`).
 
-ggez only supports WebGPU (not WebGL2). On Linux you may need to enable experimental
-WebGPU implementation in your browser (e.g. `chrome://flags/#enable-unsafe-webgpu` for Chrome)
+Start your game with `ContextBuilder::run` (or `run_with`); `ContextBuilder::build` blocks, which
+doesn't work in a browser.
 
 ```sh
 rustup target add wasm32-unknown-unknown
 cargo build --target wasm32-unknown-unknown --release
 ```
 
-Once built, run `wasm-bindgen` against the output to get an ES module + `.wasm`
-pair you can load from a static page. The CLI version **must match** the
-`wasm-bindgen` version pinned in `Cargo.lock` (currently 0.2.x):
+Then run `wasm-bindgen` on the output to get a JS module + `.wasm` pair. The CLI version **must
+match** the `wasm-bindgen` version in your `Cargo.lock`:
 
 ```sh
 cargo install --locked --version <X.Y.Z> wasm-bindgen-cli
 wasm-bindgen --target web --out-dir ./out target/wasm32-unknown-unknown/release/your_game.wasm
 ```
-
-Then load it from any static host:
 
 ```html
 <script type="module">
@@ -134,50 +131,24 @@ Then load it from any static host:
 </script>
 ```
 
-## Trying the bundled examples
+The canvas is appended to `<body>`, or to the element set with
+`WindowSetup::web_canvas_parent_id("my-element")`.
 
-A small Vite project is included in `examples/web/` that compiles every example to wasm and
-serves them in a gallery. One-time setup:
-
-```sh
-rustup target add wasm32-unknown-unknown
-cd examples/web
-npm install
-```
-
-Then:
-
-```sh
-npm run dev                   # build everything + serve at http://localhost:5173
-npm run build -- 04_snake     # rebuild a single example
-npm run build -- --release    # release-mode wasm (much smoother)
-npm run serve                 # serve a previously built tree
-```
-
-`build.mjs` will `cargo install` a matching `wasm-bindgen-cli` automatically on first run;
-pass `--no-bindgen-install` to opt out. See [`examples/web/README.md`](../examples/web/README.md) for the full layout.
-
-## Embedding the canvas inside an existing page
-
-By default ggez appends its `<canvas>` to `<body>`. To attach it to a specific element:
-
-```rust
-let cb = ggez::ContextBuilder::new("my_game", "me")
-    .window_setup(
-        ggez::conf::WindowSetup::default().web_canvas_parent_id("my-element"),
-    );
-```
-
-This is a no-op on other targets, so you can leave it on a single build configuration.
+`examples/web/` builds every example this way and serves them in a gallery; see
+[`examples/web/README.md`](../examples/web/README.md).
 
 ## Asset loading
 
-Browsers can't do synchronous file I/O, so on web ggez expects the JS host to hand it a single
-`Uint8Array` containing a zip of your resources, stashed on `window.__GGEZ_RESOURCES_ZIP__` before
-the wasm module starts. ggez mounts that zip as a `ZipFS` so the regular synchronous
-`Filesystem::open` / `read` / `read_to_string` calls just work.
+Browsers can't read files synchronously, so before the wasm module starts, the page should set
+`window.__GGEZ_RESOURCES_ZIP__` to a `Uint8Array` containing a zip of your resources. ggez mounts it
+as the resources directory, so `Filesystem` and `from_path` APIs work as usual
+(see [`examples/web/src/runner.js`](../examples/web/src/runner.js)). Alternatively, embed a zip with
+`ContextBuilder::add_zipfile_bytes`. `add_resource_path` is ignored on web.
 
-The bundled `examples/web/` pipeline shows one way to produce that zip — see
-[`examples/web/src/runner.js`](../examples/web/src/runner.js) and
-[`examples/web/build.mjs`](../examples/web/build.mjs). `add_resource_path` and the on-disk
-`resources.zip` lookups are no-ops on the web target.
+## Known limitations on web
+
+- Browsers block audio until the user interacts with the page, and sounds played before that are
+  dropped. `ctx.audio.state()` reports this if the page installs the shim from
+  [`examples/web/src/runner.js`](../examples/web/src/runner.js).
+- `SpatialSource::stop()` can freeze the tab. Prefer `pause()` and dropping the source.
+- `Image::to_pixels` is not supported and returns an error.

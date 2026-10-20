@@ -210,8 +210,7 @@ struct Opt {
 }
 
 pub fn main() -> GameResult {
-    // argh::from_env on wasm dereferences argv and calls process::exit,
-    // which traps inside the wasm sandbox. Fall back to defaults on web.
+    // There are no command line args on web.
     #[cfg(not(target_arch = "wasm32"))]
     let opt: Opt = argh::from_env();
     #[cfg(target_arch = "wasm32")]

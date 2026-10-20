@@ -125,10 +125,8 @@ impl Default for WindowMode {
 
 impl WindowMode {
     /// Set default window size in physical pixels, or screen resolution in true fullscreen mode.
-    ///
-    /// On HiDPI displays (Mac retina, Wayland fractional scaling, browsers with
-    /// `devicePixelRatio > 1`) a window sized in physical pixels appears smaller than expected.
-    /// Use [`logical_dimensions`](Self::logical_dimensions) to opt into DPI-independent sizing.
+    /// Overrides [`logical_dimensions`](Self::logical_dimensions), which you may want instead
+    /// on HiDPI displays.
     #[must_use]
     pub fn dimensions(mut self, width: f32, height: f32) -> Self {
         if width >= 1.0 {
@@ -137,14 +135,12 @@ impl WindowMode {
         if height >= 1.0 {
             self.height = height;
         }
+        self.logical_size = None;
         self
     }
 
-    /// Set default window size in logical pixels.
-    /// Overrides any value previously set by [`dimensions`](Self::dimensions).
-    ///
-    /// Use this when you want the window to take up the same visual area regardless of
-    /// the display's DPI scale factor.
+    /// Set default window size in logical pixels, so it looks the same size regardless of the
+    /// display's scale factor. Overrides [`dimensions`](Self::dimensions).
     #[must_use]
     pub fn logical_dimensions(mut self, width: f32, height: f32) -> Self {
         self.logical_size = Some(winit::dpi::LogicalSize::new(width, height));
@@ -274,8 +270,7 @@ pub struct WindowSetup {
     /// Whether or not to enable sRGB (gamma corrected color)
     /// handling on the display.
     pub srgb: bool,
-    /// Web only: id of an existing DOM element to append the rendering canvas to.
-    /// When `None` (default), the canvas is appended to `<body>`.
+    /// Web only: id of the DOM element to append the canvas to. Defaults to `<body>`.
     #[serde(default)]
     pub web_canvas_parent_id: Option<String>,
 }

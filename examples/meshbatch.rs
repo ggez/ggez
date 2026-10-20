@@ -46,8 +46,7 @@ impl ggez::Game for MainState {
 
 impl MainState {
     fn populate(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        // On web `drawable_size` can report (0, 0) until the canvas `ResizeObserver` fires.
-        // Clamp to at least 1×1 so `resize` doesn't trip capacity assert.
+        // On web the size can be (0, 0) before the canvas is laid out.
         let items_x = ((width / 64.0) as usize).max(1);
         let items_y = ((height / 64.0) as usize).max(1);
         self.mesh_batch.resize(ctx, items_x * items_y);

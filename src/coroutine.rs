@@ -6,7 +6,6 @@
 use std::{
     future::{Future, IntoFuture},
     pin::Pin,
-    sync::Arc,
     task::{Poll, Waker},
 };
 
@@ -25,15 +24,8 @@ pub struct Coroutine<T = ()> {
 impl<T> Coroutine<T> {
     /// Constructs a new coroutine
     pub fn new(fut: impl IntoFuture<Output = T> + 'static) -> Self {
-        struct Inner;
-        impl std::task::Wake for Inner {
-            fn wake(self: Arc<Self>) {}
-        }
-
-        let waker = Waker::from(Arc::new(Inner));
-
         Self {
-            waker,
+            waker: Waker::noop().clone(),
             state: CoroutineState::Future(Box::pin(fut.into_future())),
         }
     }

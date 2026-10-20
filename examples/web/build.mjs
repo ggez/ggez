@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Build ggez examples for wasm32-unknown-unknown and serve them using Vite from
-// examples/web/public/
+// Builds ggez examples for wasm32-unknown-unknown into examples/web/public/.
 //
 // Usage:
 //   node build.mjs                      # build every example
@@ -9,7 +8,7 @@
 //   node build.mjs --release            # build in release mode (much faster runtime)
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync, readdirSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildStoredZip } from './src/zip.js';
@@ -18,7 +17,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
 const PUBLIC = join(HERE, 'public');
 const EXAMPLES_OUT = join(PUBLIC, 'examples');
-const RESOURCES_OUT = join(PUBLIC, 'resources');
 
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter(a => a.startsWith('--')));
@@ -38,8 +36,7 @@ for (const name of wanted) {
   }
 }
 
-// Check that wasm-bindgen-cli matches the locked wasm-bindgen version.
-
+// wasm-bindgen-cli must match the locked wasm-bindgen version.
 const lock = readFileSync(join(REPO, 'Cargo.lock'), 'utf8');
 const lockMatch = lock.match(/name = "wasm-bindgen"\nversion = "([^"]+)"/);
 if (!lockMatch) {
@@ -78,8 +75,6 @@ const cargoArgs = [
 console.log(`\n→ cargo ${cargoArgs.join(' ')}`);
 run('cargo', cargoArgs);
 
-// Run wasm-bindgen on each produced .wasm
-
 for (const name of wanted) {
   const wasmIn = join(REPO, 'target', 'wasm32-unknown-unknown', profileDir, 'examples', `${name}.wasm`);
   if (!existsSync(wasmIn)) {
@@ -99,12 +94,7 @@ for (const name of wanted) {
   ]);
 }
 
-// Copy /resources into public/ so fetch('resources/foo') works for the async path, and
-// bundle them into resources.zip so the runner can populate VFS for Filesystem::open
-
-rmSync(RESOURCES_OUT, { recursive: true, force: true });
-cpSync(join(REPO, 'resources'), RESOURCES_OUT, { recursive: true });
-
+// Bundle resources/ into resources.zip, which runner.js hands to ggez.
 function walkFiles(root, prefix = '') {
   const out = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
@@ -119,8 +109,6 @@ function walkFiles(root, prefix = '') {
   return out;
 }
 writeFileSync(join(PUBLIC, 'resources.zip'), buildStoredZip(walkFiles(join(REPO, 'resources'))));
-
-// Write a manifest the gallery can read
 
 writeFileSync(join(PUBLIC, 'manifest.json'), JSON.stringify(wanted, null, 2) + '\n');
 

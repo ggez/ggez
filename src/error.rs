@@ -7,9 +7,9 @@ use std::sync::Arc;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
-    /// An error intializing the graphics system; the string holds the underlying cause.
+    /// An error when initializing the graphics system.
     GraphicsInitializationError(String),
-    /// The browser doesn't expose WebGPU. Catch this on wasm to render an HTML fallback.
+    /// The browser doesn't support WebGPU.
     #[cfg(target_arch = "wasm32")]
     WebGpuUnavailable(String),
     /// An error in the filesystem layout
