@@ -72,7 +72,7 @@ Circles are represented by 2 pieces of information: origin, and radius.
 Geometry, it's all coming back now.
 
 Here is the code for a [circle](https://docs.rs/ggez/latest/ggez/graphics/struct.Mesh.html#method.new_circle):
-```rust,skt-expression,no_run
+```rust,template-expression,no_run
 graphics::Mesh::new_circle(
     ctx,
     graphics::DrawMode::fill(),
@@ -107,7 +107,7 @@ And that's how a circle is created!
 
 To draw it, we first need to create our `Canvas`, filling it with black. Then we add a draw call,
 drawing the circle onto it. Lastly, we submit this draw call.
-```rust,skt-draw,no_run
+```rust,template-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
@@ -133,7 +133,7 @@ If you see a circle on the screen when you run `cargo run` you're good!
 Rectangles are represented by 3 pieces of information: origin, width, and height.
 
 Here is the code for a [rectangle](https://docs.rs/ggez/latest/ggez/graphics/struct.Mesh.html#method.new_rectangle):
-```rust,skt-expression,no_run
+```rust,template-expression,no_run
 graphics::Mesh::new_rectangle(
     ctx,
     graphics::DrawMode::fill(),
@@ -154,7 +154,7 @@ And that's how a rectangle is created!
 #### ✔ Draw Rectangle
 
 Let's try it out with some quick code:
-```rust,skt-draw,no_run
+```rust,template-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
@@ -186,7 +186,7 @@ We will use [`enum`](https://doc.rust-lang.org/book/ch06-01-defining-an-enum.htm
 We need a place to store our shapes.
 
 Modify your `State`:
-```rust,skt-definition,no_run
+```rust,template-definition,no_run
 struct State {
     shapes: Vec<Shape>,
 }
@@ -197,7 +197,7 @@ But what is the `Shape` type?
 Let's create it!
 
 Create the `Shape` enum:
-```rust,skt-definition,no_run
+```rust,template-definition,no_run
 enum Shape {
     Circle(mint::Point2<f32>, f32),
     Rectangle(graphics::Rect),
@@ -206,7 +206,7 @@ enum Shape {
 With this `enum`, we are saying each `Shape` can be either a `Circle`, or a `Rectangle`.
 
 Store 2 `Shape` values in your `shapes` `Vec`.
-```rust,skt-shapes,no_run
+```rust,template-shapes,no_run
 fn main() {
     let mut shapes = Vec::new();
     shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
@@ -232,7 +232,7 @@ We're using `Vec.push` to add 2 new values to our `Vec`.
 
 But we still don't see anything...
 You need to modify `draw` to illustrate your new `State`.
-```rust,skt-draw,no_run
+```rust,template-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
     for shape in &self.shapes {
@@ -284,12 +284,12 @@ oorandom = "11"
 ```
 
 At the top of `main.rs` add a `use` statement for the RNG:
-```rust,skt-definition,no_run
+```rust,template-definition,no_run
 use oorandom::Rand32;
 ```
 
 Change how the 2 shapes are created to include randomness:
-```rust,skt-expression,no_run
+```rust,template-expression,no_run
     let mut rng = Rand32::new(4); // Random number chosen by fair die roll
 shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
     rng.rand_float() * 800.0,
@@ -311,7 +311,7 @@ But only 2 shapes?
 Surely we can do better!
 
 Modify your `main.rs`:
-```rust,skt-expression,no_run
+```rust,template-expression,no_run
 let mut shapes = Vec::new();
 for _ in 0..8 {
     if rng.rand_i32() >= 0 {

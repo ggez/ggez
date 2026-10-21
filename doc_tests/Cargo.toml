@@ -5,12 +5,10 @@ edition = "2021"
 publish = false
 
 [build-dependencies]
-skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }
-
+pulldown-cmark = "0.9"
 
 [dev-dependencies]
 ggez = { path = ".." }
 
 rand = "0.10"
 oorandom = "11"
-skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust-1-77" }
