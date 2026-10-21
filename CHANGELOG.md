@@ -1,3 +1,10 @@
+# Unreleased
+
+## Fixed
+
+- Upgrade zip to v9 due to the security related yanks of older versions
+  ([zip-rs/zip2#1075](https://github.com/zip-rs/zip2/issues/1075)).
+
 # 0.10.0
 
 ## Added
