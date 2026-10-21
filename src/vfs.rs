@@ -591,8 +591,8 @@ impl ZipFS {
         let mut archive = zip::ZipArchive::new(reader)?;
 
         let index = (0..archive.len())
-            .map(|i| archive.by_index(i).unwrap().name().to_string())
-            .collect();
+            .map(|i| Ok(archive.by_index(i)?.name()?.into_owned()))
+            .collect::<zip::result::ZipResult<_>>()?;
 
         Ok(Self {
             source,
