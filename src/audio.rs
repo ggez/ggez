@@ -39,6 +39,11 @@ impl AudioContext {
                 None
             }
         };
+        // Also keeps the `web` snippet linked in, which installs the gesture unlock.
+        #[cfg(target_arch = "wasm32")]
+        if web::audio_state() == AudioState::Suspended {
+            log::info!("Audio is suspended until the first user gesture");
+        }
         Ok(Self {
             fs: fs.clone(),
             stream,
@@ -78,9 +83,7 @@ impl AudioContext {
     /// Current state of the audio output.
     ///
     /// On web, browsers keep audio [`Suspended`](AudioState::Suspended) until the first user
-    /// gesture. The state is read from `window.__ggezAudioState`, which the page must keep
-    /// updated with a shim installed *before* the wasm module loads (see `installAudioUnlock`
-    /// in `examples/web/src/runner.js`). Without the shim this always returns `Suspended`.
+    /// gesture; ggez resumes it on the first pointer or key event.
     pub fn state(&self) -> AudioState {
         if self.stream.is_none() {
             return AudioState::Closed;
@@ -88,7 +91,7 @@ impl AudioContext {
 
         #[cfg(target_arch = "wasm32")]
         {
-            current_web_audio_state().unwrap_or(AudioState::Suspended)
+            web::audio_state()
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -107,7 +110,7 @@ impl AudioContext {
 fn audio_output_ready() -> bool {
     #[cfg(target_arch = "wasm32")]
     {
-        matches!(current_web_audio_state(), Some(AudioState::Running))
+        web::audio_state() == AudioState::Running
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -115,17 +118,47 @@ fn audio_output_ready() -> bool {
     }
 }
 
+// rodio doesn't expose its `AudioContext`, so this JS wraps the constructor to capture and
+// resume it on the first user gesture. Emitted as a snippet (`--target web` or `bundler`)
+// that evaluates before wasm-bindgen glue, and captures `AudioContext` at load.
+// TODO: once rodio exposes the underlying `cpal::Stream`, do this in Rust via its `audio_context()`.
 #[cfg(target_arch = "wasm32")]
-fn current_web_audio_state() -> Option<AudioState> {
-    use wasm_bindgen::JsValue;
-    let global = js_sys::global();
-    let value = js_sys::Reflect::get(&global, &JsValue::from_str("__ggezAudioState")).ok()?;
-    let s = value.as_string()?;
-    Some(match s.as_str() {
-        "running" => AudioState::Running,
-        "closed" => AudioState::Closed,
-        _ => AudioState::Suspended,
-    })
+mod web {
+    use super::AudioState;
+    use wasm_bindgen::prelude::wasm_bindgen;
+
+    #[wasm_bindgen(inline_js = r#"
+// rodio may create/close several contexts while picking a config, so track the latest.
+let ctx;
+const Original = globalThis.AudioContext;
+if (Original) {
+  globalThis.AudioContext = class GgezAudioContext extends Original {
+    constructor(...args) {
+      super(...args);
+      ctx = this;
+      const unlock = () => this.resume().catch(() => {});
+      for (const ev of ["pointerdown", "keydown", "touchstart"]) {
+        addEventListener(ev, unlock, { capture: true, passive: true, once: true });
+      }
+    }
+  };
+}
+export function audioState() {
+  return ctx ? ctx.state : "closed";
+}
+"#)]
+    extern "C" {
+        #[wasm_bindgen(js_name = audioState)]
+        fn js_audio_state() -> String;
+    }
+
+    pub(super) fn audio_state() -> AudioState {
+        match js_audio_state().as_str() {
+            "running" => AudioState::Running,
+            "closed" => AudioState::Closed,
+            _ => AudioState::Suspended,
+        }
+    }
 }
 
 impl fmt::Debug for AudioContext {

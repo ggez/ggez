@@ -13,8 +13,7 @@ Then open <http://localhost:8000> in a browser with WebGPU (on Linux, Chrome wit
 `chrome://flags/#enable-unsafe-webgpu`).
 
 `build.sh` runs `cargo build --target wasm32-unknown-unknown`, `wasm-bindgen --target web` into
-`pkg/`, and zips `../../resources` into `resources.zip`. `index.html` does the three things a page
-hosting ggez needs: install the audio shim, preload the resources zip, and call `init()`. Each is
-commented there; copy the file into your own project.
+`pkg/`, and zips `../../resources` into `resources.zip`. `index.html` does the two things a page
+hosting ggez needs: preload the resources zip and call `init()`. Copy the file into your own project.
 
 For a gallery of every example with a dev server, see [`../web`](../web).

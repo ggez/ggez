@@ -11,32 +11,15 @@
   </head>
   <body>
     <script type="module">
-      // 1. Audio only: browsers keep audio suspended until a user gesture. This resumes it on
-      //    the first one and mirrors the state to `window.__ggezAudioState`, which backs
-      //    `ctx.audio.state()`. It must run before the wasm module loads, hence the dynamic
-      //    import below.
-      const Original = window.AudioContext;
-      window.AudioContext = class extends Original {
-        constructor(...args) {
-          super(...args);
-          const sync = () => (window.__ggezAudioState = this.state);
-          sync();
-          this.addEventListener("statechange", sync);
-          const unlock = () => this.resume().catch(() => {});
-          for (const ev of ["pointerdown", "keydown", "touchstart"]) {
-            addEventListener(ev, unlock, { capture: true, passive: true, once: true });
-          }
-        }
-      };
+      import init from "./pkg/game.js";
 
-      // 2. Resources: a zip of the resources directory, which ggez mounts as its
-      //    filesystem root. Skip this if you embed resources with `add_zipfile_bytes`.
+      // A zip of the resources directory, which ggez mounts as its filesystem root.
+      // Skip this if you embed resources with `add_zipfile_bytes`.
       const zip = await fetch("./resources.zip");
       window.__GGEZ_RESOURCES_ZIP__ = new Uint8Array(await zip.arrayBuffer());
 
-      // 3. Load the wasm-bindgen output. `init()` instantiates the module and runs `main()`,
-      //    which attaches a canvas (id `ggez-body`) to <body> and starts the game.
-      const { default: init } = await import("./pkg/game.js");
+      // Instantiates the module and runs `main()`, which attaches a canvas (id `ggez-body`)
+      // to <body> and starts the game.
       await init();
     </script>
   </body>

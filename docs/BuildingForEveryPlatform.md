@@ -116,8 +116,8 @@ rustup target add wasm32-unknown-unknown
 cargo build --target wasm32-unknown-unknown --release
 ```
 
-Then run `wasm-bindgen` on the output to get a JS module + `.wasm` pair. The CLI version **must
-match** the `wasm-bindgen` version in your `Cargo.lock`:
+Then run `wasm-bindgen` on the output to get the JS module + `.wasm`. Use `--target web` (or
+`bundler`), and note that the CLI version **must match** `wasm-bindgen` in your `Cargo.lock`:
 
 ```sh
 cargo install --locked --version <X.Y.Z> wasm-bindgen-cli
@@ -149,9 +149,7 @@ as the resources directory, so `Filesystem` and `from_path` APIs work as usual
 
 ## Known limitations on web
 
-- Browsers block audio until the user interacts with the page, and sounds played before that are
-  dropped. The page needs the small `AudioContext` shim from
-  [`examples/web-minimal/index.html`](../examples/web-minimal/index.html) to resume audio on the
-  first gesture and to make `ctx.audio.state()` report it.
+- Browsers block audio until the user interacts with the page. ggez resumes it on the first
+  pointer or key event, but sounds played before that are dropped (check `ctx.audio.is_running()`).
 - `SpatialSource::stop()` can freeze the tab. Prefer `pause()` and dropping the source.
 - `Image::to_pixels` is not supported and returns an error.

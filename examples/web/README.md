@@ -37,8 +37,7 @@ The gallery at <http://localhost:5173> runs the selected example in an iframe po
   `public/resources.zip`.
 - `index.html` / `src/gallery.js`: the gallery.
 - `run.html` / `src/runner.js`: runs one example. It sets `window.__GGEZ_RESOURCES_ZIP__` to the
-  resources zip, which ggez mounts as its resources directory, and installs the audio shim used by
-  `AudioContext::state()`.
+  resources zip, which ggez mounts as its resources directory.
 
 For a single page with no bundler or Node, see [`../web-minimal`](../web-minimal).
 
