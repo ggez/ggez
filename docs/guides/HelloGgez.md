@@ -54,7 +54,7 @@ It is why we're here after all.
 
 First we'll tell Rust we want to use `ggez`.
 Add this to the top of your `src/main.rs`:
-```rust,skt-definition,no_run
+```rust,template-definition,no_run
 use ggez::*;
 ```
 
@@ -78,7 +78,7 @@ This means it is intended to be implemented on a struct.
 There are quite a few callbacks defined on the Trait, but only [2 are required: update and draw](https://docs.rs/ggez/latest/ggez/event/trait.EventHandler.html#required-methods).
 
 Let's add `EventHandler` to our `src/main.rs` file:
-```rust,skt-definition,no_run
+```rust,template-definition,no_run
 struct State {}
 
 impl ggez::event::EventHandler for State {
@@ -104,7 +104,7 @@ Internally it's just a `Result<(), GameError>`, which is why we implement `Event
 But, we're not going to write any bugs right? 😉
 
 In your main, you will need to create an instance of `State`.
-```rust,skt-definition-no-main,no_run
+```rust,template-definition-no-main,no_run
 pub fn main() {
     let state = State {};
 }
@@ -150,7 +150,7 @@ Now is the time for us to interface with our hardware and do something fun.
 To do that, you need to create a [`Context`](https://docs.rs/ggez/latest/ggez/context/struct.Context.html) courtesy of `ggez`.
 
 Add this to the end of your `main` fn:
-```rust,skt-expression,no_run
+```rust,template-expression,no_run
 let c = conf::Conf::new();
 let (ctx, event_loop) = ContextBuilder::new("hello_ggez", "awesome_person")
     .default_conf(c)
@@ -165,7 +165,7 @@ Feel free to replace the author with yourself.
 You are awesome after all.
 
 Now you're ready to kick off the loop!
-```rust,skt-expression,no_run
+```rust,template-expression,no_run
 event::run(ctx, event_loop, state);
 ```
 
@@ -204,7 +204,7 @@ For this program, we want to display the duration of each frame in the console a
 How should we do that? Well, let's look at the 2 callbacks we have in our loop and our `State` struct.
 
 There is some information we want to track, so we'll modify `State` first.
-```rust,skt-definition,no_run
+```rust,template-definition,no_run
 struct State {
     dt: std::time::Duration,
 }
@@ -214,7 +214,7 @@ struct State {
 
 Now in `main`, you need to update the `State` instantiation to include `dt`:
 
-```rust,skt-expression,no_run
+```rust,template-expression,no_run
 let state = State {
     dt: std::time::Duration::new(0, 0),
 };
@@ -223,7 +223,7 @@ let state = State {
 So now that we have state to update, let's update it in our `update` callback!
 We'll use [`TimeContext::delta`](https://docs.rs/ggez/latest/ggez/timer/struct.TimeContext.html#method.delta) to get the delta time.
 
-```rust,skt-update,no_run
+```rust,template-update,no_run
 fn update(&mut self, ctx: &mut Context) -> GameResult {
     self.dt = ctx.time.delta();
     Ok(())
@@ -231,7 +231,7 @@ fn update(&mut self, ctx: &mut Context) -> GameResult {
 ```
 
 To see the changes in `State`, you need to modify the `draw` callback.
-```rust,skt-draw,no_run
+```rust,template-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     println!("Hello ggez! dt = {}ns", self.dt.as_nanos());
     Ok(())
