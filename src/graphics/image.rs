@@ -282,8 +282,8 @@ impl Image {
 
         let _ = gfx.wgpu.queue.submit([cmd]);
 
-        // wait... (web can't block, so poll once and fail if the mapping isn't ready)
-        // TODO: async API for web
+        // Wait for the mapping. Web can't block, so poll once and fail if it isn't ready.
+        // TODO: async readback API for web.
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         buffer
             .slice(..)

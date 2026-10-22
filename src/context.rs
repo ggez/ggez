@@ -223,7 +223,6 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
-    /// Async because WebGPU initialization is async on web.
     async fn from_conf(
         game_id: &str,
         conf: conf::Conf,
@@ -380,16 +379,23 @@ impl ContextBuilder {
 
     /// Build a `Context`.
     ///
-    /// Native only, as it blocks on [`build_async`](Self::build_async). On web use
-    /// [`run`](Self::run) or `build_async`.
+    /// Native only, it blocks on [`build_async`](Self::build_async), which can't be done in a
+    /// browser. On web this returns an error, use [`run`](Self::run) or `build_async` instead.
     #[cfg_attr(
         target_arch = "wasm32",
         deprecated(
             since = "0.10.0",
-            note = "traps on wasm; use `ContextBuilder::run::<G>()` or `ContextBuilder::build_async`"
+            note = "use `ContextBuilder::run::<G>()` or `ContextBuilder::build_async` on web"
         )
     )]
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let msg = "ContextBuilder::run or build_async on web";
+            web_sys::console::error_1(&format!("ggez: {msg}").into());
+            Err(GameError::CustomError(String::from(msg)))
+        }
+        #[cfg(not(target_arch = "wasm32"))]
         pollster::block_on(self.build_async())
     }
 
@@ -408,12 +414,6 @@ impl ContextBuilder {
     where
         F: FnOnce(String, conf::Conf, Filesystem) -> Fut,
         Fut: std::future::Future<Output = GameResult<(C, winit::event_loop::EventLoop<()>)>>,
-        C: HasMut<ContextFields>
-            + HasMut<graphics::GraphicsContext>
-            + HasMut<timer::TimeContext>
-            + HasMut<input::keyboard::KeyboardContext>
-            + HasMut<input::mouse::MouseContext>
-            + HasMut<GamepadContext>,
     {
         let (game_id, config, fs) = self.prepare()?;
         from_conf(game_id, config, fs).await
