@@ -21,7 +21,7 @@ You are now able to add your own custom contexts! Using the new `ContextFields` 
 
 ### Web
 
-ggez now supports the web (WebGPU only). See `docs/BuildingForEveryPlatform.md` and `examples/web/`.
+ggez now supports the web (WebGPU only). See `docs/BuildingForEveryPlatform.md`, `examples/web-minimal/` and `examples/web/`.
 
 Start games with the new `ContextBuilder::run::<G>()` (where `G` implements the new `Game` trait) or `run_with`, which work on both native and web.
 

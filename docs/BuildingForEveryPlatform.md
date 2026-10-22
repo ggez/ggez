@@ -134,21 +134,24 @@ wasm-bindgen --target web --out-dir ./out target/wasm32-unknown-unknown/release/
 The canvas is appended to `<body>`, or to the element set with
 `WindowSetup::web_canvas_parent_id("my-element")`.
 
-`examples/web/` builds every example this way and serves them in a gallery; see
-[`examples/web/README.md`](../examples/web/README.md).
+[`examples/web-minimal/`](../examples/web-minimal/) is a complete page built this way, with no
+bundler: a shell script plus one HTML file that also handles resources and audio (see below).
+[`examples/web/`](../examples/web/README.md) builds every example and serves them in a gallery with
+Vite.
 
 ## Asset loading
 
 Browsers can't read files synchronously, so before the wasm module starts, the page should set
 `window.__GGEZ_RESOURCES_ZIP__` to a `Uint8Array` containing a zip of your resources. ggez mounts it
 as the resources directory, so `Filesystem` and `from_path` APIs work as usual
-(see [`examples/web/src/runner.js`](../examples/web/src/runner.js)). Alternatively, embed a zip with
+(see [`examples/web-minimal/index.html`](../examples/web-minimal/index.html)). Alternatively, embed a zip with
 `ContextBuilder::add_zipfile_bytes`. `add_resource_path` is ignored on web.
 
 ## Known limitations on web
 
 - Browsers block audio until the user interacts with the page, and sounds played before that are
-  dropped. `ctx.audio.state()` reports this if the page installs the shim from
-  [`examples/web/src/runner.js`](../examples/web/src/runner.js).
+  dropped. The page needs the small `AudioContext` shim from
+  [`examples/web-minimal/index.html`](../examples/web-minimal/index.html) to resume audio on the
+  first gesture and to make `ctx.audio.state()` report it.
 - `SpatialSource::stop()` can freeze the tab. Prefer `pause()` and dropping the source.
 - `Image::to_pixels` is not supported and returns an error.

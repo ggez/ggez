@@ -38,7 +38,9 @@ The gallery at <http://localhost:5173> runs the selected example in an iframe po
 - `index.html` / `src/gallery.js`: the gallery.
 - `run.html` / `src/runner.js`: runs one example. It sets `window.__GGEZ_RESOURCES_ZIP__` to the
   resources zip, which ggez mounts as its resources directory, and installs the audio shim used by
-  `AudioContext::state()`. Copy it as a starting point for your own page.
+  `AudioContext::state()`.
+
+For a single page with no bundler or Node, see [`../web-minimal`](../web-minimal).
 
 If you'd rather not load resources from JS, embed them in the binary instead:
 
