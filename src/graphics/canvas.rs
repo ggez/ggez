@@ -420,6 +420,10 @@ impl Canvas {
     }
 
     /// Finish drawing with this canvas and submit all the draw calls.
+    ///
+    /// Must be called in an active frame, which the event loop handles automatically for
+    /// [`EventHandler::draw`](crate::event::EventHandler::draw). When drawing outside that, call
+    /// [`GraphicsContext::begin_frame`] first and [`GraphicsContext::end_frame`] after finishing.
     #[inline]
     pub fn finish(mut self, gfx: &mut impl HasMut<GraphicsContext>) -> GameResult {
         let gfx = gfx.retrieve_mut();
