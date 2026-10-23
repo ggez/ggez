@@ -241,7 +241,7 @@ impl Mesh {
             })
     }
 
-    /// Returns the bounding box of the vertices of this mesh.
+    /// Returns the axis-aligned bounds of this mesh's vertices in local coordinates.
     pub fn bounding_box(&self) -> Rect {
         self.bounds
     }

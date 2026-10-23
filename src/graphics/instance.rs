@@ -4,7 +4,7 @@ use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
     internal_canvas::InstanceArrayView,
-    transform_rect, Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
+    Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
 };
 use crevice::std140::AsStd140;
 use std::{
@@ -289,16 +289,30 @@ impl InstanceArray {
         self.sort_by = sort_by;
     }
 
-    /// Calculates the bounding box of the set of instances already pushed into the array, using the mesh given as reference.
-    pub fn bounding_box(&self, mesh: &Mesh) -> Rect {
-        if self.params.is_empty() {
-            return Rect::new(0.0, 0.0, 1.0, 1.0);
-        }
-        let dimensions = mesh.bounds;
+    /// Returns the bounds after applying instance transforms, or `None` if empty.
+    /// Excludes the outer transform passed to [`Canvas::draw_instanced_mesh`].
+    pub fn bounding_box(&self, mesh: &Mesh) -> Option<Rect> {
+        let bounds = mesh.bounding_box();
         self.params
             .iter()
-            .map(|&param| transform_rect(dimensions, param))
-            .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
+            .map(|param| {
+                let transform = param.transform.to_bare_matrix_glam();
+                let corners = [
+                    [bounds.x, bounds.y],
+                    [bounds.right(), bounds.y],
+                    [bounds.x, bounds.bottom()],
+                    [bounds.right(), bounds.bottom()],
+                ];
+                let mut min = glam::Vec2::splat(f32::INFINITY);
+                let mut max = glam::Vec2::splat(f32::NEG_INFINITY);
+                for [x, y] in corners {
+                    let point = transform.transform_point3(glam::vec3(x, y, 0.0)).truncate();
+                    min = min.min(point);
+                    max = max.max(point);
+                }
+                Rect::new(min.x, min.y, max.x - min.x, max.y - min.y)
+            })
+            .reduce(Rect::combine_with)
     }
 }
 
