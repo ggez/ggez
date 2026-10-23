@@ -19,6 +19,12 @@ var t: texture_2d<f32>;
 @group(1) @binding(1)
 var s: sampler;
 
+fn srgb_to_linear(color: vec4<f32>) -> vec4<f32> {
+    let low = color.rgb / vec3<f32>(12.92);
+    let high = pow((color.rgb + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4));
+    return vec4<f32>(select(high, low, color.rgb <= vec3<f32>(0.04045)), color.a);
+}
+
 @vertex
 fn vs_main(
     @location(0) position: vec2<f32>,
@@ -28,14 +34,7 @@ fn vs_main(
     var out: VertexOutput;
     out.position = uniforms.transform * vec4<f32>(position, 0.0, 1.0);
     out.uv = mix(uniforms.src_rect.xy, uniforms.src_rect.zw, uv);
-    
-    // convert to linear
-    var threshold = uniforms.color.rgb < vec3<f32>(0.04045);
-    var hi = pow((uniforms.color.rgb + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4));
-    var lo = uniforms.color.rgb * vec3<f32>(1.0 / 12.92);
-    var linear_color = vec4<f32>(select(hi, lo, threshold), uniforms.color.a);
-    out.color = linear_color * color;
-    
+    out.color = srgb_to_linear(uniforms.color) * color;
     return out;
 }
 

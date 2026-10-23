@@ -1,6 +1,14 @@
 # Unreleased
 
+## Changed
+
+- Convert draw and per-instance tint colors from sRGB to linear in vertex shaders.
+  See `resources/vertex.wgsl`.
+
 ## Fixed
+
+- Convert the overall instance-array tint to linear before combining it with
+  per-instance and mesh colors.
 
 - Upgrade zip to v9 due to the security related yanks of older versions
   ([zip-rs/zip2#1075](https://github.com/zip-rs/zip2/issues/1075)).
