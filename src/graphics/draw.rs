@@ -1,4 +1,4 @@
-use super::{Canvas, Color, GraphicsContext, LinearColor, Rect};
+use super::{Canvas, Color, GraphicsContext, Rect};
 use crate::context::Has;
 use glam::{Mat4, Vec4};
 
@@ -346,10 +346,9 @@ impl DrawUniforms {
             ),
         };
 
-        let color = LinearColor::from(param.color);
-
         DrawUniforms {
-            color: Vec4::from_array(color.into()),
+            // Draw and per-instance tints are converted to linear in the vertex shader.
+            color: Vec4::from_array(param.color.into()),
             src_rect: Vec4::new(
                 param.src.x,
                 param.src.y,

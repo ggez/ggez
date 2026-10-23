@@ -32,6 +32,12 @@ var s: sampler;
 @group(2) @binding(0)
 var<storage, read> instances: InstanceArray;
 
+fn srgb_to_linear(color: vec4<f32>) -> vec4<f32> {
+    let low = color.rgb / vec3<f32>(12.92);
+    let high = pow((color.rgb + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4));
+    return vec4<f32>(select(high, low, color.rgb <= vec3<f32>(0.04045)), color.a);
+}
+
 @vertex
 fn vs_main(
     @builtin(instance_index) in_instance_index: u32,
@@ -66,7 +72,7 @@ fn vs_main(
     var out: VertexOutput;
     out.position = uniforms.transform * instance.transform * scale_mat * vec4<f32>(position, 0.0, 1.0);
     out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
-    out.color = uniforms.color * instance.color * color;
+    out.color = uniforms.color * srgb_to_linear(instance.color) * color;
     return out;
 }
 

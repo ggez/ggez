@@ -133,6 +133,10 @@ impl Default for ShaderBuilder<'_> {
 
 /// A custom shader that can be used to render with shader effects.
 ///
+/// Custom vertex shaders receive draw and per-instance tint colors in sRGB. They
+/// convert RGB channels to linear before multiplying by mesh vertex colors, which
+/// are already linear. See `resources/vertex.wgsl` for conversion used by built-in shaders.
+///
 /// The shader may have a user specified vertex module, fragment module, both,
 /// or neither. The fragment module entry point must be named `fs_main`. The
 /// vertex module entry point must be named `vs_main`. The vertex module must

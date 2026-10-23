@@ -29,6 +29,12 @@ struct VertexOutput {
     @location(2) vertex_color: vec4<f32>
 }
 
+fn srgb_to_linear(color: vec4<f32>) -> vec4<f32> {
+    let low = color.rgb / vec3<f32>(12.92);
+    let high = pow((color.rgb + vec3<f32>(0.055)) / vec3<f32>(1.055), vec3<f32>(2.4));
+    return vec4<f32>(select(high, low, color.rgb <= vec3<f32>(0.04045)), color.a);
+}
+
 @vertex
 fn vs_main(
     model: VertexInput,
@@ -36,7 +42,7 @@ fn vs_main(
     var out: VertexOutput;
     out.tex_coord = model.tex_coords;
     out.clip_position = uniforms.camera_transform * uniforms.model_transform * vec4<f32>(model.position, 1.0);
-    out.color = uniforms.color;
+    out.color = srgb_to_linear(uniforms.color);
     out.vertex_color = model.color;
     return out;
 }

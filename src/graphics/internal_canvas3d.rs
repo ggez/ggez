@@ -359,7 +359,7 @@ impl<'a> InternalCanvas3d<'a> {
         let uniforms = InstanceUniforms3d {
             model_transform: draw_uniforms.model_transform,
             camera_transform: draw_uniforms.camera_transform,
-            color: glam::Vec4::from_array(param.color.into()),
+            color: glam::Vec4::from_array(LinearColor::from(param.color).into()),
         };
 
         self.wgpu.queue.write_buffer(
