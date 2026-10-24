@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <title>ggez</title>
+    <style>
+      body { margin: 0; background: #111; }
+      canvas { display: block; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import init from "./pkg/game.js";
+
+      // A zip of the resources directory, which ggez mounts as its filesystem root.
+      // Skip this if you embed resources with `add_zipfile_bytes`.
+      const zip = await fetch("./resources.zip");
+      window.__GGEZ_RESOURCES_ZIP__ = new Uint8Array(await zip.arrayBuffer());
+
+      // Instantiates the module and runs `main()`, which attaches a canvas (id `ggez-body`)
+      // to <body> and starts the game.
+      await init();
+    </script>
+  </body>
+</html>

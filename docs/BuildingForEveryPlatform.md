@@ -89,10 +89,13 @@ Just copy-paste the exe and resource directory to the destination computer.
 
 # MacOS
 
-At the moment we unfortunately cannot provide support for developing on
-mac (none of the developers have hardware). While `ggez` tries not to do
-anything that would make it *not* work on Mac, it is a DIY target. If
-you find any issues feel free to open a PR.
+Should just build.
+
+## Distributing
+
+You *can* just directly distribute an exe and resource directory but macos typically has .apps.
+You can look into the structure of these(Basically just a folder with a certain layout) or do something
+with xcode.
 
 # Android
 
@@ -100,10 +103,54 @@ Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 
 You might be able to use [`good-web-game`] though to run your `ggez` app on Android.
 
-# Web/wasm/emscripten
+# Web (wasm32)
 
-Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/71
+ggez targets `wasm32-unknown-unknown` via `wasm-bindgen`, and only supports WebGPU (not WebGL2).
+On Linux you may need to enable WebGPU in your browser (e.g. `chrome://flags/#enable-unsafe-webgpu`).
 
-You might be able to use [`good-web-game`] though to run your `ggez` app on wasm.
+Start your game with `ContextBuilder::run` (or `run_with`); `ContextBuilder::build` blocks, which
+doesn't work in a browser.
 
-[`good-web-game`]: https://github.com/ggez/good-web-game
+```sh
+rustup target add wasm32-unknown-unknown
+cargo build --target wasm32-unknown-unknown --release
+```
+
+Then run `wasm-bindgen` on the output to get the JS module + `.wasm`. Use `--target web` (or
+`bundler`), and note that the CLI version **must match** `wasm-bindgen` in your `Cargo.lock`:
+
+```sh
+cargo install --locked --version <X.Y.Z> wasm-bindgen-cli
+wasm-bindgen --target web --out-dir ./out target/wasm32-unknown-unknown/release/your_game.wasm
+```
+
+```html
+<script type="module">
+  import init from './out/your_game.js';
+  await init();
+</script>
+```
+
+The canvas is appended to `<body>`, or to the element set with
+`WindowSetup::web_canvas_parent_id("my-element")`.
+
+[`examples/web-minimal/`](../examples/web-minimal/) is a complete page built this way, with no
+bundler: a shell script plus one HTML file that also handles resources and audio (see below).
+[`examples/web/`](../examples/web/README.md) builds every example and serves them in a gallery with
+Vite.
+
+## Asset loading
+
+Browsers can't read files synchronously, so before the wasm module starts, the page should set
+`window.__GGEZ_RESOURCES_ZIP__` to a `Uint8Array` containing a zip of your resources. ggez mounts it
+as the resources directory, so `Filesystem` and `from_path` APIs work as usual
+(see [`examples/web-minimal/index.html`](../examples/web-minimal/index.html)). Alternatively, embed a zip with
+`ContextBuilder::add_zipfile_bytes`. `add_resource_path` is ignored on web.
+
+## Known limitations on web
+
+- Browsers block audio until the user interacts with the page. ggez resumes it on the first
+  pointer or key event, but sounds played before that are dropped (check `ctx.audio.is_running()`).
+- `SpatialSource::stop()` can freeze the tab. Prefer `pause()` and dropping the source.
+- `Image::to_pixels` is not supported and returns an error.
+- There is no writable user directory, so `Filesystem::create`, `write_config` and other writes fail.

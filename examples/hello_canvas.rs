@@ -15,7 +15,7 @@ struct MainState {
     draw_with_canvas: bool,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
@@ -107,9 +107,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("hello_canvas", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("hello_canvas", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

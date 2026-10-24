@@ -1,8 +1,9 @@
-use crate::{context::Has, graphics::gpu::bind_group::BindGroupBuilder, GameError, GameResult};
+use crate::{context::Has, GameError, GameResult};
 
 use super::{
-    context::GraphicsContext, internal_canvas3d::InstanceArrayView3d, Canvas3d, Draw3d,
-    DrawParam3d, DrawUniforms3d, Drawable3d, Image, Mesh3d, Std140DrawUniforms3d, WgpuContext,
+    context::GraphicsContext, instance::create_buffers, internal_canvas3d::InstanceArrayView3d,
+    Canvas3d, Draw3d, DrawParam3d, DrawUniforms3d, Drawable3d, Image, Mesh3d, Std140DrawUniforms3d,
+    WgpuContext,
 };
 use crevice::std140::AsStd140;
 use std::{
@@ -16,6 +17,9 @@ use std::{
 const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
+///
+/// All draws of an `InstanceArray3d` in a frame use its contents at the end of that frame,
+/// so use separate arrays rather than modifying one between draws.
 #[derive(Debug)]
 pub struct InstanceArray3d {
     pub(crate) buffer: Mutex<wgpu::Buffer>,
@@ -84,50 +88,13 @@ impl InstanceArray3d {
     ) -> Self {
         assert!(capacity > 0);
 
-        let buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: DrawUniforms3d::std140_size_static() as u64 * capacity as u64,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST
-                | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-
-        let indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: if ordered {
-                std::mem::size_of::<u32>() as u64 * capacity as u64
-            } else {
-                4 // min for layout
-            },
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_SRC
-                | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let bind_group = BindGroupBuilder::new()
-            .buffer(
-                &buffer,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            )
-            .buffer(
-                &indices,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            );
-        let bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &bind_layout,
-            entries: bind_group.entries(),
-        });
+        let (buffer, indices, bind_group) = create_buffers(
+            &wgpu.device,
+            &bind_layout,
+            DrawUniforms3d::std140_size_static() as u64,
+            capacity,
+            ordered,
+        );
 
         let uniforms = Vec::with_capacity(capacity);
         let params = Vec::with_capacity(capacity);
@@ -209,23 +176,27 @@ impl InstanceArray3d {
         }
 
         let len = self.uniforms.len();
-        //if len > self.capacity.load(SeqCst) {
-        let mut resized = InstanceArray3d::new_wgpu(
-            wgpu,
-            self.bind_layout.clone(),
-            self.image.clone(),
-            len,
-            self.ordered,
-            self.mesh.clone(),
-        );
-        *self.buffer.lock().map_err(|_| GameError::LockError)? =
-            resized.buffer.get_mut().unwrap().clone();
-        *self.indices.lock().map_err(|_| GameError::LockError)? =
-            resized.indices.get_mut().unwrap().clone();
-        *self.bind_group.lock().map_err(|_| GameError::LockError)? =
-            resized.bind_group.get_mut().unwrap().clone();
-        self.capacity.store(len, SeqCst);
-        //}
+        if len == 0 {
+            return Ok(());
+        }
+
+        // Only reallocate when the data outgrows the buffers, growing geometrically.
+        let cap = self.capacity.load(SeqCst);
+        if len > cap {
+            let new_cap = len.max(cap * 2);
+            let (buffer, indices, bind_group) = create_buffers(
+                &wgpu.device,
+                &self.bind_layout,
+                DrawUniforms3d::std140_size_static() as u64,
+                new_cap,
+                self.ordered,
+            );
+
+            *self.buffer.lock().map_err(|_| GameError::LockError)? = buffer;
+            *self.indices.lock().map_err(|_| GameError::LockError)? = indices;
+            *self.bind_group.lock().map_err(|_| GameError::LockError)? = bind_group;
+            self.capacity.store(new_cap, SeqCst);
+        }
 
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
@@ -257,17 +228,16 @@ impl InstanceArray3d {
         assert!(new_capacity > 0);
 
         let gfx: &GraphicsContext = gfx.retrieve();
-        let resized = InstanceArray3d::new_wgpu(
-            &gfx.wgpu,
-            self.bind_layout.clone(),
-            self.image.clone(),
+        let (buffer, indices, bind_group) = create_buffers(
+            &gfx.wgpu.device,
+            &self.bind_layout,
+            DrawUniforms3d::std140_size_static() as u64,
             new_capacity,
             self.ordered,
-            self.mesh.clone(),
         );
-        self.buffer = resized.buffer;
-        self.indices = resized.indices;
-        self.bind_group = resized.bind_group;
+        self.buffer = Mutex::new(buffer);
+        self.indices = Mutex::new(indices);
+        self.bind_group = Mutex::new(bind_group);
 
         self.capacity.store(new_capacity, SeqCst);
         self.dirty.store(true, SeqCst);

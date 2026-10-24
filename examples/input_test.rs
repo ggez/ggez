@@ -14,13 +14,13 @@ struct MainState {
     mouse_down: bool,
 }
 
-impl MainState {
-    fn new() -> MainState {
-        MainState {
+impl ggez::Game for MainState {
+    fn new(_ctx: &mut Context) -> GameResult<MainState> {
+        Ok(MainState {
             pos_x: 100.0,
             pos_y: 100.0,
             mouse_down: false,
-        }
+        })
     }
 }
 
@@ -180,13 +180,6 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("input_test", "ggez").window_mode(
-        conf::WindowMode::default()
-            .fullscreen_type(conf::FullscreenType::Windowed)
-            .resizable(true),
-    );
-    let (ctx, event_loop) = cb.build()?;
-
     // remove the comment to see how physical mouse coordinates can differ
     // from logical game coordinates when the screen coordinate system changes
     // canvas.set_screen_coordinates(Rect::new(20.0, 50.0, 2000.0, 1000.0));
@@ -194,6 +187,11 @@ pub fn main() -> GameResult {
     // alternatively, resizing the window also leads to screen coordinates
     // and physical window size being out of sync
 
-    let state = MainState::new();
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("input_test", "ggez")
+        .window_mode(
+            conf::WindowMode::default()
+                .fullscreen_type(conf::FullscreenType::Windowed)
+                .resizable(true),
+        )
+        .run::<MainState>()
 }

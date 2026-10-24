@@ -18,14 +18,16 @@ struct MainState {
     sound: audio::Source,
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let data = audio::SoundData::new(ctx, "/sound.ogg")?;
         let sound = audio::Source::from_data(ctx, data.clone())?;
         let s = MainState { data, sound };
         Ok(s)
     }
+}
 
+impl MainState {
     // To test: play, play_later, play_detached(),
     // set_repeat, set_fade_in, set_pitch,
     // basically every method on Source, actually,
@@ -112,9 +114,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("sounds", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("sounds", "ggez")
+        .add_resource_path(resource_dir)
+        .run::<MainState>()
 }

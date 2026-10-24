@@ -17,9 +17,69 @@ use std::{
 
 const DEFAULT_CAPACITY: usize = 16;
 
+/// Creates the instance buffer, index buffer, and their bind group for `capacity`
+/// instances of `item_size` bytes each.
+pub(crate) fn create_buffers(
+    device: &wgpu::Device,
+    bind_layout: &wgpu::BindGroupLayout,
+    item_size: u64,
+    capacity: usize,
+    ordered: bool,
+) -> (wgpu::Buffer, wgpu::Buffer, wgpu::BindGroup) {
+    let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: None,
+        size: item_size * capacity as u64,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_DST
+            | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
+
+    let indices = device.create_buffer(&wgpu::BufferDescriptor {
+        label: None,
+        size: if ordered {
+            std::mem::size_of::<u32>() as u64 * capacity as u64
+        } else {
+            4 // min for layout
+        },
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_SRC
+            | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    let bind_group = BindGroupBuilder::new()
+        .buffer(
+            &buffer,
+            0,
+            wgpu::ShaderStages::VERTEX,
+            wgpu::BufferBindingType::Storage { read_only: true },
+            false,
+            None,
+        )
+        .buffer(
+            &indices,
+            0,
+            wgpu::ShaderStages::VERTEX,
+            wgpu::BufferBindingType::Storage { read_only: true },
+            false,
+            None,
+        );
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: None,
+        layout: bind_layout,
+        entries: bind_group.entries(),
+    });
+
+    (buffer, indices, bind_group)
+}
+
 /// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
+///
+/// All draws of an `InstanceArray` in a frame use its contents at the end of that frame,
+/// so use separate arrays rather than modifying one between draws.
 #[derive(Debug)]
 pub struct InstanceArray {
     pub(crate) buffer: Mutex<wgpu::Buffer>,
@@ -45,8 +105,7 @@ impl InstanceArray {
     pub fn new(gfx: &impl Has<GraphicsContext>, image: impl Into<Option<Image>>) -> Self {
         let gfx = gfx.retrieve();
         InstanceArray::new_wgpu(
-            &gfx.wgpu,
-            gfx.instance_bind_layout.clone(),
+            gfx,
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             DEFAULT_CAPACITY,
             false,
@@ -59,67 +118,24 @@ impl InstanceArray {
     pub fn new_ordered(gfx: &impl Has<GraphicsContext>, image: impl Into<Option<Image>>) -> Self {
         let gfx = gfx.retrieve();
         InstanceArray::new_wgpu(
-            &gfx.wgpu,
-            gfx.instance_bind_layout.clone(),
+            gfx,
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             DEFAULT_CAPACITY,
             true,
         )
     }
 
-    fn new_wgpu(
-        wgpu: &WgpuContext,
-        bind_layout: wgpu::BindGroupLayout,
-        image: Image,
-        capacity: usize,
-        ordered: bool,
-    ) -> Self {
+    fn new_wgpu(gfx: &GraphicsContext, image: Image, capacity: usize, ordered: bool) -> Self {
         assert!(capacity > 0);
 
-        let buffer = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST
-                | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-
-        let indices = wgpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: if ordered {
-                std::mem::size_of::<u32>() as u64 * capacity as u64
-            } else {
-                4 // min for layout
-            },
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_SRC
-                | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let bind_group = BindGroupBuilder::new()
-            .buffer(
-                &buffer,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            )
-            .buffer(
-                &indices,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            );
-        let bind_group = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &bind_layout,
-            entries: bind_group.entries(),
-        });
+        let bind_layout = gfx.instance_bind_layout.clone();
+        let (buffer, indices, bind_group) = create_buffers(
+            &gfx.wgpu.device,
+            &bind_layout,
+            DrawUniforms::std140_size_static() as u64,
+            capacity,
+            ordered,
+        );
 
         let uniforms = Vec::with_capacity(capacity);
         let params = Vec::with_capacity(capacity);
@@ -150,6 +166,12 @@ impl InstanceArray {
                 .iter()
                 .map(|x| DrawUniforms::from_param(x, None).as_std140()),
         );
+    }
+
+    /// Replaces the image all instances are drawn with; useful when the image
+    /// arrives after the array is created (e.g. async loading on web).
+    pub fn set_image(&mut self, image: Image) {
+        self.image = image;
     }
 
     /// Pushes a new instance onto the end.
@@ -200,22 +222,27 @@ impl InstanceArray {
         }
 
         let len = self.uniforms.len();
-        //if len > self.capacity.load(SeqCst) {
-        let mut resized = InstanceArray::new_wgpu(
-            wgpu,
-            self.bind_layout.clone(),
-            self.image.clone(),
-            len,
-            self.ordered,
-        );
-        *self.buffer.lock().map_err(|_| GameError::LockError)? =
-            resized.buffer.get_mut().unwrap().clone();
-        *self.indices.lock().map_err(|_| GameError::LockError)? =
-            resized.indices.get_mut().unwrap().clone();
-        *self.bind_group.lock().map_err(|_| GameError::LockError)? =
-            resized.bind_group.get_mut().unwrap().clone();
-        self.capacity.store(len, SeqCst);
-        //}
+        if len == 0 {
+            return Ok(());
+        }
+
+        // Only reallocate when the data outgrows the buffers, growing geometrically.
+        let cap = self.capacity.load(SeqCst);
+        if len > cap {
+            let new_cap = len.max(cap * 2);
+            let (buffer, indices, bind_group) = create_buffers(
+                &wgpu.device,
+                &self.bind_layout,
+                DrawUniforms::std140_size_static() as u64,
+                new_cap,
+                self.ordered,
+            );
+
+            *self.buffer.lock().map_err(|_| GameError::LockError)? = buffer;
+            *self.indices.lock().map_err(|_| GameError::LockError)? = indices;
+            *self.bind_group.lock().map_err(|_| GameError::LockError)? = bind_group;
+            self.capacity.store(new_cap, SeqCst);
+        }
 
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
@@ -247,16 +274,16 @@ impl InstanceArray {
         assert!(new_capacity > 0);
 
         let gfx: &GraphicsContext = gfx.retrieve();
-        let resized = InstanceArray::new_wgpu(
-            &gfx.wgpu,
-            self.bind_layout.clone(),
-            self.image.clone(),
+        let (buffer, indices, bind_group) = create_buffers(
+            &gfx.wgpu.device,
+            &self.bind_layout,
+            DrawUniforms::std140_size_static() as u64,
             new_capacity,
             self.ordered,
         );
-        self.buffer = resized.buffer;
-        self.indices = resized.indices;
-        self.bind_group = resized.bind_group;
+        self.buffer = Mutex::new(buffer);
+        self.indices = Mutex::new(indices);
+        self.bind_group = Mutex::new(bind_group);
 
         self.capacity.store(new_capacity, SeqCst);
         self.dirty.store(true, SeqCst);

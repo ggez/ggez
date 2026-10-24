@@ -256,15 +256,28 @@ where
     }
 }
 
+/// An [`EventHandler`] that can construct itself from a [`Context`], so it can be run with
+/// [`ContextBuilder::run::<MyGame>()`](crate::ContextBuilder::run) on both native and web.
+///
+/// If your state needs something `Context` can't provide (CLI args, a network handle, ...),
+/// use [`ContextBuilder::run_with`](crate::ContextBuilder::run_with) instead.
+pub trait Game: EventHandler<Context, GameError> + Sized + 'static {
+    /// Construct the game state once the [`Context`] is ready.
+    fn new(ctx: &mut Context) -> GameResult<Self>;
+}
+
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
+///
+/// On wasm this returns `Ok(())` immediately and the browser drives the loop,
+/// so code after `event::run(...)` runs before the game does.
 pub fn run<S, C, E>(ctx: C, event_loop: EventLoop<()>, state: S) -> GameResult
 where
     S: EventHandler<C, E> + 'static,
-    E: std::fmt::Debug,
+    E: std::fmt::Debug + 'static,
     C: 'static
         + HasMut<ContextFields>
         + HasMut<GraphicsContext>
@@ -273,15 +286,26 @@ where
         + HasMut<GamepadContext>
         + HasMut<crate::timer::TimeContext>,
 {
-    let mut app = GgezApplicationHandler {
+    let app = GgezApplicationHandler {
         ctx,
         state,
         _p: PhantomData,
     };
 
-    event_loop
-        .run_app(&mut app)
-        .map_err(GameError::EventLoopError)
+    #[cfg(target_arch = "wasm32")]
+    {
+        // `run_app` exits by throwing a JS exception, which rejects wasm-bindgen's `init()`.
+        use winit::platform::web::EventLoopExtWebSys;
+        event_loop.spawn_app(app);
+        Ok(())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let mut app = app;
+        event_loop
+            .run_app(&mut app)
+            .map_err(GameError::EventLoopError)
+    }
 }
 
 struct GgezApplicationHandler<S, C, E>
@@ -331,10 +355,7 @@ where
         }
         if !HasMut::<ContextFields>::retrieve_mut(&mut self.ctx).continuing {
             event_loop.exit();
-            return;
         }
-
-        event_loop.set_control_flow(ControlFlow::Poll);
     }
 
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
@@ -353,6 +374,8 @@ where
         process_window_event(&mut self.ctx, &mut window_id, &mut event);
 
         match event {
+            #[cfg(target_arch = "wasm32")]
+            WindowEvent::RedrawRequested => self.run_frame(event_loop),
             WindowEvent::Resized(logical_size) => {
                 let res = self.state.resize_event(
                     &mut self.ctx,
@@ -559,18 +582,6 @@ where
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        // If you are writing your own event loop, make sure you include calls
-        // to `TimeContext::tick()`, `KeyboardContext::save_keyboard_state()`,
-        // `MouseContext::reset_delta()`, and `MouseContext::save_mouse_state()`.
-        //
-        // These update ggez's internal state however necessary.
-        //
-        // Make sure to include calls to `GraphicsContext::begin_frame()` and
-        // `GraphicsContext::end_frame()` before/after the drawing routine in
-        // your custom event loop.
-        let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
-        time.tick();
-
         // Handle gamepad events if necessary.
         #[cfg(feature = "gamepad")]
         while let Some(gilrs::Event { id, event, .. }) =
@@ -623,6 +634,64 @@ where
             }
         }
 
+        // On web, frames run on `RedrawRequested`, which winit schedules with
+        // `requestAnimationFrame`. While the page is hidden, wake once a second instead:
+        // `ControlFlow::Poll` would spin a core in a background tab.
+        #[cfg(target_arch = "wasm32")]
+        {
+            if !HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).is_page_visible() {
+                // Drop the fixed-step backlog so games don't burst-update on resume.
+                let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
+                time.tick();
+                time.reset_residual_update_dt();
+                let when = web_time::Instant::now() + std::time::Duration::from_secs(1);
+                event_loop.set_control_flow(ControlFlow::WaitUntil(when));
+                return;
+            }
+
+            HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx)
+                .window()
+                .request_redraw();
+            event_loop.set_control_flow(ControlFlow::Wait);
+        }
+
+        // On native, run a frame every iteration (vsync paces it). `RedrawRequested`
+        // would stall `update` while the window is minimized or occluded.
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.run_frame(event_loop);
+            event_loop.set_control_flow(ControlFlow::Poll);
+        }
+    }
+}
+
+impl<S, C, E> GgezApplicationHandler<S, C, E>
+where
+    S: EventHandler<C, E> + 'static,
+    E: std::fmt::Debug,
+    C: 'static
+        + HasMut<ContextFields>
+        + HasMut<GraphicsContext>
+        + HasMut<input::keyboard::KeyboardContext>
+        + HasMut<input::mouse::MouseContext>
+        + HasMut<GamepadContext>
+        + HasMut<crate::timer::TimeContext>,
+{
+    /// Runs one frame: `update`, then `draw` between `begin_frame`/`end_frame`.
+    ///
+    /// If you are writing your own event loop, make sure you include calls
+    /// to `TimeContext::tick()`, `KeyboardContext::save_keyboard_state()`,
+    /// `MouseContext::reset_delta()`, and `MouseContext::save_mouse_state()`,
+    /// and call `GraphicsContext::begin_frame()` and `end_frame()` around drawing.
+    fn run_frame(&mut self, event_loop: &ActiveEventLoop) {
+        // A redraw queued just before the page was hidden may still arrive.
+        if !HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).is_page_visible() {
+            return;
+        }
+
+        let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
+        time.tick();
+
         let res = self.state.update(&mut self.ctx);
         if catch_error(
             &mut self.ctx,
@@ -652,6 +721,7 @@ where
                     error!("Error on GraphicsContext::end_frame(): {e:?}");
                     eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
                     event_loop.exit();
+                    return;
                 }
             }
             Ok(false) => {
@@ -661,6 +731,7 @@ where
                 error!("Error on GraphicsContext::begin_frame(): {e:?}");
                 eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
                 event_loop.exit();
+                return;
             }
         }
 
@@ -781,17 +852,16 @@ where
             keyboard.set_physical_key(&event.physical_key, pressed);
         }
         WindowEvent::ScaleFactorChanged {
-            inner_size_writer, ..
+            scale_factor,
+            inner_size_writer,
         } => {
             let fields = HasMut::<ContextFields>::retrieve_mut(ctx);
             if !fields.conf.window_mode.resize_on_scale_factor_change {
                 // actively set the new_inner_size to be the desired size
                 // to stop winit from resizing our window
-                let _ =
-                    inner_size_writer.request_inner_size(winit::dpi::PhysicalSize::<u32>::from([
-                        fields.conf.window_mode.width,
-                        fields.conf.window_mode.height,
-                    ]));
+                if let Ok(size) = fields.conf.window_mode.actual_size() {
+                    let _ = inner_size_writer.request_inner_size(size.to_physical(*scale_factor));
+                }
             }
         }
         _ => (),

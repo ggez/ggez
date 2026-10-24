@@ -86,8 +86,8 @@ where
 /// A structure that contains our time-tracking state.
 #[derive(Debug)]
 pub struct TimeContext {
-    init_instant: time::Instant,
-    last_instant: time::Instant,
+    init_instant: web_time::Instant,
+    last_instant: web_time::Instant,
     frame_durations: LogBuffer<time::Duration>,
     residual_update_dt: time::Duration,
     frame_count: usize,
@@ -101,8 +101,8 @@ impl TimeContext {
     pub fn new() -> TimeContext {
         let initial_dt = time::Duration::from_millis(16);
         TimeContext {
-            init_instant: time::Instant::now(),
-            last_instant: time::Instant::now(),
+            init_instant: web_time::Instant::now(),
+            last_instant: web_time::Instant::now(),
             frame_durations: LogBuffer::new(TIME_LOG_FRAMES, initial_dt),
             residual_update_dt: time::Duration::from_secs(0),
             frame_count: 0,
@@ -205,13 +205,19 @@ impl TimeContext {
     /// You only need to call this function if you're writing your
     /// own custom event loop.
     pub fn tick(&mut self) {
-        let now = time::Instant::now();
+        let now = web_time::Instant::now();
         let time_since_last = now - self.last_instant;
         self.frame_durations.push(time_since_last);
         self.last_instant = now;
         self.frame_count += 1;
 
         self.residual_update_dt += time_since_last;
+    }
+
+    /// Clears the time accumulated for [`check_update_time`](Self::check_update_time), so it
+    /// doesn't run a burst of catch-up updates. Called while a web page is hidden.
+    pub fn reset_residual_update_dt(&mut self) {
+        self.residual_update_dt = time::Duration::from_secs(0);
     }
 }
 

@@ -1,5 +1,23 @@
 # Unreleased
 
+## Added
+
+- `WindowMode::logical_dimensions`, `GraphicsContext::pixel_scale` and `Text::set_logical_scale`
+  for sizing windows and text in logical pixels on HiDPI displays.
+
+### Web
+
+ggez now supports the web (WebGPU only). See `docs/BuildingForEveryPlatform.md`, `examples/web-minimal/` and `examples/web/`.
+
+Start games with the new `ContextBuilder::run::<G>()` (where `G` implements the new `Game` trait) or `run_with`, which work on both native and web. Use `WindowSetup::web_canvas_parent_id` to choose where the canvas is attached.
+
+Breaking changes:
+- `GameError::GraphicsInitializationError` now has a cause `String`, and there's a new wasm-only `GameError::WebGpuUnavailable`.
+- `GraphicsContext::new` is now `async`, so `ContextBuilder::custom_build` takes a closure returning a future. `custom_build` is native only, for web use `custom_build_async` or `custom_run`.
+- `event::run` now requires `E: 'static`.
+- `AudioContext::device` returns an `Option`. Audio is disabled instead of failing when there's no output device.
+- `InstanceArray`/`InstanceArray3d` reuse GPU buffers instead of reallocating on every flush, so all draws of one array in a frame now use its final contents.
+
 ## Changed
 
 - Convert draw and per-instance tint colors from sRGB to linear in vertex shaders.

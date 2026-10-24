@@ -3,6 +3,9 @@
 //!
 //! It doesn't use an event loop, it just runs once and exits,
 //! printing a bunch of stuff to the console.
+//!
+//! It uses `ContextBuilder::build`, so it doesn't work on web.
+#![cfg_attr(target_arch = "wasm32", allow(deprecated))]
 
 use ggez::{conf, filesystem, ContextBuilder, GameResult};
 use std::env;

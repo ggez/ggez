@@ -492,7 +492,7 @@ impl BlendMode {
     /// When combining two fragments, choose the lighter value
     pub const LIGHTEN: Self = BlendMode {
         color: BlendComponent {
-            src_factor: BlendFactor::SrcAlpha,
+            src_factor: BlendFactor::One,
             dst_factor: BlendFactor::One,
             operation: BlendOperation::Max,
         },
@@ -506,7 +506,7 @@ impl BlendMode {
     /// When combining two fragments, choose the darker value
     pub const DARKEN: Self = BlendMode {
         color: BlendComponent {
-            src_factor: BlendFactor::SrcAlpha,
+            src_factor: BlendFactor::One,
             dst_factor: BlendFactor::One,
             operation: BlendOperation::Min,
         },
