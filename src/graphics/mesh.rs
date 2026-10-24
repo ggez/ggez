@@ -3,7 +3,11 @@ use super::{
     Rect, WgpuContext,
 };
 use crate::{context::Has, GameError, GameResult};
-use lyon::{math::Point as LPoint, path::Polygon, tessellation as tess};
+use lyon::{
+    math::Point as LPoint,
+    path::{Path, Polygon},
+    tessellation as tess,
+};
 use wgpu::util::DeviceExt;
 
 /// Vertex format uploaded to vertex buffers.
@@ -133,6 +137,21 @@ impl Mesh {
             MeshBuilder::new()
                 .ellipse(mode, point, radius1, radius2, tolerance, color)?
                 .build(),
+        ))
+    }
+
+    /// Create a new mesh for a [`Path`].
+    ///
+    /// See [`MeshBuilder::path`] for an example of constructing a [`Path`].
+    pub fn new_path(
+        gfx: &impl Has<GraphicsContext>,
+        mode: DrawMode,
+        path: &Path,
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_data(
+            gfx,
+            MeshBuilder::new().path(mode, path, color)?.build(),
         ))
     }
 
@@ -416,6 +435,42 @@ impl MeshBuilder {
                     )?;
                 }
             };
+        }
+        Ok(self)
+    }
+
+    /// Extend the mesh with a [`Path`], which can contain line segments,
+    /// quadratic and cubic Bézier curves, and arcs.
+    ///
+    /// ```
+    /// # use ggez::GameResult;
+    /// use ggez::graphics::{
+    ///     path::{math::point, Path},
+    ///     Color, DrawMode, MeshBuilder,
+    /// };
+    /// # fn main() -> GameResult {
+    /// let mut path = Path::builder();
+    /// path.begin(point(0., 0.));
+    /// path.cubic_bezier_to(point(10., 0.), point(0., 10.), point(10., 10.));
+    /// path.end(false);
+    ///
+    /// let mut builder = MeshBuilder::new();
+    /// builder.path(DrawMode::stroke(1.), &path.build(), Color::BLACK)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn path(&mut self, mode: DrawMode, path: &Path, color: Color) -> GameResult<&mut Self> {
+        let vb = VertexBuilder {
+            color: LinearColor::from(color),
+        };
+        let builder = &mut tess::BuffersBuilder::new(&mut self.buffer, vb);
+        match mode {
+            DrawMode::Fill(options) => {
+                tess::FillTessellator::new().tessellate_path(path, &options, builder)?
+            }
+            DrawMode::Stroke(options) => {
+                tess::StrokeTessellator::new().tessellate_path(path, &options, builder)?
+            }
         }
         Ok(self)
     }
