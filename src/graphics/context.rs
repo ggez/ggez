@@ -599,7 +599,9 @@ impl GraphicsContext {
     /// Begins a new frame.
     ///
     /// The only situation you need to call this in is when you are rolling your own event loop.
-    pub fn begin_frame(&mut self) -> GameResult {
+    /// Returns `Ok(false)` when the surface is occluded; callers should skip drawing that frame.
+    /// `Ok(true)` means a frame was acquired.
+    pub fn begin_frame(&mut self) -> GameResult<bool> {
         if self.fcx.is_some() {
             return Err(GameError::RenderError(String::from(
                 "cannot begin a new frame while another frame is still in progress; call end_frame first",
@@ -616,10 +618,8 @@ impl GraphicsContext {
                     self.reconfigure_surface();
                 }
                 wgpu::CurrentSurfaceTexture::Outdated => self.reconfigure_surface(),
-                wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
-                    // TODO: Add proper way to skip frame
-                    continue;
-                }
+                wgpu::CurrentSurfaceTexture::Timeout => continue,
+                wgpu::CurrentSurfaceTexture::Occluded => return Ok(false),
                 wgpu::CurrentSurfaceTexture::Lost => {
                     self.surface = self
                         .wgpu
@@ -653,7 +653,7 @@ impl GraphicsContext {
 
         self.text.verts.free();
 
-        Ok(())
+        Ok(true)
     }
 
     /// Ends the current frame.
