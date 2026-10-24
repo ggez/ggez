@@ -384,7 +384,7 @@ impl ContextBuilder {
     #[cfg_attr(
         target_arch = "wasm32",
         deprecated(
-            since = "0.10.0",
+            since = "0.11.0",
             note = "use `ContextBuilder::run::<G>()` or `ContextBuilder::build_async` on web"
         )
     )]
@@ -404,6 +404,20 @@ impl ContextBuilder {
     pub async fn build_async(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let (game_id, config, fs) = self.prepare()?;
         Context::from_conf(&game_id, config, fs).await
+    }
+
+    /// Build a custom context type, blocking on [`custom_build_async`](Self::custom_build_async).
+    /// Native only (use [`custom_run`](Self::custom_run) or `custom_build_async` for web).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn custom_build<C, F, Fut>(
+        self,
+        from_conf: F,
+    ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
+    where
+        F: FnOnce(String, conf::Conf, Filesystem) -> Fut,
+        Fut: std::future::Future<Output = GameResult<(C, winit::event_loop::EventLoop<()>)>>,
+    {
+        pollster::block_on(self.custom_build_async(from_conf))
     }
 
     /// Build a custom context type. `from_conf` is async so it can `.await`
@@ -487,7 +501,7 @@ impl ContextBuilder {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let (mut ctx, event_loop) = pollster::block_on(self.custom_build_async(from_conf))?;
+            let (mut ctx, event_loop) = self.custom_build(from_conf)?;
             let state = create_state(&mut ctx)?;
             crate::event::run(ctx, event_loop, state)
         }

@@ -32,7 +32,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         var r = fi / 1024.0;
         var rel = r * dir;
         var p = clamp(light.pos + rel, vec2<f32>(0.0), vec2<f32>(1.0));
-        if (textureSample(t, s, p).a > 0.8) {
+        if (textureSampleLevel(t, s, p, 0.0).a > 0.8) {
             dist = distance(light.pos, p) * 0.5;
             break;
         }

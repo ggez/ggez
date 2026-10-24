@@ -13,7 +13,7 @@ Start games with the new `ContextBuilder::run::<G>()` (where `G` implements the 
 
 Breaking changes:
 - `GameError::GraphicsInitializationError` now has a cause `String`, and there's a new wasm-only `GameError::WebGpuUnavailable`.
-- `ContextBuilder::custom_build` was replaced by `custom_build_async` and `custom_run`, and `GraphicsContext::new` is now `async`.
+- `GraphicsContext::new` is now `async`, so `ContextBuilder::custom_build` takes a closure returning a future. `custom_build` is native only, for web use `custom_build_async` or `custom_run`.
 - `event::run` now requires `E: 'static`.
 - `AudioContext::device` returns an `Option`. Audio is disabled instead of failing when there's no output device.
 - `InstanceArray`/`InstanceArray3d` reuse GPU buffers instead of reallocating on every flush, so all draws of one array in a frame now use its final contents.

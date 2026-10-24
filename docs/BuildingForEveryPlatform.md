@@ -153,3 +153,4 @@ as the resources directory, so `Filesystem` and `from_path` APIs work as usual
   pointer or key event, but sounds played before that are dropped (check `ctx.audio.is_running()`).
 - `SpatialSource::stop()` can freeze the tab. Prefer `pause()` and dropping the source.
 - `Image::to_pixels` is not supported and returns an error.
+- There is no writable user directory, so `Filesystem::create`, `write_config` and other writes fail.
