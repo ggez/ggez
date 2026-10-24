@@ -322,9 +322,10 @@ impl GraphicsContext {
         let capabilities = surface.get_capabilities(&adapter);
 
         let (width, height) = physical_window_size(&window, &conf.window_mode);
+        let format = capabilities.formats[0];
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: capabilities.formats[0],
+            format,
             width,
             height,
             present_mode: if conf.window_setup.vsync {
@@ -334,7 +335,7 @@ impl GraphicsContext {
             },
             desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            view_formats: vec![],
+            view_formats: vec![format.add_srgb_suffix()],
             color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
@@ -655,7 +656,7 @@ impl GraphicsContext {
     /// Returns the image format of the window surface.
     #[inline]
     pub fn surface_format(&self) -> ImageFormat {
-        self.surface_config.format
+        self.surface_config.format.add_srgb_suffix()
     }
 
     /// Returns the current [`wgpu::CommandEncoder`] if there is a frame in progress.
@@ -706,9 +707,10 @@ impl GraphicsContext {
             }
         };
 
-        let frame_view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let frame_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
+            format: Some(self.surface_format()),
+            ..Default::default()
+        });
 
         self.fcx = Some(FrameContext {
             cmd: self
@@ -767,7 +769,7 @@ impl GraphicsContext {
                     vs_entry: "vs_main",
                     fs_entry: "fs_main",
                     samples: 1,
-                    format: self.surface_config.format,
+                    format: self.surface_format(),
                     blend: None,
                     depth: None,
                     vertices: false,
