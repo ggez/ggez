@@ -71,7 +71,7 @@ fn pacman(c: Vec2) -> Path {
     path.build()
 }
 
-impl MainState {
+impl ggez::Game for MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let mut mb = graphics::MeshBuilder::new();
         mb.path(DrawMode::fill(), &heart(vec2(150., 180.)), Color::RED)?
@@ -99,8 +99,5 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("mesh_path", "ggez");
-    let (mut ctx, event_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    ggez::ContextBuilder::new("mesh_path", "ggez").run::<MainState>()
 }
