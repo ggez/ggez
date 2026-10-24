@@ -144,34 +144,29 @@ What this means for you is: If you want `DrawParam::offset` to be a relative off
 "absolute interpretations" above, then you'll have to adapt your offset like this:
 
 ```rust
-// scale up and move the offset according to the dimensions of the Drawable
-// the move is necessary as the dimensions (i.e. the bounding box) may not
-// necessarily start at [0,0]
+let bounds = mesh.bounding_box();
 let mut new_param = param;
-if let Transform::Values { offset, .. } = param.trans {
-    if let Some(dim) = drawable.dimensions(ctx) {
-        let new_offset = mint::Vector2 {
-            x: offset.x * dim.w + dim.x,
-            y: offset.y * dim.h + dim.y,
-        };
-        new_param = param.offset(new_offset);
-    }
+if let Transform::Values { offset, .. } = param.transform {
+    new_param = param.offset([
+        offset.x * bounds.w + bounds.x,
+        offset.y * bounds.h + bounds.y,
+    ]);
 }
 ```
 
-If, however, you find yourself desiring to use absolute offsets on any of the types declared
-to have "relative interpretation" here instead, you'll have to do almost the opposite:
+For a meshed `InstanceArray`, use `instances.bounding_box(&mesh)` instead.
+It returns `None` when the array is empty.
+
+If you want an absolute offset for an image, convert it to a relative offset using
+the image size and the source rectangle being drawn:
 
 ```rust
-// scale down the offset according to the dimensions of the Drawable
+let width = image.width() as f32 * param.src.w;
+let height = image.height() as f32 * param.src.h;
 let mut new_param = param;
-if let Transform::Values { offset, .. } = param.trans {
-    if let Some(dim) = drawable.dimensions(ctx) {
-        let new_offset = mint::Vector2 {
-            x: offset.x / dim.w,
-            y: offset.y / dim.h,
-        };
-        new_param = param.offset(new_offset);
+if width != 0.0 && height != 0.0 {
+    if let Transform::Values { offset, .. } = param.transform {
+        new_param = param.offset([offset.x / width, offset.y / height]);
     }
 }
 ```
