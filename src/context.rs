@@ -391,7 +391,8 @@ impl ContextBuilder {
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         #[cfg(target_arch = "wasm32")]
         {
-            let msg = "ContextBuilder::run or build_async on web";
+            let msg =
+                "ContextBuilder::build can't block on web, use ContextBuilder::run or build_async";
             web_sys::console::error_1(&format!("ggez: {msg}").into());
             Err(GameError::CustomError(String::from(msg)))
         }
