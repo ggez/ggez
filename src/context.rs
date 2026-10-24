@@ -223,14 +223,14 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
-    fn from_conf(
+    fn from_conf<T>(
         game_id: &str,
         conf: conf::Conf,
         fs: Filesystem,
-    ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
+    ) -> GameResult<(Context, winit::event_loop::EventLoop<T>)> {
         #[cfg(feature = "audio")]
         let audio_context = audio::AudioContext::new(&fs)?;
-        let events_loop = winit::event_loop::EventLoop::new()?;
+        let events_loop = winit::event_loop::EventLoop::<T>::with_user_event().build()?;
         let timer_context = timer::TimeContext::new();
         let graphics_context =
             graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
@@ -378,6 +378,11 @@ impl ContextBuilder {
 
     /// Build a `Context`
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
+        self.build_user()
+    }
+
+    /// Build a `Context` with a custom user event `T`
+    pub fn build_user<T>(self) -> GameResult<(Context, winit::event_loop::EventLoop<T>)> {
         let fs = Filesystem::new(
             self.game_id.as_ref(),
             self.author.as_ref(),
@@ -403,14 +408,14 @@ impl ContextBuilder {
     }
 
     /// Build a Custom `Context`.
-    pub fn custom_build<C>(
+    pub fn custom_build<C, T>(
         self,
         from_conf: impl Fn(
             String,
             conf::Conf,
             Filesystem,
-        ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
-    ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
+        ) -> GameResult<(C, winit::event_loop::EventLoop<T>)>,
+    ) -> GameResult<(C, winit::event_loop::EventLoop<T>)>
     where
         C: HasMut<ContextFields>
             + HasMut<timer::TimeContext>

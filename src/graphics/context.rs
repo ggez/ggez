@@ -87,9 +87,9 @@ pub struct GraphicsContext {
 
 impl GraphicsContext {
     /// Create a new graphics context
-    pub fn new(
+    pub fn new<T>(
         game_id: &str,
-        event_loop: &winit::event_loop::EventLoop<()>,
+        event_loop: &winit::event_loop::EventLoop<T>,
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
@@ -184,10 +184,10 @@ impl GraphicsContext {
         (bind_group, layout)
     }
 
-    pub(crate) fn new_from_instance(
+    pub(crate) fn new_from_instance<T>(
         #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
-        event_loop: &winit::event_loop::EventLoop<()>,
+        event_loop: &winit::event_loop::EventLoop<T>,
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
