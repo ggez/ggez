@@ -971,3 +971,132 @@ mod tests {
 
     // BUGGO: TODO: Make sure all functions are tested for OverlayFS and ZipFS!!
 }
+
+/// A read-only filesystem backed by the `assets/` directory of an Android APK.
+#[cfg(target_os = "android")]
+pub struct AndroidAssetsFS {
+    assets: winit::platform::android::activity::ndk::asset::AssetManager,
+}
+
+#[cfg(target_os = "android")]
+impl AndroidAssetsFS {
+    pub fn new(app: &winit::platform::android::activity::AndroidApp) -> Self {
+        Self {
+            assets: app.asset_manager(),
+        }
+    }
+
+    /// Asset names are relative to `assets/`, without the leading slash ggez paths have.
+    fn asset_name(path: &Path) -> GameResult<std::ffi::CString> {
+        let name = convenient_path_to_str(path)?.trim_matches('/');
+        std::ffi::CString::new(name)
+            .map_err(|_| GameError::FilesystemError(format!("Invalid asset path {path:?}")))
+    }
+
+    fn open_asset(
+        &self,
+        path: &Path,
+    ) -> GameResult<winit::platform::android::activity::ndk::asset::Asset> {
+        self.assets
+            .open(&Self::asset_name(path)?)
+            .ok_or_else(|| GameError::FilesystemError(format!("Asset {path:?} not found")))
+    }
+
+    fn dir_entries(&self, path: &Path) -> GameResult<Vec<std::ffi::CString>> {
+        Ok(self
+            .assets
+            .open_dir(&Self::asset_name(path)?)
+            .map(|dir| dir.collect())
+            .unwrap_or_default())
+    }
+}
+
+#[cfg(target_os = "android")]
+impl Debug for AndroidAssetsFS {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "<AndroidAssetsFS>")
+    }
+}
+
+#[cfg(target_os = "android")]
+impl VFS for AndroidAssetsFS {
+    fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>> {
+        if open_options.write || open_options.create || open_options.append || open_options.truncate
+        {
+            let msg = format!("Cannot alter file {path:?} in {self:?}, filesystem read-only");
+            return Err(GameError::FilesystemError(msg));
+        }
+        let mut buffer = Vec::new();
+        let _ = self.open_asset(path)?.read_to_end(&mut buffer)?;
+        Ok(Box::new(io::Cursor::new(buffer)))
+    }
+
+    fn mkdir(&self, path: &Path) -> GameResult {
+        let msg = format!("Cannot mkdir {path:?} in {self:?}, filesystem read-only");
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn rm(&self, path: &Path) -> GameResult {
+        let msg = format!("Cannot rm {path:?} in {self:?}, filesystem read-only");
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn rmrf(&self, path: &Path) -> GameResult {
+        let msg = format!("Cannot rmrf {path:?} in {self:?}, filesystem read-only");
+        Err(GameError::FilesystemError(msg))
+    }
+
+    fn exists(&self, path: &Path) -> bool {
+        self.metadata(path).is_ok()
+    }
+
+    fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
+        if let Ok(asset) = self.open_asset(path) {
+            return Ok(Box::new(AndroidAssetMetadata {
+                len: asset.length() as u64,
+                is_dir: false,
+            }));
+        }
+        if !self.dir_entries(path)?.is_empty() {
+            return Ok(Box::new(AndroidAssetMetadata {
+                len: 0,
+                is_dir: true,
+            }));
+        }
+        Err(GameError::FilesystemError(format!(
+            "Asset {path:?} not found"
+        )))
+    }
+
+    fn read_dir(&self, path: &Path, dst: &mut Vec<PathBuf>) -> GameResult<()> {
+        for name in self.dir_entries(path)? {
+            let mut pathbuf = PathBuf::from(path);
+            pathbuf.push(name.to_string_lossy().as_ref());
+            dst.push(pathbuf);
+        }
+        Ok(())
+    }
+
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        None
+    }
+}
+
+#[cfg(target_os = "android")]
+struct AndroidAssetMetadata {
+    len: u64,
+    is_dir: bool,
+}
+
+#[cfg(target_os = "android")]
+impl VMetadata for AndroidAssetMetadata {
+    fn is_dir(&self) -> bool {
+        self.is_dir
+    }
+    fn is_file(&self) -> bool {
+        !self.is_dir
+    }
+    fn len(&self) -> u64 {
+        self.len
+    }
+}

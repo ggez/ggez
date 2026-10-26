@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- build.sh fills in PACKAGE and LABEL. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="PACKAGE"
+    android:versionCode="1"
+    android:versionName="0.10.0">
+
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+
+    <application
+        android:label="LABEL"
+        android:hasCode="false"
+        android:extractNativeLibs="true">
+        <!-- configChanges keeps rotation and keyboard changes from recreating the activity;
+             ggez just sees a resize instead. -->
+        <activity
+            android:name="android.app.NativeActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+            <meta-data android:name="android.app.lib_name" android:value="ggez_android_examples" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

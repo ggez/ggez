@@ -29,9 +29,15 @@ impl fmt::Debug for GamepadContext {
 }
 
 impl GamepadContext {
-    /// Create a new GamepadContext
     pub fn new() -> GameResult<Self> {
-        let gilrs = Gilrs::new()?;
+        let gilrs = match Gilrs::new() {
+            Ok(gilrs) => gilrs,
+            Err(gilrs::Error::NotImplemented(dummy)) => {
+                warn!("Gamepads are not supported on this platform");
+                dummy
+            }
+            Err(e) => return Err(e.into()),
+        };
         Ok(GamepadContext { gilrs })
     }
 }

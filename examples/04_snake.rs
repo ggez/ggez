@@ -459,7 +459,7 @@ impl event::EventHandler for GameState {
     }
 }
 
-fn main() -> GameResult {
+pub fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
     let (ctx, events_loop) = ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.

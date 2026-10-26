@@ -13,6 +13,7 @@ use ggez::{Context, ContextBuilder, GameResult};
 use oorandom::Rand32;
 
 use ggez::input::keyboard::KeyInput;
+use ggez::input::mouse::MouseButton;
 use std::env;
 use std::path;
 use winit::keyboard::{Key, NamedKey};
@@ -178,6 +179,25 @@ fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f32) {
     }
 }
 
+/// During mouse or touchscreen press, turn the ship, thrust, and fire.
+fn player_steer_towards(actor: &mut Actor, target: Point2, dt: f32) {
+    let offset = target - actor.pos;
+    let target_facing = offset.x.atan2(offset.y);
+    // Turn the shortest way around, at most PLAYER_TURN_RATE per second.
+    let turn = (target_facing - actor.facing + std::f32::consts::PI)
+        .rem_euclid(std::f32::consts::TAU)
+        - std::f32::consts::PI;
+    let max_turn = dt * PLAYER_TURN_RATE;
+    actor.facing += turn.clamp(-max_turn, max_turn);
+
+    if offset.length() > POINTER_THRUST_DISTANCE {
+        player_thrust(actor, dt);
+    }
+}
+
+/// How far the pointer must be from the ship for pointer controls to thrust.
+const POINTER_THRUST_DISTANCE: f32 = 100.0;
+
 fn player_thrust(actor: &mut Actor, dt: f32) {
     let direction_vector = vec_from_angle(actor.facing);
     let thrust_vector = direction_vector * (PLAYER_THRUST);
@@ -227,6 +247,12 @@ fn handle_timed_life(actor: &mut Actor, dt: f32) {
 fn world_to_screen_coords(screen_width: f32, screen_height: f32, point: Point2) -> Point2 {
     let x = point.x + screen_width / 2.0;
     let y = screen_height - (point.y + screen_height / 2.0);
+    Point2::new(x, y)
+}
+
+fn screen_to_world_coords(screen_width: f32, screen_height: f32, point: Point2) -> Point2 {
+    let x = point.x - screen_width / 2.0;
+    let y = screen_height / 2.0 - point.y;
     Point2::new(x, y)
 }
 
@@ -283,6 +309,7 @@ struct InputState {
     xaxis: f32,
     yaxis: f32,
     fire: bool,
+    pointer: Option<Point2>,
 }
 
 impl Default for InputState {
@@ -291,6 +318,7 @@ impl Default for InputState {
             xaxis: 0.0,
             yaxis: 0.0,
             fire: false,
+            pointer: None,
         }
     }
 }
@@ -416,6 +444,7 @@ fn print_instructions() {
     println!();
     println!("How to play:");
     println!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
+    println!("Or click/press to aim, move, and fire");
     println!();
 }
 
@@ -450,8 +479,13 @@ impl EventHandler for MainState {
 
             // Update the player state based on the user input.
             player_handle_input(&mut self.player, &self.input, seconds);
+            if let Some(pointer) = self.input.pointer {
+                let target = screen_to_world_coords(self.screen_width, self.screen_height, pointer);
+                player_steer_towards(&mut self.player, target, seconds);
+            }
             self.player_shot_timeout -= seconds;
-            if self.input.fire && self.player_shot_timeout < 0.0 {
+            let firing = self.input.fire || self.input.pointer.is_some();
+            if firing && self.player_shot_timeout < 0.0 {
                 self.fire_player_shot();
             }
 
@@ -593,6 +627,47 @@ impl EventHandler for MainState {
                 self.input.fire = false;
             }
             _ => (), // Do nothing
+        }
+        Ok(())
+    }
+
+    // Handle mouse events, which is also how touches arrive on phones.
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
+        if button == MouseButton::Left {
+            self.input.pointer = Some(Point2::new(x, y));
+        }
+        Ok(())
+    }
+
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        x: f32,
+        y: f32,
+        _dx: f32,
+        _dy: f32,
+    ) -> GameResult {
+        if let Some(pointer) = &mut self.input.pointer {
+            *pointer = Point2::new(x, y);
+        }
+        Ok(())
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) -> GameResult {
+        if button == MouseButton::Left {
+            self.input.pointer = None;
         }
         Ok(())
     }

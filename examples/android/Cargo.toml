@@ -1,0 +1,27 @@
+[package]
+name = "ggez-android-examples"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Packages one of ggez's examples as an Android app. See README.md."
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[target.'cfg(target_os = "android")'.dependencies]
+ggez = { path = "../..", features = ["android-native-activity"] }
+android_logger = "0.15"
+log = "0.4"
+winit = "0.30"
+# Dependencies of the examples themselves, mirroring ggez's dev-dependencies.
+oorandom = "11"
+rand = "0.10"
+getrandom = "0.4"
+keyframe = "1"
+keyframe_derive = "1"
+num-derive = "0.4"
+num-traits = "0.2"
+chrono = "0.4"
+fern = "0.7"
+argh = "0.1"

@@ -37,6 +37,7 @@ use crate::{
     vfs::{self, OverlayFS, VFS},
     GameError, GameResult,
 };
+#[cfg(not(target_os = "android"))]
 use directories::ProjectDirs;
 use std::{
     env,
@@ -115,6 +116,36 @@ impl io::Seek for File {
     }
 }
 
+/// Returns the per-user `(data, config)` directories.
+#[cfg(not(target_os = "android"))]
+fn user_dirs(id: &str, author: &str) -> GameResult<(path::PathBuf, path::PathBuf)> {
+    let project_dirs = match ProjectDirs::from("", author, id) {
+        Some(dirs) => dirs,
+        None => {
+            return Err(GameError::FilesystemError(String::from(
+                "No valid home directory path could be found.",
+            )));
+        }
+    };
+    Ok((
+        project_dirs.data_local_dir().to_path_buf(),
+        project_dirs.config_dir().to_path_buf(),
+    ))
+}
+
+/// Returns the per-user `(data, config)` directories, both inside the app's internal storage.
+#[cfg(target_os = "android")]
+fn user_dirs(_id: &str, _author: &str) -> GameResult<(path::PathBuf, path::PathBuf)> {
+    let internal = crate::android::android_app()?
+        .internal_data_path()
+        .ok_or_else(|| {
+            GameError::FilesystemError(String::from(
+                "No internal data path could be retrieved from Android.",
+            ))
+        })?;
+    Ok((internal.join("data"), internal.join("config")))
+}
+
 impl Filesystem {
     /// Create a new `Filesystem` instance, using the given `id` and (on
     /// some platforms) the `author` as a portion of the user
@@ -153,17 +184,8 @@ impl Filesystem {
 
         let mut resources_path;
         let mut resources_zip_path;
-        let user_data_path;
-        let user_config_path;
 
-        let project_dirs = match ProjectDirs::from("", author, id) {
-            Some(dirs) => dirs,
-            None => {
-                return Err(GameError::FilesystemError(String::from(
-                    "No valid home directory path could be retrieved.",
-                )));
-            }
-        };
+        let (user_data_path, user_config_path) = user_dirs(id, author)?;
 
         // <game exe root>/resources/
         {
@@ -172,6 +194,13 @@ impl Filesystem {
             trace!("Resources path: {resources_path:?}");
             let physfs = vfs::PhysicalFS::new(&resources_path, true);
             overlay.push_back(Box::new(physfs));
+        }
+
+        // The APK's assets/ directory
+        #[cfg(target_os = "android")]
+        {
+            let assetsfs = vfs::AndroidAssetsFS::new(&crate::android::android_app()?);
+            overlay.push_back(Box::new(assetsfs));
         }
 
         // <root>/resources.zip
@@ -190,18 +219,16 @@ impl Filesystem {
         // Per-user data dir,
         // ~/.local/share/whatever/
         {
-            user_data_path = project_dirs.data_local_dir();
             trace!("User-local data path: {user_data_path:?}");
-            let physfs = vfs::PhysicalFS::new(user_data_path, true);
+            let physfs = vfs::PhysicalFS::new(&user_data_path, true);
             overlay.push_back(Box::new(physfs));
         }
 
         // Writeable local dir, ~/.config/whatever/
         // Save game dir is read-write
         {
-            user_config_path = project_dirs.config_dir();
             trace!("User-local configuration path: {user_config_path:?}");
-            let physfs = vfs::PhysicalFS::new(user_config_path, false);
+            let physfs = vfs::PhysicalFS::new(&user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }
 
@@ -209,8 +236,8 @@ impl Filesystem {
             vfs: Arc::new(RwLock::new(overlay)),
             resources_dir: resources_path,
             zip_dir: resources_zip_path,
-            user_config_dir: user_config_path.to_path_buf(),
-            user_data_dir: user_data_path.to_path_buf(),
+            user_config_dir: user_config_path,
+            user_data_dir: user_data_path,
         };
 
         Ok(fs)

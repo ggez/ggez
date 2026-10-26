@@ -44,7 +44,8 @@ pub struct WgpuContext {
 pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
 
-    pub(crate) surface: wgpu::Surface<'static>,
+    /// `None` while the app is suspended and has no native window.
+    pub(crate) surface: Option<wgpu::Surface<'static>>,
     pub(crate) window: Arc<winit::window::Window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
@@ -388,7 +389,7 @@ impl GraphicsContext {
         let mut this = GraphicsContext {
             wgpu,
 
-            surface,
+            surface: Some(surface),
             window,
             surface_config,
 
@@ -609,7 +610,10 @@ impl GraphicsContext {
         }
 
         let frame = loop {
-            match self.surface.get_current_texture() {
+            let Some(surface) = &self.surface else {
+                return Ok(false);
+            };
+            match surface.get_current_texture() {
                 wgpu::CurrentSurfaceTexture::Success(frame) => break frame,
                 wgpu::CurrentSurfaceTexture::Suboptimal(tex) => {
                     // Drop the SurfaceTexture before reconfiguring the surface, otherwise wgpu panics
@@ -621,11 +625,12 @@ impl GraphicsContext {
                 wgpu::CurrentSurfaceTexture::Timeout => continue,
                 wgpu::CurrentSurfaceTexture::Occluded => return Ok(false),
                 wgpu::CurrentSurfaceTexture::Lost => {
-                    self.surface = self
-                        .wgpu
-                        .instance
-                        .create_surface(self.window.clone())
-                        .map_err(|_| GameError::GraphicsInitializationError)?;
+                    self.surface = Some(
+                        self.wgpu
+                            .instance
+                            .create_surface(self.window.clone())
+                            .map_err(|_| GameError::GraphicsInitializationError)?,
+                    );
                     self.reconfigure_surface();
                 }
 
@@ -730,8 +735,30 @@ impl GraphicsContext {
         let size = self.window.inner_size();
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
-        self.surface
-            .configure(&self.wgpu.device, &self.surface_config);
+        if let Some(surface) = &self.surface {
+            surface.configure(&self.wgpu.device, &self.surface_config);
+        }
+    }
+
+    /// Drops the window surface. Android destroys the native window when the app is
+    /// suspended, and the surface must not outlive it.
+    pub(crate) fn suspend(&mut self) {
+        self.surface = None;
+    }
+
+    /// Recreates the window surface dropped by [`Self::suspend`], if any.
+    pub(crate) fn resume(&mut self) -> GameResult {
+        if self.surface.is_none() {
+            self.surface = Some(
+                self.wgpu
+                    .instance
+                    .create_surface(self.window.clone())
+                    .map_err(|_| GameError::GraphicsInitializationError)?,
+            );
+            // The window may have been resized while it was gone.
+            self.on_resize();
+        }
+        Ok(())
     }
 
     pub(crate) fn on_resize(&mut self) {
@@ -818,8 +845,9 @@ impl GraphicsContext {
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
 
-        self.surface
-            .configure(&self.wgpu.device, &self.surface_config);
+        if let Some(surface) = &self.surface {
+            surface.configure(&self.wgpu.device, &self.surface_config);
+        }
 
         Ok(())
     }

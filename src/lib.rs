@@ -193,6 +193,8 @@ pub use glam;
 pub use mint;
 pub use winit;
 
+#[cfg(target_os = "android")]
+pub mod android;
 pub mod audio;
 pub mod conf;
 pub mod context;

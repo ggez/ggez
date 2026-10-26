@@ -337,8 +337,19 @@ where
         event_loop.set_control_flow(ControlFlow::Poll);
     }
 
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         // TODO create window
+        // The window is created before the event loop starts, but on Android its
+        // surface has to be recreated when the app returns to the foreground.
+        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).resume() {
+            error!("Error on GraphicsContext::resume(): {e:?}");
+            eprintln!("Error on GraphicsContext::resume(): {e:?}");
+            event_loop.exit();
+        }
+    }
+
+    fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
+        HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).suspend();
     }
 
     fn window_event(

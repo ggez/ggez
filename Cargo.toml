@@ -27,6 +27,8 @@ gamepad = ["gilrs"]
 3d = []
 gltf = ["dep:gltf", "dep:base64", "dep:percent-encoding", "3d"]
 obj = ["dep:obj-rs", "3d"]
+android-native-activity = ["winit/android-native-activity"]
+android-game-activity = ["winit/android-game-activity"]
 
 [dependencies]
 bitflags = "2.1"
@@ -71,7 +73,7 @@ skeptic = { git = "https://github.com/Erk-/rust-skeptic.git", branch = "fix-rust
 getrandom = "0.4"
 
 [workspace]
-members = ["doc_tests"]
+members = ["doc_tests", "examples/android"]
 
 [[example]]
 name = "3d"
