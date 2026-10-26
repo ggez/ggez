@@ -4,6 +4,8 @@
 //!
 //! * The `resources/` subdirectory in the same directory as the
 //!   program executable, if any,
+//! * On Android, the APK's read-only `assets/` directory (for example,
+//!   `assets/player.png` is opened as `/player.png`),
 //! * The `resources.zip` file in the same
 //!   directory as the program executable, if any,
 //! * The root folder of the  game's "save" directory which is in a
@@ -13,6 +15,7 @@
 //!   [`ContextBuilder::new()`](../struct.ContextBuilder.html#method.new).
 //!   Some platforms such as Windows also incorporate the `author` string into
 //!   the path.
+//!   On Android, user data and config directories are under the app's internal storage.
 //!
 //! These locations will be searched for files in the order listed, and the first file
 //! found used.  That allows game assets to be easily distributed as an archive

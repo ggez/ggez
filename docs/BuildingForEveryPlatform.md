@@ -96,9 +96,45 @@ you find any issues feel free to open a PR.
 
 # Android
 
-Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
+Android support is limited. Build your game as a shared library (`src/lib.rs`)
+using ggez master:
 
-You might be able to use [`good-web-game`] though to run your `ggez` app on Android.
+```toml
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ggez = { git = "https://github.com/ggez/ggez", branch = "master", features = ["android-native-activity"] }
+```
+
+TODO - Update references to release versions.
+
+Export `android_main`, register the app before building the context, and run your
+usual `EventHandler`:
+
+```rust,ignore
+#[unsafe(no_mangle)]
+fn android_main(app: ggez::android::AndroidApp) {
+    ggez::android::set_android_app(app);
+    let (mut ctx, event_loop) = ggez::ContextBuilder::new("my_game", "author")
+        .build().unwrap();
+    let game = MyGame::new(&mut ctx); // Your game's state implementing EventHandler.
+    ggez::event::run(ctx, event_loop, game).unwrap();
+}
+```
+
+See the [NativeActivity example](../examples/android/README.md) for APK packaging,
+SDK setup and device/emulator commands. Its build script requires Linux x86_64
+and targets Android 8.0/API 26 or later.
+
+* Package `resources/` contents as read-only APK `assets/`, load `assets/player.png`
+  as `/player.png`. Saves use the app's internal storage.
+* Touches trigger mouse callbacks by default. Override `EventHandler::touch_event`
+  for custom handling. See `05_astroblasto` for an example.
+* ggez handles drawing surface suspend/resume.
+
+Enable only one activity feature. The alternative `android-game-activity` needs
+your own GameActivity integration and packaging.
 
 # Web/wasm/emscripten
 

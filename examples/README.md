@@ -9,3 +9,6 @@ The non-numbered examples show off the details of various specific parts of the 
 
 For a general overview of the API, or want to know what ggez is capable of, you might want to go to <https://docs.rs/ggez/> and read the module docs for each module.
 There's a paragraph or two for each module introducing what it contains and how the various subsystems work.
+
+Android support is limited. See [android/README.md](android/README.md) to package
+and run an example on Android; start with `05_astroblasto` for touch controls.

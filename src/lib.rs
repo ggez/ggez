@@ -42,11 +42,12 @@
 //! ### Supported platforms
 //!
 //!  * Fully supported: Windows, Linux
+//!  * Limited support: Android; see the [Android guide](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md#android)
 //!  * Not officially supported but might work anyway: Mac
 //!
 //! For details, see [docs/BuildingForEveryPlatform.md](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md)
 //!
-//! If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/ggez/good-web-game).
+//! For older ggez games (up to 0.7) targeting Android, iOS or the web, see [good-web-game](https://github.com/ggez/good-web-game).
 //!
 //! ## Who's using ggez?
 //!

@@ -1,5 +1,9 @@
 //! Android support.
 //!
+//! Support is limited. See the [Android guide](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md#android)
+//! and [example packager](https://github.com/ggez/ggez/tree/master/examples/android)
+//! for project setup and APK build instructions.
+//!
 //! An Android game is a `cdylib` that exports an `android_main` function instead of a
 //! binary with `main`. Hand the [`AndroidApp`] it receives to ggez with [`set_android_app`]
 //! before building a [`Context`](crate::Context), then build and run as usual:
@@ -14,16 +18,8 @@
 //! }
 //! ```
 //!
-//! Enable exactly one of the `android-native-activity` or `android-game-activity` features.
+//! Enable either `android-native-activity` or `android-game-activity` features.
 //! `NativeActivity` needs no Java code, so it is the simplest place to start.
-//!
-//! On Android the [`filesystem`](crate::filesystem) serves resources from the APK's
-//! `assets/` directory, and the user data and config directories live under the app's
-//! internal storage.
-//!
-//! Android destroys the native window whenever the app goes to the background. ggez drops
-//! the window surface when that happens, skips drawing until the app is resumed, and then
-//! recreates it.
 
 use std::sync::Mutex;
 
