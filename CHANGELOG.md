@@ -7,6 +7,8 @@
 
 ## Fixed
 
+- Keep text anchors at the requested destination when scaling or rotating text.
+
 - Convert the overall instance-array tint to linear before combining it with
   per-instance and mesh colors.
 

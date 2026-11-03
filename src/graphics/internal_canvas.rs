@@ -445,10 +445,10 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn draw_bounded_text(&mut self, text: &Text, mut param: DrawParam) -> GameResult {
-        if let Transform::Values { offset, .. } = param.transform {
+        if let Transform::Values { offset, .. } = &mut param.transform {
             if offset.x != 0. || offset.y != 0. {
                 let bounds = text.measure_raw(self.text_renderer, self.fonts)?;
-                apply_text_offset(&mut param, bounds);
+                *offset = text_offset(*offset, bounds);
             }
         }
 
@@ -706,12 +706,23 @@ struct TextUniforms {
     transform: Mat4,
 }
 
-fn apply_text_offset(param: &mut DrawParam, bounds: mint::Vector2<f32>) {
-    if let Transform::Values { offset, .. } = &mut param.transform {
-        // Convert the relative offset to glyph coordinates before scaling and rotating it.
-        offset.x *= bounds.x;
-        offset.y *= bounds.y;
+fn text_offset(offset: mint::Point2<f32>, bounds: mint::Vector2<f32>) -> mint::Point2<f32> {
+    // Convert the relative offset to glyph coordinates before scaling and rotating it.
+    mint::Point2 {
+        x: offset.x * bounds.x,
+        y: offset.y * bounds.y,
     }
+}
+
+pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
+    glam::camera::rh::proj::directx::orthographic(
+        screen.left(),
+        screen.right(),
+        screen.bottom(),
+        screen.top(),
+        0.,
+        1.,
+    )
 }
 
 #[cfg(test)]
@@ -726,14 +737,18 @@ mod tests {
             ([2., 3.], 0., [0.5, 0.5]),
             ([2., 3.], std::f32::consts::FRAC_PI_2, [0.5, 0.5]),
             ([-1., 0.5], 0.3, [-0.5, 0.25]),
+            ([2., 3.], 0.3, [0.5, 0.]),
+            ([2., 3.], 0.3, [0., 0.5]),
+            ([2., 3.], 0.3, [-0.5, 0.]),
+            ([2., 3.], 0.3, [0., -0.5]),
+            ([2., 3.], 0.3, [-0.5, -0.25]),
             ([1., 1.], 0., [0., 0.]),
         ] {
-            let mut param = DrawParam::new()
+            let param = DrawParam::new()
                 .dest([100., 200.])
                 .scale(scale)
                 .rotation(rotation)
-                .offset(offset);
-            apply_text_offset(&mut param, bounds);
+                .offset(text_offset(offset.into(), bounds));
             let anchor = param
                 .transform
                 .to_bare_matrix_glam()
@@ -750,21 +765,10 @@ mod tests {
     }
 
     #[test]
-    fn text_offset_leaves_matrix_transforms_unchanged() {
-        let mut param = DrawParam::new().transform(Mat4::from_scale(glam::vec3(2., 3., 1.)));
-        let original = param;
-        apply_text_offset(&mut param, mint::Vector2 { x: 120., y: 40. });
-        assert_eq!(param, original);
+    fn text_offset_uses_glyph_bounds() {
+        assert_eq!(
+            text_offset([0.25, -0.5].into(), [120., 40.].into()),
+            [30., -20.].into()
+        );
     }
-}
-
-pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
-    glam::camera::rh::proj::directx::orthographic(
-        screen.left(),
-        screen.right(),
-        screen.bottom(),
-        screen.top(),
-        0.,
-        1.,
-    )
 }
