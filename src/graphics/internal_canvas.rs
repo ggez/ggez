@@ -445,12 +445,10 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn draw_bounded_text(&mut self, text: &Text, mut param: DrawParam) -> GameResult {
-        if let Transform::Values { dest, offset, .. } = &mut param.transform {
-            if offset.x > 0. || offset.y > 0. {
+        if let Transform::Values { offset, .. } = &mut param.transform {
+            if offset.x != 0. || offset.y != 0. {
                 let bounds = text.measure_raw(self.text_renderer, self.fonts)?;
-                dest.x -= offset.x * bounds.x;
-                dest.y -= offset.y * bounds.y;
-                *offset = mint::Point2 { x: 0., y: 0. };
+                *offset = text_offset(*offset, bounds);
             }
         }
 
@@ -708,6 +706,14 @@ struct TextUniforms {
     transform: Mat4,
 }
 
+fn text_offset(offset: mint::Point2<f32>, bounds: mint::Vector2<f32>) -> mint::Point2<f32> {
+    // Convert the relative offset to glyph coordinates before scaling and rotating it.
+    mint::Point2 {
+        x: offset.x * bounds.x,
+        y: offset.y * bounds.y,
+    }
+}
+
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
     glam::camera::rh::proj::directx::orthographic(
         screen.left(),
@@ -717,4 +723,52 @@ pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
         0.,
         1.,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn text_offset_keeps_anchor_at_destination() {
+        let bounds = mint::Vector2 { x: 120., y: 40. };
+        for (scale, rotation, offset) in [
+            ([0.1, 0.1], 0., [0.5, 0.5]),
+            ([2., 3.], 0., [0.5, 0.5]),
+            ([2., 3.], std::f32::consts::FRAC_PI_2, [0.5, 0.5]),
+            ([-1., 0.5], 0.3, [-0.5, 0.25]),
+            ([2., 3.], 0.3, [0.5, 0.]),
+            ([2., 3.], 0.3, [0., 0.5]),
+            ([2., 3.], 0.3, [-0.5, 0.]),
+            ([2., 3.], 0.3, [0., -0.5]),
+            ([2., 3.], 0.3, [-0.5, -0.25]),
+            ([1., 1.], 0., [0., 0.]),
+        ] {
+            let param = DrawParam::new()
+                .dest([100., 200.])
+                .scale(scale)
+                .rotation(rotation)
+                .offset(text_offset(offset.into(), bounds));
+            let anchor = param
+                .transform
+                .to_bare_matrix_glam()
+                .transform_point3(glam::vec3(bounds.x * offset[0], bounds.y * offset[1], 0.));
+            assert!(
+                (anchor.x - 100.).abs() < 0.001,
+                "{scale:?} {rotation} {offset:?}: {anchor:?}"
+            );
+            assert!(
+                (anchor.y - 200.).abs() < 0.001,
+                "{scale:?} {rotation} {offset:?}: {anchor:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn text_offset_uses_glyph_bounds() {
+        assert_eq!(
+            text_offset([0.25, -0.5].into(), [120., 40.].into()),
+            [30., -20.].into()
+        );
+    }
 }
